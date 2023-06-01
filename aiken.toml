@@ -1,0 +1,14 @@
+name = "aiken-lang/vault"
+version = "0.0.0"
+license = "Apache-2.0"
+description = "Aiken contracts for project 'dcspark/vault'"
+
+[repository]
+user = "aiken-lang"
+project = "vault"
+platform = "github"
+
+[[dependencies]]
+name = "aiken-lang/stdlib"
+version = "add-value-to-list"
+source = "github"
