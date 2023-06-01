@@ -18,11 +18,11 @@ use aiken/transaction/value.{
 
 /// The datum for the locked assets
 type State {
-  /// Whether the assets are locked or unlocking with a wait time
-  status: Status,
   /// The owner has the rights to withdrawl the full or
   /// partial amount
   owner: Owner,
+  /// Whether the assets are locked or unlocking with a wait time
+  status: Status,
 }
 
 /// Used to describe what state
@@ -44,7 +44,7 @@ type Owner {
   /// whoever can spend this NFT can unlock.
   NFT(PolicyId, AssetName)
   /// A uniquely minted asset created on lock.
-  /// Whoever can spend it can unlock.
+  /// Whoever can burn it can unlock.
   Receipt(AssetName)
 }
 
@@ -55,6 +55,7 @@ type Owner {
 type Redeem {
   partial_withdraw: Bool,
   nft_input_owner: Option<OutputReference>,
+  new_receipt_owner: Option<AssetName>,
 }
 
 type MintRedeemer {
@@ -101,11 +102,15 @@ validator {
     let State { owner, status } =
       datum
 
-    let owner_present_check =
+    // Checks current owner is valid and gets next owner
+    let next_owner =
       when owner is {
         // An owner can be a public key, a spent NFT, or a burned receipt token that was minted by this script
-        PKH(signer) ->
-          list.has(extra_signatories, signer)
+        PKH(signer) -> {
+          expect True =
+            list.has(extra_signatories, signer)
+          owner
+        }
         // In this case the redeemer out ref refers to some other input that holds the nft 
         // that we check is spent
         NFT(policy, token_name) -> {
@@ -118,12 +123,17 @@ validator {
               fn(input) { input.output_reference == nft_input_owner },
             )
 
-          quantity_of(nft_input.output.value, policy, token_name) == 1
+          expect True =
+            quantity_of(nft_input.output.value, policy, token_name) == 1
+          owner
         }
 
         Receipt(token_name) -> {
           let payc =
             in_address.payment_credential
+
+          expect Some(next_receipt_name) =
+            redeemer.new_receipt_owner
 
           let policy =
             when payc is {
@@ -133,135 +143,138 @@ validator {
                 hash
             }
 
-          quantity_of(mint, policy, token_name) == -1
+          expect True =
+            quantity_of(mint, policy, token_name) == -1 && quantity_of(
+              mint,
+              policy,
+              next_receipt_name,
+            ) == 1
+
+          Receipt(next_receipt_name)
         }
       }
 
     let Interval { lower_bound, upper_bound } =
       validity_range
 
-    let datum_check =
-      when status is {
-        Locked -> {
-          let IntervalBound { bound_type, .. } =
-            upper_bound
+    when status is {
+      Locked -> {
+        let IntervalBound { bound_type, .. } =
+          upper_bound
 
-          expect Finite(upper) =
-            bound_type
+        expect Finite(upper) =
+          bound_type
 
-          // Can use record update since owner is the same.
-          // upper bound + minimum_lock_time = for_how_long
-          let output_unlocking_datum =
-            State {
-              ..datum,
-              status: Unlocking {
-                out_ref: own_out_ref,
-                for_how_long: upper + minimum_lock_time,
-              },
-            }
-
-          let outputs_offset =
-            find_outputs_offset(outputs, InlineDatum(output_unlocking_datum))
-
-          if redeemer.partial_withdraw {
-            // case for partial withdraws
-            expect [unlocking_output, remainder_output, ..] =
-              outputs_offset
-
-            let Output { address: out_address, value: out_value, .. } =
-              unlocking_output
-
-            let Output { address: rem_address, value: rem_value, datum, .. } =
-              remainder_output
-
-            expect InlineDatum(datum) =
-              datum
-
-            expect State { status, .. }: State =
-              datum
-
-            let is_locked =
-              status == Locked
-
-            expect [(in_ada_policy, in_ada_amount), ..in_rest_values] =
-              to_list_advanced_usage(in_value)
-
-            expect Some(in_ada_quantity) =
-              dict.get(in_ada_amount, "")
-
-            expect [(rem_ada_policy, rem_ada_amount), ..] =
-              to_list_advanced_usage(rem_value)
-
-            expect [(out_ada_policy, out_ada_amount), ..] =
-              to_list_advanced_usage(out_value)
-
-            expect Some(out_ada_quantity) =
-              dict.get(out_ada_amount, "")
-
-            expect Some(rem_ada_quantity) =
-              dict.get(rem_ada_amount, "")
-
-            let out_ada_total =
-              rem_ada_quantity + out_ada_quantity
-
-            let ada_check =
-              in_ada_quantity <= out_ada_total && in_ada_policy == "" && out_ada_policy == "" && rem_ada_policy == ""
-
-            let rem_value_no_ada =
-              rem_value |> without_lovelace
-
-            let total_value_no_ada =
-              out_value
-                |> without_lovelace
-                |> add(rem_value_no_ada)
-                |> to_list_advanced_usage
-
-            let value_check =
-              in_rest_values == total_value_no_ada && ada_check
-
-            out_address == in_address && rem_address == in_address && ada_check && value_check && is_locked
-          } else {
-            expect [unlocking_output, ..] =
-              outputs_offset
-
-            let Output { address: out_address, value: out_value, .. } =
-              unlocking_output
-
-            expect [(in_ada_policy, in_ada_amount), ..in_rest_values] =
-              to_list_advanced_usage(in_value)
-
-            expect Some(in_ada_quantity) =
-              dict.get(in_ada_amount, "")
-
-            expect [(out_ada_policy, out_ada_amount), ..out_rest_values] =
-              to_list_advanced_usage(out_value)
-
-            expect Some(out_ada_quantity) =
-              dict.get(out_ada_amount, "")
-
-            let ada_check =
-              in_ada_quantity <= out_ada_quantity && in_ada_policy == "" && out_ada_policy == ""
-
-            let value_check =
-              in_rest_values == out_rest_values
-
-            out_address == in_address && ada_check && value_check
+        // upper bound + minimum_lock_time = for_how_long
+        let output_unlocking_datum =
+          State {
+            owner: next_owner,
+            status: Unlocking {
+              out_ref: own_out_ref,
+              for_how_long: upper + minimum_lock_time,
+            },
           }
-        }
 
-        Unlocking { for_how_long, .. } -> {
-          // lower bound check
-          let IntervalBound { bound_type, .. } =
-            lower_bound
+        let outputs_offset =
+          find_outputs_offset(outputs, InlineDatum(output_unlocking_datum))
 
-          expect Finite(lower) =
-            bound_type
+        if redeemer.partial_withdraw {
+          // case for partial withdraws
+          expect [unlocking_output, remainder_output, ..] =
+            outputs_offset
 
-          for_how_long <= lower
+          let Output { address: out_address, value: out_value, .. } =
+            unlocking_output
+
+          let Output { address: rem_address, value: rem_value, datum, .. } =
+            remainder_output
+
+          expect InlineDatum(datum) =
+            datum
+
+          expect State { status, .. }: State =
+            datum
+
+          let is_locked =
+            status == Locked
+
+          expect [(in_ada_policy, in_ada_amount), ..in_rest_values] =
+            to_list_advanced_usage(in_value)
+
+          expect Some(in_ada_quantity) =
+            dict.get(in_ada_amount, "")
+
+          expect [(rem_ada_policy, rem_ada_amount), ..] =
+            to_list_advanced_usage(rem_value)
+
+          expect [(out_ada_policy, out_ada_amount), ..] =
+            to_list_advanced_usage(out_value)
+
+          expect Some(out_ada_quantity) =
+            dict.get(out_ada_amount, "")
+
+          expect Some(rem_ada_quantity) =
+            dict.get(rem_ada_amount, "")
+
+          let out_ada_total =
+            rem_ada_quantity + out_ada_quantity
+
+          let ada_check =
+            in_ada_quantity <= out_ada_total && in_ada_policy == "" && out_ada_policy == "" && rem_ada_policy == ""
+
+          let rem_value_no_ada =
+            rem_value |> without_lovelace
+
+          let total_value_no_ada =
+            out_value
+              |> without_lovelace
+              |> add(rem_value_no_ada)
+              |> to_list_advanced_usage
+
+          let value_check =
+            in_rest_values == total_value_no_ada && ada_check
+
+          out_address == in_address && rem_address == in_address && ada_check && value_check && is_locked
+        } else {
+          expect [unlocking_output, ..] =
+            outputs_offset
+
+          let Output { address: out_address, value: out_value, .. } =
+            unlocking_output
+
+          expect [(in_ada_policy, in_ada_amount), ..in_rest_values] =
+            to_list_advanced_usage(in_value)
+
+          expect Some(in_ada_quantity) =
+            dict.get(in_ada_amount, "")
+
+          expect [(out_ada_policy, out_ada_amount), ..out_rest_values] =
+            to_list_advanced_usage(out_value)
+
+          expect Some(out_ada_quantity) =
+            dict.get(out_ada_amount, "")
+
+          let ada_check =
+            in_ada_quantity <= out_ada_quantity && in_ada_policy == "" && out_ada_policy == ""
+
+          let value_check =
+            in_rest_values == out_rest_values
+
+          out_address == in_address && ada_check && value_check
         }
       }
 
-    datum_check && owner_present_check
+      Unlocking { for_how_long, .. } -> {
+        // lower bound check
+        let IntervalBound { bound_type, .. } =
+          lower_bound
+
+        expect Finite(lower) =
+          bound_type
+
+        for_how_long <= lower
+      }
+    }
   }
 
   /// If the owner is a `Receipt` then we'll need this
