@@ -8,9 +8,7 @@ use aiken/transaction.{
   Datum, InlineDatum, Input, Mint, Output, OutputReference, ScriptContext, Spend,
   Transaction,
 }
-use aiken/transaction/credential.{
-  PaymentCredential, ScriptCredential, VerificationKeyCredential,
-}
+use aiken/transaction/credential.{PaymentCredential, ScriptCredential}
 use aiken/transaction/value.{
   AssetName, PolicyId, add, quantity_of, to_list_advanced_usage,
   without_lovelace,
@@ -135,13 +133,8 @@ validator {
           expect Some(next_receipt_name) =
             redeemer.new_receipt_owner
 
-          let policy =
-            when payc is {
-              VerificationKeyCredential(hash) ->
-                hash
-              ScriptCredential(hash) ->
-                hash
-            }
+          expect ScriptCredential(policy) =
+            payc
 
           expect True =
             quantity_of(mint, policy, token_name) == -1 && quantity_of(
