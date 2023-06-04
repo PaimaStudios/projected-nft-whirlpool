@@ -16,7 +16,7 @@ use aiken/transaction/value.{
 
 /// The datum for the locked assets
 type State {
-  /// The owner has the rights to withdrawl the full or
+  /// The owner has the rights to withdrawal the full or
   /// partial amount
   owner: Owner,
   /// Whether the assets are locked or unlocking with a wait time
@@ -30,7 +30,13 @@ type Status {
   Locked
   /// A withdrawal request has been made but
   /// things can only be unlocked after interval
-  Unlocking { out_ref: OutputReference, for_how_long: Int }
+  Unlocking {
+    /// To support creating multiple "Unlocking" in a single transaction,
+    /// We need to properly tag which Unlocking is for which hololocker
+    out_ref: OutputReference,
+    /// note: this interval is in slots and not in blocks, since that's all we can access from Plutus
+    for_how_long: Int,
+  }
 }
 
 /// This contract supports
@@ -51,6 +57,7 @@ type Owner {
 /// an NFT resides in, this is only relevant for NFT owners
 /// hence it's `Option`.
 type Redeem {
+  /// not optional since None and Bool are the same onchain size anyway
   partial_withdraw: Bool,
   nft_input_owner: Option<OutputReference>,
   new_receipt_owner: Option<AssetName>,
@@ -64,7 +71,8 @@ type MintRedeemer {
 /// This is combined with the upper bound
 /// of the validity range to get an exact slot
 /// that the assets can be claimed at.
-const minimum_lock_time = 2000
+/// note: denominated in slots, but equals ~15 blocks (5 * 60 / slot_time)
+const minimum_lock_time = 300
 
 const ada_policy = ""
 
@@ -109,6 +117,7 @@ validator {
         // In this case the redeemer out ref refers to some other input that holds the nft 
         // that we check is spent
         NFT(policy, token_name) -> {
+          // look up the NFT to be used using `nft_input_owner` as a performance optimization
           expect Some(nft_input_owner) = redeemer.nft_input_owner
 
           expect Some(nft_input) =
@@ -117,6 +126,7 @@ validator {
               fn(input) { input.output_reference == nft_input_owner },
             )
 
+          // note: we do not burn the NFT - only that it's included in a tx input
           expect True =
             quantity_of(nft_input.output.value, policy, token_name) == 1
           owner
@@ -125,16 +135,26 @@ validator {
         Receipt(token_name) -> {
           let payc = in_address.payment_credential
 
-          expect Some(next_receipt_name) = redeemer.new_receipt_owner
-
           expect ScriptCredential(policy) = payc
 
+          // ensure that we burn the previous receipt NFT
           expect True = quantity_of(mint, policy, token_name) == -1
 
-          expect True =
-            status != Locked || quantity_of(mint, policy, next_receipt_name) == 1
+          when status is {
+            Locked -> {
+              expect Some(next_receipt_name) = redeemer.new_receipt_owner
 
-          Receipt(next_receipt_name)
+              // mint a new NFT so it can be used as the condition for withdrawing
+              // note: `next_receipt_name` user input here is implicitly constained to match `create_expected_minted_nfts`
+              //       since that's the only way a token can be minted from this policy 
+              expect True = quantity_of(mint, policy, next_receipt_name) == 1
+
+              Receipt(next_receipt_name)
+            }
+            Unlocking { .. } ->
+              // no need to mint a new NFT if the user is withdrawing
+              owner
+          }
         }
       }
 
@@ -226,12 +246,15 @@ validator {
   }
 }
 
+// finds the output that contains the desired datum
+// returns that output, along with all ouputs that come afterwards
 fn find_outputs_offset(
   outputs: List<Output>,
   output_datum: Datum,
 ) -> List<Output> {
   expect [output, ..rest_outputs] = outputs
 
+  // note: this implicitly checks out_ref equality
   if output.datum == output_datum {
     outputs
   } else {
@@ -248,45 +271,42 @@ fn check_partial_withdraw_outputs(
 
   let Output { address: out_address, value: out_value, .. } = unlocking_output
 
-  let Output { address: rem_address, value: rem_value, datum, .. } =
-    remainder_output
+  let Output {
+    address: rem_address,
+    value: rem_value,
+    datum: remainder_datum,
+    ..
+  } = remainder_output
 
-  // Check status of remainder output is locked
-  expect InlineDatum(datum) = datum
-
-  expect State { status, .. }: State = datum
-
+  // check funds that remain in the lock properly stay in the "Locked" state
+  expect InlineDatum(remainder_datum) = remainder_datum
+  // note: we don't enforce that it's the same owner type
+  expect State { status, .. }: State = remainder_datum
   expect True = status == Locked
 
+  // make sure no ADA is added to the state machine when unlocking
   expect [(in_ada_policy, in_ada_amount), ..in_rest_values] =
     to_list_advanced_usage(input_value)
-
   expect Some(in_ada_quantity) = dict.get(in_ada_amount, ada_token_name)
-
   expect [(rem_ada_policy, rem_ada_amount), ..] =
     to_list_advanced_usage(rem_value)
-
   expect [(out_ada_policy, out_ada_amount), ..] =
     to_list_advanced_usage(out_value)
-
   expect Some(out_ada_quantity) = dict.get(out_ada_amount, ada_token_name)
-
   expect Some(rem_ada_quantity) = dict.get(rem_ada_amount, ada_token_name)
 
-  // Check total ada quantity between the 2 outputs is greater than or equal to input ada
-  let out_ada_total = rem_ada_quantity + out_ada_quantity
-
+  // <= instead of just equal to handle extra ADA having to be added to satisfy min UTXO
+  expect True = in_ada_quantity <= rem_ada_quantity + out_ada_quantity
   expect True =
-    in_ada_quantity <= out_ada_total && in_ada_policy == ada_policy && out_ada_policy == ada_policy && rem_ada_policy == ada_policy
+    in_ada_policy == ada_policy && out_ada_policy == ada_policy && rem_ada_policy == ada_policy
 
+  // make sure native assets are exactly split between unlocking and funds remaining in the lock
   let rem_value_no_ada = rem_value |> without_lovelace
-
   let total_value_no_ada =
     out_value
       |> without_lovelace
       |> add(rem_value_no_ada)
       |> to_list_advanced_usage
-
   // Check other values have value conserved
   expect True = in_rest_values == total_value_no_ada
 
@@ -314,6 +334,7 @@ fn check_full_withdraw_outputs(
   expect Some(out_ada_quantity) = dict.get(out_ada_amount, ada_token_name)
 
   // Check total ada quantity for the output is greater than or equal to input ada
+  // <= instead of just equal to handle extra ADA having to be added to satisfy min UTXO
   expect True =
     in_ada_quantity <= out_ada_quantity && in_ada_policy == ada_policy && out_ada_policy == ada_policy
 
@@ -338,12 +359,14 @@ fn check_mint_to_output_datums(
     [] -> True
     [(minted_asset_name, quantity), ..rest_assets] ->
       if quantity == 1 {
+        // 1) ensure the expected asset exists 
         expect True =
           list.any(
             expected_assets,
             fn(expected_asset) { expected_asset == minted_asset_name },
           )
 
+        // 2) ensure the expected asset is used as the lock for an output
         let expected_datum =
           InlineDatum(
             State { owner: Receipt(minted_asset_name), status: Locked },
@@ -365,6 +388,11 @@ fn check_mint_to_output_datums(
           validator_cred,
         )
       } else if quantity == -1 {
+        // note: we skip the burn case
+        // the reason we need to handle the burn case here by skipping instead of failing
+        // is because `minted_assets` is global to the transaction, and not this specific script execution
+        // and the transaction may contain multiple mints and burns in the same transaction! (separate redeemers)
+        // notably, when unlocking a hololocker for the Receipt case, users will use this policy to both mint and burn at the same time
         check_mint_to_output_datums(
           rest_assets,
           outputs,
@@ -377,6 +405,8 @@ fn check_mint_to_output_datums(
   }
 }
 
+// create N unique token names
+// by taking a common base and appending a unique counter to each one
 fn create_expected_minted_nfts(
   base: ByteArray,
   counter: Int,
