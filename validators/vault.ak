@@ -317,8 +317,10 @@ fn check_full_withdraw_outputs(
   expect True =
     in_ada_quantity <= out_ada_quantity && in_ada_policy == ada_policy && out_ada_policy == ada_policy
 
+  // Check other values have value conserved
   expect True = in_rest_values == out_rest_values
 
+  // Addresses are the same
   out_address == input_address
 }
 
