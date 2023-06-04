@@ -66,6 +66,10 @@ type MintRedeemer {
 /// that the assets can be claimed at.
 const minimum_lock_time = 2000
 
+const ada_policy = ""
+
+const ada_token_name = ""
+
 /// Implemented as a multi-validator.
 /// `spend` is for unlocking and claiming.
 /// `mint` is only used in the case of `Receipt` owners.
@@ -247,16 +251,17 @@ fn check_partial_withdraw_outputs(
   let Output { address: rem_address, value: rem_value, datum, .. } =
     remainder_output
 
+  // Check status of remainder output is locked
   expect InlineDatum(datum) = datum
 
   expect State { status, .. }: State = datum
 
-  let is_locked = status == Locked
+  expect True = status == Locked
 
   expect [(in_ada_policy, in_ada_amount), ..in_rest_values] =
     to_list_advanced_usage(input_value)
 
-  expect Some(in_ada_quantity) = dict.get(in_ada_amount, "")
+  expect Some(in_ada_quantity) = dict.get(in_ada_amount, ada_token_name)
 
   expect [(rem_ada_policy, rem_ada_amount), ..] =
     to_list_advanced_usage(rem_value)
@@ -264,14 +269,15 @@ fn check_partial_withdraw_outputs(
   expect [(out_ada_policy, out_ada_amount), ..] =
     to_list_advanced_usage(out_value)
 
-  expect Some(out_ada_quantity) = dict.get(out_ada_amount, "")
+  expect Some(out_ada_quantity) = dict.get(out_ada_amount, ada_token_name)
 
-  expect Some(rem_ada_quantity) = dict.get(rem_ada_amount, "")
+  expect Some(rem_ada_quantity) = dict.get(rem_ada_amount, ada_token_name)
 
+  // Check total ada quantity between the 2 outputs is greater than or equal to input ada
   let out_ada_total = rem_ada_quantity + out_ada_quantity
 
-  let ada_check =
-    in_ada_quantity <= out_ada_total && in_ada_policy == "" && out_ada_policy == "" && rem_ada_policy == ""
+  expect True =
+    in_ada_quantity <= out_ada_total && in_ada_policy == ada_policy && out_ada_policy == ada_policy && rem_ada_policy == ada_policy
 
   let rem_value_no_ada = rem_value |> without_lovelace
 
@@ -281,9 +287,11 @@ fn check_partial_withdraw_outputs(
       |> add(rem_value_no_ada)
       |> to_list_advanced_usage
 
-  let value_check = in_rest_values == total_value_no_ada && ada_check
+  // Check other values have value conserved
+  expect True = in_rest_values == total_value_no_ada
 
-  out_address == input_address && rem_address == input_address && ada_check && value_check && is_locked
+  // Addresses are the same
+  out_address == input_address && rem_address == input_address
 }
 
 fn check_full_withdraw_outputs(
@@ -298,19 +306,20 @@ fn check_full_withdraw_outputs(
   expect [(in_ada_policy, in_ada_amount), ..in_rest_values] =
     to_list_advanced_usage(input_value)
 
-  expect Some(in_ada_quantity) = dict.get(in_ada_amount, "")
+  expect Some(in_ada_quantity) = dict.get(in_ada_amount, ada_token_name)
 
   expect [(out_ada_policy, out_ada_amount), ..out_rest_values] =
     to_list_advanced_usage(out_value)
 
-  expect Some(out_ada_quantity) = dict.get(out_ada_amount, "")
+  expect Some(out_ada_quantity) = dict.get(out_ada_amount, ada_token_name)
 
-  let ada_check =
-    in_ada_quantity <= out_ada_quantity && in_ada_policy == "" && out_ada_policy == ""
+  // Check total ada quantity for the output is greater than or equal to input ada
+  expect True =
+    in_ada_quantity <= out_ada_quantity && in_ada_policy == ada_policy && out_ada_policy == ada_policy
 
-  let value_check = in_rest_values == out_rest_values
+  expect True = in_rest_values == out_rest_values
 
-  out_address == input_address && ada_check && value_check
+  out_address == input_address
 }
 
 // Check each minted token name is in the expected list, has quantity of 1,
