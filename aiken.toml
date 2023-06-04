@@ -1,7 +1,7 @@
 name = "dcspark/vault"
 version = "0.0.0"
 license = "Apache-2.0"
-description = "Aiken contracts for project 'dcspark/vault'"
+description = "Aiken contracts for the Projected NFT Whirlpool"
 
 [repository]
 user = "dcspark"
