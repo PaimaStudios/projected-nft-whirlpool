@@ -9,9 +9,9 @@ use aiken/transaction.{
   Transaction,
 }
 use aiken/transaction/credential.{Address, PaymentCredential, ScriptCredential}
+use aiken/transaction/minted_value
 use aiken/transaction/value.{
-  AssetName, PolicyId, Value, add, quantity_of, to_list_advanced_usage,
-  without_lovelace,
+  AssetName, PolicyId, Value, merge, quantity_of, to_dict, without_lovelace,
 }
 
 /// The datum for the locked assets
@@ -138,7 +138,7 @@ validator {
           expect ScriptCredential(policy) = payc
 
           // ensure that we burn the previous receipt NFT
-          expect True = quantity_of(mint, policy, token_name) == -1
+          expect True = minted_value.quantity_of(mint, policy, token_name) == -1
 
           when status is {
             Locked -> {
@@ -147,7 +147,8 @@ validator {
               // mint a new NFT so it can be used as the condition for withdrawing
               // note: `next_receipt_name` user input here is implicitly constained to match `create_expected_minted_nfts`
               //       since that's the only way a token can be minted from this policy 
-              expect True = quantity_of(mint, policy, next_receipt_name) == 1
+              expect True =
+                minted_value.quantity_of(mint, policy, next_receipt_name) == 1
 
               Receipt(next_receipt_name)
             }
@@ -211,7 +212,7 @@ validator {
 
     let minted_assets =
       mint
-        |> value.tokens(policy_id)
+        |> minted_value.tokens(policy_id)
         |> dict.to_list()
 
     when redeemer is {
@@ -286,12 +287,22 @@ fn check_partial_withdraw_outputs(
 
   // make sure no ADA is added to the state machine when unlocking
   expect [(in_ada_policy, in_ada_amount), ..in_rest_values] =
-    to_list_advanced_usage(input_value)
+    input_value
+      |> to_dict
+      |> dict.to_list
+
   expect Some(in_ada_quantity) = dict.get(in_ada_amount, ada_token_name)
+
   expect [(rem_ada_policy, rem_ada_amount), ..] =
-    to_list_advanced_usage(rem_value)
+    rem_value
+      |> to_dict
+      |> dict.to_list
+
   expect [(out_ada_policy, out_ada_amount), ..] =
-    to_list_advanced_usage(out_value)
+    out_value
+      |> to_dict
+      |> dict.to_list
+
   expect Some(out_ada_quantity) = dict.get(out_ada_amount, ada_token_name)
   expect Some(rem_ada_quantity) = dict.get(rem_ada_amount, ada_token_name)
 
@@ -305,8 +316,10 @@ fn check_partial_withdraw_outputs(
   let total_value_no_ada =
     out_value
       |> without_lovelace
-      |> add(rem_value_no_ada)
-      |> to_list_advanced_usage
+      |> merge(rem_value_no_ada)
+      |> to_dict
+      |> dict.to_list
+
   // Check other values have value conserved
   expect True = in_rest_values == total_value_no_ada
 
@@ -324,12 +337,16 @@ fn check_full_withdraw_outputs(
   let Output { address: out_address, value: out_value, .. } = unlocking_output
 
   expect [(in_ada_policy, in_ada_amount), ..in_rest_values] =
-    to_list_advanced_usage(input_value)
+    input_value
+      |> to_dict
+      |> dict.to_list
 
   expect Some(in_ada_quantity) = dict.get(in_ada_amount, ada_token_name)
 
   expect [(out_ada_policy, out_ada_amount), ..out_rest_values] =
-    to_list_advanced_usage(out_value)
+    out_value
+      |> to_dict
+      |> dict.to_list
 
   expect Some(out_ada_quantity) = dict.get(out_ada_amount, ada_token_name)
 
