@@ -4,3 +4,10 @@ artifacts/
 build/
 # Aiken's default documentation export
 docs/
+
+# JetBrains IDE files
+.idea/
+
+# Rust data
+sdk/target
+sdk/Cargo.lock
