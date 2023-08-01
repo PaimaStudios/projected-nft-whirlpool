@@ -129,7 +129,7 @@ impl Owner {
         match &self.0 {
             projected_nft_structs::Owner::PKH { .. } => OwnerKind::PKH,
             projected_nft_structs::Owner::NFT(_) => OwnerKind::NFT,
-            projected_nft_structs::Owner::Receipt(_) => OwnerKind::Receipt,
+            projected_nft_structs::Owner::Receipt { .. } => OwnerKind::Receipt,
         }
     }
 
@@ -149,7 +149,7 @@ impl Owner {
 
     pub fn as_receipt(&self) -> Option<AssetName> {
         match &self.0 {
-            projected_nft_structs::Owner::Receipt(receipt) => Some(receipt.clone().into()),
+            projected_nft_structs::Owner::Receipt { receipt, .. } => Some(receipt.clone().into()),
             _ => None,
         }
     }

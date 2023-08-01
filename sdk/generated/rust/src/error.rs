@@ -8,6 +8,10 @@ pub enum Key {
     Float(f64),
 }
 
+pub fn map_cml_error(error: cardano_multiplatform_lib::error::DeserializeError) -> DeserializeError {
+    DeserializeError::new("CardanoLibDeserializeError", DeserializeFailure::CardanoLibDeserializeError(error))
+}
+
 impl std::fmt::Display for Key {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -46,6 +50,8 @@ pub enum DeserializeFailure {
     },
     UnknownKey(Key),
     UnexpectedKeyType(cbor_event::Type),
+
+    CardanoLibDeserializeError(cardano_multiplatform_lib::error::DeserializeError),
 }
 
 // we might want to add more info like which field,
@@ -115,6 +121,9 @@ impl DeserializeError {
             DeserializeFailure::TagMismatch{ found, expected } => write!(f, "Expected tag {}, found {}", expected, found),
             DeserializeFailure::UnknownKey(key) => write!(f, "Found unexpected key {}", key),
             DeserializeFailure::UnexpectedKeyType(ty) => write!(f, "Found unexpected key of CBOR type {:?}", ty),
+            DeserializeFailure::CardanoLibDeserializeError(error) => {
+                write!(f, "Cardano deserialize error {:?}", error)
+            }
         }
     }
 }

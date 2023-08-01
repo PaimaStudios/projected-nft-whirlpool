@@ -205,7 +205,7 @@ impl<T: cbor_event::se::Serialize> ToCBORBytes for T {
     }
 }
 pub trait RawBytesEncoding {
-    fn to_raw_bytes(&self) -> &[u8];
+    fn to_raw_bytes(&self) -> Vec<u8>;
 
     fn from_raw_bytes(bytes: &[u8]) -> Result<Self, DeserializeError>
     where
@@ -247,8 +247,22 @@ impl cbor_event::se::Serialize for NFT {
                 .unwrap_or_default()
                 .to_len_sz(2),
         )?;
-        self.policy_id.serialize(serializer)?;
-        self.asset_name.serialize(serializer)?;
+        serializer.write_bytes_sz(
+            &self.policy_id.to_raw_bytes(),
+            self.encodings
+                .as_ref()
+                .map(|encs| encs.policy_id_encoding.clone())
+                .unwrap_or_default()
+                .to_str_len_sz(self.policy_id.to_raw_bytes().len() as u64),
+        )?;
+        serializer.write_bytes_sz(
+            &self.asset_name.to_raw_bytes(),
+            self.encodings
+                .as_ref()
+                .map(|encs| encs.asset_name_encoding.clone())
+                .unwrap_or_default()
+                .to_str_len_sz(self.asset_name.to_raw_bytes().len() as u64),
+        )?;
         self.encodings
             .as_ref()
             .map(|encs| encs.len_encoding)
@@ -265,9 +279,23 @@ impl Deserialize for NFT {
         read_len.read_elems(2)?;
         read_len.finish()?;
         (|| -> Result<_, DeserializeError> {
-            let policy_id = PolicyId::deserialize(raw)
+            let (policy_id, policy_id_encoding) = raw
+                .bytes_sz()
+                .map_err(Into::<DeserializeError>::into)
+                .and_then(|(bytes, enc)| {
+                    PolicyId::from_raw_bytes(&bytes)
+                        .map(|bytes| (bytes, StringEncoding::from(enc)))
+                        .map_err(|e| DeserializeFailure::InvalidStructure(Box::new(e)).into())
+                })
                 .map_err(|e: DeserializeError| e.annotate("policy_id"))?;
-            let asset_name = AssetName::deserialize(raw)
+            let (asset_name, asset_name_encoding) = raw
+                .bytes_sz()
+                .map_err(Into::<DeserializeError>::into)
+                .and_then(|(bytes, enc)| {
+                    AssetName::from_raw_bytes(&bytes)
+                        .map(|bytes| (bytes, StringEncoding::from(enc)))
+                        .map_err(|e| DeserializeFailure::InvalidStructure(Box::new(e)).into())
+                })
                 .map_err(|e: DeserializeError| e.annotate("asset_name"))?;
             match len {
                 cbor_event::LenSz::Len(_, _) => (),
@@ -279,7 +307,11 @@ impl Deserialize for NFT {
             Ok(NFT {
                 policy_id,
                 asset_name,
-                encodings: Some(NFTEncoding { len_encoding }),
+                encodings: Some(NFTEncoding {
+                    len_encoding,
+                    policy_id_encoding,
+                    asset_name_encoding,
+                }),
             })
         })()
         .map_err(|e| e.annotate("NFT"))
@@ -300,7 +332,13 @@ impl cbor_event::se::Serialize for Owner {
                 p_k_h_encoding.to_str_len_sz(p_k_h.to_raw_bytes().len() as u64),
             ),
             Owner::NFT(n_f_t) => n_f_t.serialize(serializer),
-            Owner::Receipt(receipt) => receipt.serialize(serializer),
+            Owner::Receipt {
+                receipt,
+                receipt_encoding,
+            } => serializer.write_bytes_sz(
+                &receipt.to_raw_bytes(),
+                receipt_encoding.to_str_len_sz(receipt.to_raw_bytes().len() as u64),
+            ),
         }
     }
 }
@@ -342,9 +380,21 @@ impl Deserialize for Owner {
                         .unwrap();
                 }
             };
-            let deser_variant: Result<_, DeserializeError> = AssetName::deserialize(raw);
+            let deser_variant: Result<_, DeserializeError> = raw
+                .bytes_sz()
+                .map_err(Into::<DeserializeError>::into)
+                .and_then(|(bytes, enc)| {
+                    AssetName::from_raw_bytes(&bytes)
+                        .map(|bytes| (bytes, StringEncoding::from(enc)))
+                        .map_err(|e| DeserializeFailure::InvalidStructure(Box::new(e)).into())
+                });
             match deser_variant {
-                Ok(receipt) => return Ok(Self::Receipt(receipt)),
+                Ok((receipt, receipt_encoding)) => {
+                    return Ok(Self::Receipt {
+                        receipt,
+                        receipt_encoding,
+                    })
+                }
                 Err(e) => {
                     errs.push(e.annotate("Receipt"));
                     raw.as_mut_ref()
@@ -482,7 +532,14 @@ impl cbor_event::se::Serialize for StatusUnlocking {
                             .unwrap_or_default()
                             .to_str_len_sz("out_ref".len() as u64),
                     )?;
-                    self.out_ref.serialize(serializer)?;
+                    serializer.write_bytes_sz(
+                        &self.out_ref.to_raw_bytes(),
+                        self.encodings
+                            .as_ref()
+                            .map(|encs| encs.out_ref_encoding.clone())
+                            .unwrap_or_default()
+                            .to_str_len_sz(self.out_ref.to_raw_bytes().len() as u64),
+                    )?;
                 }
                 1 => {
                     serializer.write_text_sz(
@@ -493,7 +550,14 @@ impl cbor_event::se::Serialize for StatusUnlocking {
                             .unwrap_or_default()
                             .to_str_len_sz("for_how_long".len() as u64),
                     )?;
-                    self.for_how_long.serialize(serializer)?;
+                    serializer.write_bytes_sz(
+                        &self.for_how_long.to_raw_bytes(),
+                        self.encodings
+                            .as_ref()
+                            .map(|encs| encs.for_how_long_encoding.clone())
+                            .unwrap_or_default()
+                            .to_str_len_sz(self.for_how_long.to_raw_bytes().len() as u64),
+                    )?;
                 }
                 _ => unreachable!(),
             };
@@ -515,8 +579,10 @@ impl Deserialize for StatusUnlocking {
         read_len.finish()?;
         (|| -> Result<_, DeserializeError> {
             let mut orig_deser_order = Vec::new();
+            let mut out_ref_encoding = StringEncoding::default();
             let mut out_ref_key_encoding = StringEncoding::default();
             let mut out_ref = None;
+            let mut for_how_long_encoding = StringEncoding::default();
             let mut for_how_long_key_encoding = StringEncoding::default();
             let mut for_how_long = None;
             let mut read = 0;
@@ -541,9 +607,20 @@ impl Deserialize for StatusUnlocking {
                                     ))
                                     .into());
                                 }
-                                let tmp_out_ref = TransactionInput::deserialize(raw)
+                                let (tmp_out_ref, tmp_out_ref_encoding) = raw
+                                    .bytes_sz()
+                                    .map_err(Into::<DeserializeError>::into)
+                                    .and_then(|(bytes, enc)| {
+                                        TransactionInput::from_raw_bytes(&bytes)
+                                            .map(|bytes| (bytes, StringEncoding::from(enc)))
+                                            .map_err(|e| {
+                                                DeserializeFailure::InvalidStructure(Box::new(e))
+                                                    .into()
+                                            })
+                                    })
                                     .map_err(|e: DeserializeError| e.annotate("out_ref"))?;
                                 out_ref = Some(tmp_out_ref);
+                                out_ref_encoding = tmp_out_ref_encoding;
                                 out_ref_key_encoding = StringEncoding::from(key_enc);
                                 orig_deser_order.push(0);
                             }
@@ -554,9 +631,20 @@ impl Deserialize for StatusUnlocking {
                                     ))
                                     .into());
                                 }
-                                let tmp_for_how_long = Int64::deserialize(raw)
+                                let (tmp_for_how_long, tmp_for_how_long_encoding) = raw
+                                    .bytes_sz()
+                                    .map_err(Into::<DeserializeError>::into)
+                                    .and_then(|(bytes, enc)| {
+                                        Int64::from_raw_bytes(&bytes)
+                                            .map(|bytes| (bytes, StringEncoding::from(enc)))
+                                            .map_err(|e| {
+                                                DeserializeFailure::InvalidStructure(Box::new(e))
+                                                    .into()
+                                            })
+                                    })
                                     .map_err(|e: DeserializeError| e.annotate("for_how_long"))?;
                                 for_how_long = Some(tmp_for_how_long);
+                                for_how_long_encoding = tmp_for_how_long_encoding;
                                 for_how_long_key_encoding = StringEncoding::from(key_enc);
                                 orig_deser_order.push(1);
                             }
@@ -611,7 +699,9 @@ impl Deserialize for StatusUnlocking {
                     len_encoding,
                     orig_deser_order,
                     out_ref_key_encoding,
+                    out_ref_encoding,
                     for_how_long_key_encoding,
+                    for_how_long_encoding,
                 }),
             })
         })()

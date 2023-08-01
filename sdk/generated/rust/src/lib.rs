@@ -10,12 +10,62 @@ pub mod cbor_encodings;
 pub mod serialization;
 
 use crate::error::*;
-use crate::serialization::{LenEncoding, StringEncoding};
+use crate::serialization::{LenEncoding, RawBytesEncoding, StringEncoding, ToCBORBytes};
 use cbor_encodings::{NFTEncoding, StateEncoding, StatusUnlockingEncoding};
 use ordered_hash_map::OrderedHashMap;
 use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use cardano_multiplatform_lib::{AssetName, PolicyID as PolicyId, crypto::Ed25519KeyHash as Keyhash, TransactionInput, ledger::common::value::Int as Int64};
+
+impl RawBytesEncoding for AssetName {
+    fn to_raw_bytes(&self) -> Vec<u8> {
+        self.to_bytes()
+    }
+
+    fn from_raw_bytes(bytes: &[u8]) -> Result<Self, DeserializeError> where Self: Sized {
+        AssetName::from_bytes(bytes.to_vec()).map_err(map_cml_error)
+    }
+}
+
+impl RawBytesEncoding for PolicyId {
+    fn to_raw_bytes(&self) -> Vec<u8> {
+        self.to_bytes()
+    }
+
+    fn from_raw_bytes(bytes: &[u8]) -> Result<Self, DeserializeError> where Self: Sized {
+        PolicyId::from_bytes(bytes.to_vec()).map_err(map_cml_error)
+    }
+}
+
+impl RawBytesEncoding for TransactionInput {
+    fn to_raw_bytes(&self) -> Vec<u8> {
+        self.to_bytes()
+    }
+
+    fn from_raw_bytes(bytes: &[u8]) -> Result<Self, DeserializeError> where Self: Sized {
+        TransactionInput::from_bytes(bytes.to_vec()).map_err(map_cml_error)
+    }
+}
+
+impl RawBytesEncoding for Int64 {
+    fn to_raw_bytes(&self) -> Vec<u8> {
+        self.to_bytes()
+    }
+
+    fn from_raw_bytes(bytes: &[u8]) -> Result<Self, DeserializeError> where Self: Sized {
+        Int64::from_bytes(bytes.to_vec()).map_err(map_cml_error)
+    }
+}
+
+impl RawBytesEncoding for Keyhash {
+    fn to_raw_bytes(&self) -> Vec<u8> {
+        self.to_bytes()
+    }
+
+    fn from_raw_bytes(bytes: &[u8]) -> Result<Self, DeserializeError> where Self: Sized {
+        Keyhash::from_bytes(bytes.to_vec()).map_err(map_cml_error)
+    }
+}
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct NFT {
@@ -43,7 +93,11 @@ pub enum Owner {
         p_k_h_encoding: StringEncoding,
     },
     NFT(NFT),
-    Receipt(AssetName),
+    Receipt {
+        receipt: AssetName,
+        #[serde(skip)]
+        receipt_encoding: StringEncoding,
+    },
 }
 
 impl Owner {
@@ -59,7 +113,10 @@ impl Owner {
     }
 
     pub fn new_receipt(receipt: AssetName) -> Self {
-        Self::Receipt(receipt)
+        Self::Receipt {
+            receipt,
+            receipt_encoding: StringEncoding::default(),
+        }
     }
 }
 
