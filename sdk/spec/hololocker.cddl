@@ -1,0 +1,22 @@
+policy_id = _CDDL_CODEGEN_EXTERN_TYPE_
+asset_name = _CDDL_CODEGEN_EXTERN_TYPE_
+keyhash = _CDDL_CODEGEN_RAW_BYTES_TYPE_
+int64 = _CDDL_CODEGEN_EXTERN_TYPE_
+transaction_input = _CDDL_CODEGEN_EXTERN_TYPE_
+
+owner =
+    keyhash                     ; @name PKH
+  / [policy_id, asset_name]     ; @name NFT
+  / asset_name                  ; @name Receipt
+
+status_unlocking = { out_ref: transaction_input
+                   , for_how_long: int64
+                   }
+status =
+    0                           ; @name Locked
+  / status_unlocking            ; @name Unlocking
+
+state =
+    [ owner: owner
+    , status: status
+    ]

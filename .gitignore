@@ -11,3 +11,5 @@ docs/
 # Rust data
 sdk/target
 sdk/Cargo.lock
+
+**/target

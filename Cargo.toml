@@ -1,0 +1,10 @@
+[workspace]
+members = [
+    "sdk/generated/rust",
+    "sdk/generated/wasm",
+    "sdk",
+]
+
+[workspace.metadata.release]
+shared-version = false
+tag = true
