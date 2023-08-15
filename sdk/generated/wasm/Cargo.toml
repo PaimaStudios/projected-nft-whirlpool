@@ -7,6 +7,11 @@ edition = "2018"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+cml-core = { git = "https://github.com/dcSpark/cardano-multiplatform-lib.git", rev = "802e663f066499ffc3eebdadf76e16873f0fc310" }
+cml-core-wasm = { git = "https://github.com/dcSpark/cardano-multiplatform-lib.git", rev = "802e663f066499ffc3eebdadf76e16873f0fc310" }
+cml-chain-wasm = { git = "https://github.com/dcSpark/cardano-multiplatform-lib.git", rev = "802e663f066499ffc3eebdadf76e16873f0fc310" }
+cml-crypto-wasm = { git = "https://github.com/dcSpark/cardano-multiplatform-lib.git", rev = "802e663f066499ffc3eebdadf76e16873f0fc310" }
+
 projected-nft-structs = { path = "../rust" }
 cbor_event = "2.4.0"
 wasm-bindgen = { version = "0.2", features=["serde-serialize"] }

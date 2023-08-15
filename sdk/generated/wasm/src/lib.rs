@@ -6,7 +6,10 @@
 // This file was code-generated using an experimental CDDL to rust tool:
 // https://github.com/dcSpark/cddl-codegen
 
-use projected_nft_structs::ordered_hash_map::OrderedHashMap;
+use cml_chain_wasm::assets::AssetName;
+use cml_chain_wasm::transaction::TransactionInput;
+use cml_chain_wasm::PolicyId;
+use cml_crypto_wasm::Ed25519KeyHash as Keyhash;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 #[derive(Clone, Debug)]
@@ -16,11 +19,11 @@ pub struct NFT(projected_nft_structs::NFT);
 #[wasm_bindgen]
 impl NFT {
     pub fn to_cbor_bytes(&self) -> Vec<u8> {
-        projected_nft_structs::serialization::ToCBORBytes::to_cbor_bytes(&self.0)
+        cml_core::serialization::Serialize::to_cbor_bytes(&self.0)
     }
 
     pub fn from_cbor_bytes(cbor_bytes: &[u8]) -> Result<NFT, JsValue> {
-        projected_nft_structs::serialization::Deserialize::from_cbor_bytes(cbor_bytes)
+        cml_core::serialization::Deserialize::from_cbor_bytes(cbor_bytes)
             .map(Self)
             .map_err(|e| JsValue::from_str(&format!("from_bytes: {}", e)))
     }
@@ -82,11 +85,11 @@ pub struct Owner(projected_nft_structs::Owner);
 #[wasm_bindgen]
 impl Owner {
     pub fn to_cbor_bytes(&self) -> Vec<u8> {
-        projected_nft_structs::serialization::ToCBORBytes::to_cbor_bytes(&self.0)
+        cml_core::serialization::Serialize::to_cbor_bytes(&self.0)
     }
 
     pub fn from_cbor_bytes(cbor_bytes: &[u8]) -> Result<Owner, JsValue> {
-        projected_nft_structs::serialization::Deserialize::from_cbor_bytes(cbor_bytes)
+        cml_core::serialization::Deserialize::from_cbor_bytes(cbor_bytes)
             .map(Self)
             .map_err(|e| JsValue::from_str(&format!("from_bytes: {}", e)))
     }
@@ -108,15 +111,13 @@ impl Owner {
     }
 
     pub fn new_p_k_h(p_k_h: &Keyhash) -> Self {
-        Self(projected_nft_structs::Owner::new_p_k_h(
+        Self(projected_nft_structs::Owner::new_public_keyhash(
             p_k_h.clone().into(),
         ))
     }
 
     pub fn new_n_f_t(n_f_t: &NFT) -> Self {
-        Self(projected_nft_structs::Owner::new_n_f_t(
-            n_f_t.clone().into(),
-        ))
+        Self(projected_nft_structs::Owner::new_nft(n_f_t.clone().into()))
     }
 
     pub fn new_receipt(receipt: &AssetName) -> Self {
@@ -129,7 +130,7 @@ impl Owner {
         match &self.0 {
             projected_nft_structs::Owner::PKH { .. } => OwnerKind::PKH,
             projected_nft_structs::Owner::NFT(_) => OwnerKind::NFT,
-            projected_nft_structs::Owner::Receipt { .. } => OwnerKind::Receipt,
+            projected_nft_structs::Owner::Receipt(_) => OwnerKind::Receipt,
         }
     }
 
@@ -149,7 +150,7 @@ impl Owner {
 
     pub fn as_receipt(&self) -> Option<AssetName> {
         match &self.0 {
-            projected_nft_structs::Owner::Receipt { receipt, .. } => Some(receipt.clone().into()),
+            projected_nft_structs::Owner::Receipt(receipt) => Some(receipt.clone().into()),
             _ => None,
         }
     }
@@ -187,11 +188,11 @@ pub struct State(projected_nft_structs::State);
 #[wasm_bindgen]
 impl State {
     pub fn to_cbor_bytes(&self) -> Vec<u8> {
-        projected_nft_structs::serialization::ToCBORBytes::to_cbor_bytes(&self.0)
+        cml_core::serialization::Serialize::to_cbor_bytes(&self.0)
     }
 
     pub fn from_cbor_bytes(cbor_bytes: &[u8]) -> Result<State, JsValue> {
-        projected_nft_structs::serialization::Deserialize::from_cbor_bytes(cbor_bytes)
+        cml_core::serialization::Deserialize::from_cbor_bytes(cbor_bytes)
             .map(Self)
             .map_err(|e| JsValue::from_str(&format!("from_bytes: {}", e)))
     }
@@ -253,11 +254,11 @@ pub struct Status(projected_nft_structs::Status);
 #[wasm_bindgen]
 impl Status {
     pub fn to_cbor_bytes(&self) -> Vec<u8> {
-        projected_nft_structs::serialization::ToCBORBytes::to_cbor_bytes(&self.0)
+        cml_core::serialization::Serialize::to_cbor_bytes(&self.0)
     }
 
     pub fn from_cbor_bytes(cbor_bytes: &[u8]) -> Result<Status, JsValue> {
-        projected_nft_structs::serialization::Deserialize::from_cbor_bytes(cbor_bytes)
+        cml_core::serialization::Deserialize::from_cbor_bytes(cbor_bytes)
             .map(Self)
             .map_err(|e| JsValue::from_str(&format!("from_bytes: {}", e)))
     }
@@ -334,11 +335,11 @@ pub struct StatusUnlocking(projected_nft_structs::StatusUnlocking);
 #[wasm_bindgen]
 impl StatusUnlocking {
     pub fn to_cbor_bytes(&self) -> Vec<u8> {
-        projected_nft_structs::serialization::ToCBORBytes::to_cbor_bytes(&self.0)
+        cml_core::serialization::Serialize::to_cbor_bytes(&self.0)
     }
 
     pub fn from_cbor_bytes(cbor_bytes: &[u8]) -> Result<StatusUnlocking, JsValue> {
-        projected_nft_structs::serialization::Deserialize::from_cbor_bytes(cbor_bytes)
+        cml_core::serialization::Deserialize::from_cbor_bytes(cbor_bytes)
             .map(Self)
             .map_err(|e| JsValue::from_str(&format!("from_bytes: {}", e)))
     }
@@ -363,14 +364,14 @@ impl StatusUnlocking {
         self.0.out_ref.clone().into()
     }
 
-    pub fn for_how_long(&self) -> Int64 {
-        self.0.for_how_long.clone().into()
+    pub fn for_how_long(&self) -> i64 {
+        self.0.for_how_long
     }
 
-    pub fn new(out_ref: &TransactionInput, for_how_long: &Int64) -> Self {
+    pub fn new(out_ref: &TransactionInput, for_how_long: i64) -> Self {
         Self(projected_nft_structs::StatusUnlocking::new(
             out_ref.clone().into(),
-            for_how_long.clone().into(),
+            for_how_long,
         ))
     }
 }
