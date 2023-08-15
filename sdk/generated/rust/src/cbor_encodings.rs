@@ -2,7 +2,12 @@
 // https://github.com/dcSpark/cddl-codegen
 
 use cml_core::serialization::{LenEncoding, StringEncoding};
-use std::collections::BTreeMap;
+
+#[derive(Clone, Debug, Default)]
+pub struct MintTokensEncoding {
+    pub len_encoding: LenEncoding,
+    pub total_encoding: Option<cbor_event::Sz>,
+}
 
 #[derive(Clone, Debug, Default)]
 pub struct NFTEncoding {
@@ -11,15 +16,17 @@ pub struct NFTEncoding {
 }
 
 #[derive(Clone, Debug, Default)]
+pub struct RedeemEncoding {
+    pub len_encoding: LenEncoding,
+}
+
+#[derive(Clone, Debug, Default)]
 pub struct StateEncoding {
     pub len_encoding: LenEncoding,
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct StatusUnlockingEncoding {
+pub struct UnlockingEncoding {
     pub len_encoding: LenEncoding,
-    pub orig_deser_order: Vec<usize>,
-    pub out_ref_key_encoding: StringEncoding,
     pub for_how_long_encoding: Option<cbor_event::Sz>,
-    pub for_how_long_key_encoding: StringEncoding,
 }

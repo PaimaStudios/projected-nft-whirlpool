@@ -14,6 +14,148 @@ use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 #[derive(Clone, Debug)]
 #[wasm_bindgen]
+pub struct MintRedeemer(projected_nft_structs::MintRedeemer);
+
+#[wasm_bindgen]
+impl MintRedeemer {
+    pub fn to_cbor_bytes(&self) -> Vec<u8> {
+        cml_core::serialization::Serialize::to_cbor_bytes(&self.0)
+    }
+
+    pub fn from_cbor_bytes(cbor_bytes: &[u8]) -> Result<MintRedeemer, JsValue> {
+        cml_core::serialization::Deserialize::from_cbor_bytes(cbor_bytes)
+            .map(Self)
+            .map_err(|e| JsValue::from_str(&format!("from_bytes: {}", e)))
+    }
+
+    pub fn to_json(&self) -> Result<String, JsValue> {
+        serde_json::to_string_pretty(&self.0)
+            .map_err(|e| JsValue::from_str(&format!("to_json: {}", e)))
+    }
+
+    pub fn to_json_value(&self) -> Result<JsValue, JsValue> {
+        serde_wasm_bindgen::to_value(&self.0)
+            .map_err(|e| JsValue::from_str(&format!("to_js_value: {}", e)))
+    }
+
+    pub fn from_json(json: &str) -> Result<MintRedeemer, JsValue> {
+        serde_json::from_str(json)
+            .map(Self)
+            .map_err(|e| JsValue::from_str(&format!("from_json: {}", e)))
+    }
+
+    pub fn new_mint_tokens(mint_tokens: &MintTokens) -> Self {
+        Self(projected_nft_structs::MintRedeemer::new_mint_tokens(
+            mint_tokens.clone().into(),
+        ))
+    }
+
+    pub fn new_burn_tokens() -> Self {
+        Self(projected_nft_structs::MintRedeemer::new_burn_tokens())
+    }
+
+    pub fn kind(&self) -> MintRedeemerKind {
+        match &self.0 {
+            projected_nft_structs::MintRedeemer::MintTokens(_) => MintRedeemerKind::MintTokens,
+            projected_nft_structs::MintRedeemer::BurnTokens { .. } => MintRedeemerKind::BurnTokens,
+        }
+    }
+
+    pub fn as_mint_tokens(&self) -> Option<MintTokens> {
+        match &self.0 {
+            projected_nft_structs::MintRedeemer::MintTokens(mint_tokens) => {
+                Some(mint_tokens.clone().into())
+            }
+            _ => None,
+        }
+    }
+}
+
+impl From<projected_nft_structs::MintRedeemer> for MintRedeemer {
+    fn from(native: projected_nft_structs::MintRedeemer) -> Self {
+        Self(native)
+    }
+}
+
+impl From<MintRedeemer> for projected_nft_structs::MintRedeemer {
+    fn from(wasm: MintRedeemer) -> Self {
+        wasm.0
+    }
+}
+
+impl AsRef<projected_nft_structs::MintRedeemer> for MintRedeemer {
+    fn as_ref(&self) -> &projected_nft_structs::MintRedeemer {
+        &self.0
+    }
+}
+
+#[wasm_bindgen]
+pub enum MintRedeemerKind {
+    MintTokens,
+    BurnTokens,
+}
+
+#[derive(Clone, Debug)]
+#[wasm_bindgen]
+pub struct MintTokens(projected_nft_structs::MintTokens);
+
+#[wasm_bindgen]
+impl MintTokens {
+    pub fn to_cbor_bytes(&self) -> Vec<u8> {
+        cml_core::serialization::Serialize::to_cbor_bytes(&self.0)
+    }
+
+    pub fn from_cbor_bytes(cbor_bytes: &[u8]) -> Result<MintTokens, JsValue> {
+        cml_core::serialization::Deserialize::from_cbor_bytes(cbor_bytes)
+            .map(Self)
+            .map_err(|e| JsValue::from_str(&format!("from_bytes: {}", e)))
+    }
+
+    pub fn to_json(&self) -> Result<String, JsValue> {
+        serde_json::to_string_pretty(&self.0)
+            .map_err(|e| JsValue::from_str(&format!("to_json: {}", e)))
+    }
+
+    pub fn to_json_value(&self) -> Result<JsValue, JsValue> {
+        serde_wasm_bindgen::to_value(&self.0)
+            .map_err(|e| JsValue::from_str(&format!("to_js_value: {}", e)))
+    }
+
+    pub fn from_json(json: &str) -> Result<MintTokens, JsValue> {
+        serde_json::from_str(json)
+            .map(Self)
+            .map_err(|e| JsValue::from_str(&format!("from_json: {}", e)))
+    }
+
+    pub fn total(&self) -> i64 {
+        self.0.total
+    }
+
+    pub fn new(total: i64) -> Self {
+        Self(projected_nft_structs::MintTokens::new(total))
+    }
+}
+
+impl From<projected_nft_structs::MintTokens> for MintTokens {
+    fn from(native: projected_nft_structs::MintTokens) -> Self {
+        Self(native)
+    }
+}
+
+impl From<MintTokens> for projected_nft_structs::MintTokens {
+    fn from(wasm: MintTokens) -> Self {
+        wasm.0
+    }
+}
+
+impl AsRef<projected_nft_structs::MintTokens> for MintTokens {
+    fn as_ref(&self) -> &projected_nft_structs::MintTokens {
+        &self.0
+    }
+}
+
+#[derive(Clone, Debug)]
+#[wasm_bindgen]
 pub struct NFT(projected_nft_structs::NFT);
 
 #[wasm_bindgen]
@@ -111,13 +253,15 @@ impl Owner {
     }
 
     pub fn new_p_k_h(p_k_h: &Keyhash) -> Self {
-        Self(projected_nft_structs::Owner::new_public_keyhash(
+        Self(projected_nft_structs::Owner::new_p_k_h(
             p_k_h.clone().into(),
         ))
     }
 
     pub fn new_n_f_t(n_f_t: &NFT) -> Self {
-        Self(projected_nft_structs::Owner::new_nft(n_f_t.clone().into()))
+        Self(projected_nft_structs::Owner::new_n_f_t(
+            n_f_t.clone().into(),
+        ))
     }
 
     pub fn new_receipt(receipt: &AssetName) -> Self {
@@ -179,6 +323,84 @@ pub enum OwnerKind {
     PKH,
     NFT,
     Receipt,
+}
+
+#[derive(Clone, Debug)]
+#[wasm_bindgen]
+pub struct Redeem(projected_nft_structs::Redeem);
+
+#[wasm_bindgen]
+impl Redeem {
+    pub fn to_cbor_bytes(&self) -> Vec<u8> {
+        cml_core::serialization::Serialize::to_cbor_bytes(&self.0)
+    }
+
+    pub fn from_cbor_bytes(cbor_bytes: &[u8]) -> Result<Redeem, JsValue> {
+        cml_core::serialization::Deserialize::from_cbor_bytes(cbor_bytes)
+            .map(Self)
+            .map_err(|e| JsValue::from_str(&format!("from_bytes: {}", e)))
+    }
+
+    pub fn to_json(&self) -> Result<String, JsValue> {
+        serde_json::to_string_pretty(&self.0)
+            .map_err(|e| JsValue::from_str(&format!("to_json: {}", e)))
+    }
+
+    pub fn to_json_value(&self) -> Result<JsValue, JsValue> {
+        serde_wasm_bindgen::to_value(&self.0)
+            .map_err(|e| JsValue::from_str(&format!("to_js_value: {}", e)))
+    }
+
+    pub fn from_json(json: &str) -> Result<Redeem, JsValue> {
+        serde_json::from_str(json)
+            .map(Self)
+            .map_err(|e| JsValue::from_str(&format!("from_json: {}", e)))
+    }
+
+    pub fn partial_withdraw(&self) -> bool {
+        self.0.partial_withdraw
+    }
+
+    pub fn nft_input_owner(&self) -> Option<TransactionInput> {
+        self.0.nft_input_owner.clone().map(std::convert::Into::into)
+    }
+
+    pub fn new_receipt_owner(&self) -> Option<AssetName> {
+        self.0
+            .new_receipt_owner
+            .clone()
+            .map(std::convert::Into::into)
+    }
+
+    pub fn new(
+        partial_withdraw: bool,
+        nft_input_owner: Option<TransactionInput>,
+        new_receipt_owner: Option<AssetName>,
+    ) -> Self {
+        Self(projected_nft_structs::Redeem::new(
+            partial_withdraw,
+            nft_input_owner.map(Into::into),
+            new_receipt_owner.map(Into::into),
+        ))
+    }
+}
+
+impl From<projected_nft_structs::Redeem> for Redeem {
+    fn from(native: projected_nft_structs::Redeem) -> Self {
+        Self(native)
+    }
+}
+
+impl From<Redeem> for projected_nft_structs::Redeem {
+    fn from(wasm: Redeem) -> Self {
+        wasm.0
+    }
+}
+
+impl AsRef<projected_nft_structs::Redeem> for Redeem {
+    fn as_ref(&self) -> &projected_nft_structs::Redeem {
+        &self.0
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -283,7 +505,7 @@ impl Status {
         Self(projected_nft_structs::Status::new_locked())
     }
 
-    pub fn new_unlocking(unlocking: &StatusUnlocking) -> Self {
+    pub fn new_unlocking(unlocking: &Unlocking) -> Self {
         Self(projected_nft_structs::Status::new_unlocking(
             unlocking.clone().into(),
         ))
@@ -296,7 +518,7 @@ impl Status {
         }
     }
 
-    pub fn as_unlocking(&self) -> Option<StatusUnlocking> {
+    pub fn as_unlocking(&self) -> Option<Unlocking> {
         match &self.0 {
             projected_nft_structs::Status::Unlocking(unlocking) => Some(unlocking.clone().into()),
             _ => None,
@@ -330,15 +552,15 @@ pub enum StatusKind {
 
 #[derive(Clone, Debug)]
 #[wasm_bindgen]
-pub struct StatusUnlocking(projected_nft_structs::StatusUnlocking);
+pub struct Unlocking(projected_nft_structs::Unlocking);
 
 #[wasm_bindgen]
-impl StatusUnlocking {
+impl Unlocking {
     pub fn to_cbor_bytes(&self) -> Vec<u8> {
         cml_core::serialization::Serialize::to_cbor_bytes(&self.0)
     }
 
-    pub fn from_cbor_bytes(cbor_bytes: &[u8]) -> Result<StatusUnlocking, JsValue> {
+    pub fn from_cbor_bytes(cbor_bytes: &[u8]) -> Result<Unlocking, JsValue> {
         cml_core::serialization::Deserialize::from_cbor_bytes(cbor_bytes)
             .map(Self)
             .map_err(|e| JsValue::from_str(&format!("from_bytes: {}", e)))
@@ -354,7 +576,7 @@ impl StatusUnlocking {
             .map_err(|e| JsValue::from_str(&format!("to_js_value: {}", e)))
     }
 
-    pub fn from_json(json: &str) -> Result<StatusUnlocking, JsValue> {
+    pub fn from_json(json: &str) -> Result<Unlocking, JsValue> {
         serde_json::from_str(json)
             .map(Self)
             .map_err(|e| JsValue::from_str(&format!("from_json: {}", e)))
@@ -369,27 +591,27 @@ impl StatusUnlocking {
     }
 
     pub fn new(out_ref: &TransactionInput, for_how_long: i64) -> Self {
-        Self(projected_nft_structs::StatusUnlocking::new(
+        Self(projected_nft_structs::Unlocking::new(
             out_ref.clone().into(),
             for_how_long,
         ))
     }
 }
 
-impl From<projected_nft_structs::StatusUnlocking> for StatusUnlocking {
-    fn from(native: projected_nft_structs::StatusUnlocking) -> Self {
+impl From<projected_nft_structs::Unlocking> for Unlocking {
+    fn from(native: projected_nft_structs::Unlocking) -> Self {
         Self(native)
     }
 }
 
-impl From<StatusUnlocking> for projected_nft_structs::StatusUnlocking {
-    fn from(wasm: StatusUnlocking) -> Self {
+impl From<Unlocking> for projected_nft_structs::Unlocking {
+    fn from(wasm: Unlocking) -> Self {
         wasm.0
     }
 }
 
-impl AsRef<projected_nft_structs::StatusUnlocking> for StatusUnlocking {
-    fn as_ref(&self) -> &projected_nft_structs::StatusUnlocking {
+impl AsRef<projected_nft_structs::Unlocking> for Unlocking {
+    fn as_ref(&self) -> &projected_nft_structs::Unlocking {
         &self.0
     }
 }

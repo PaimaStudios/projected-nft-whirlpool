@@ -4,6 +4,7 @@ use cml_chain::address::{Address, EnterpriseAddress};
 use cml_chain::assets::MultiAsset;
 use cml_chain::builders::input_builder::{InputBuilderResult, SingleInputBuilder};
 use cml_chain::builders::output_builder::TransactionOutputBuilder;
+use cml_chain::builders::redeemer_builder::RedeemerWitnessKey;
 use cml_chain::builders::tx_builder::{
     ChangeSelectionAlgo, TransactionBuilder, TransactionBuilderConfigBuilder,
 };
@@ -12,28 +13,29 @@ use cml_chain::certs::StakeCredential;
 use cml_chain::crypto::hash::hash_transaction;
 use cml_chain::crypto::utils::make_vkey_witness;
 use cml_chain::fees::LinearFee;
-use cml_chain::plutus::PlutusScript::PlutusV2;
+
 use cml_chain::plutus::{
-    ConstrPlutusData, CostModels, ExUnitPrices, Language, PlutusData, PlutusScript, PlutusV2Script,
+    CostModels, ExUnitPrices, ExUnits, PlutusData, PlutusScript, PlutusV2Script, RedeemerTag,
 };
 use cml_chain::transaction::{
     DatumOption, RequiredSigners, Transaction, TransactionInput, TransactionOutput,
     TransactionWitnessSet,
 };
-use cml_chain::utils::BigInt;
-use cml_chain::{AssetName, PolicyId, Rational, UnitInterval, Value};
+
+use cml_chain::{AssetName, PolicyId, Rational, Value};
 use cml_core::ordered_hash_map::OrderedHashMap;
-use cml_core::serialization::{FromBytes, Serialize, ToBytes};
+use cml_core::serialization::{FromBytes, Serialize};
 use cml_core::{Int, Slot};
 use cml_crypto::{
-    blake2b256, Bip32PrivateKey, DatumHash, PrivateKey, PublicKey, RawBytesEncoding, ScriptHash,
-    TransactionHash,
+    Bip32PrivateKey, PrivateKey, PublicKey, RawBytesEncoding, ScriptHash, TransactionHash,
 };
-use projected_nft_structs::{Owner, State, Status, StatusUnlocking};
+use projected_nft_structs::{Owner, State, Status, Unlocking};
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::{header, Client, StatusCode};
 use serde::de::Error;
-use serde::{Deserialize, Deserializer, Serialize as SerdeSerialize, Serializer};
+use serde::{
+    Deserialize as SerdeDeserialize, Deserializer, Serialize as SerdeSerialize, Serializer,
+};
 use std::fmt;
 use std::fs::File;
 use std::hash::Hash;
@@ -63,7 +65,7 @@ pub struct ConfigPath {
     config: PathBuf,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, SerdeDeserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct LockNftConfiguration {
     pub payment_bech32: Option<String>,
@@ -82,7 +84,7 @@ pub struct LockNftConfiguration {
     pub nft_asset_name: String,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, SerdeDeserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct UnlockNftConfiguration {
     pub payment_bech32: Option<String>,
@@ -140,7 +142,8 @@ async fn handle_lock_nft(
     let mut builder = create_tx_builder_plutus(true);
 
     let blockfrost = Blockfrost::new(blockfrost)?;
-    let (inputs_value, inputs) = fetch_inputs(config.inputs, &blockfrost, &payment_address).await?;
+    let (_inputs_value, inputs) =
+        fetch_inputs(config.inputs, &blockfrost, &payment_address).await?;
     for input in inputs {
         builder
             .add_input(input)
@@ -191,7 +194,7 @@ async fn handle_lock_nft(
     };
 
     let datum = State::new(
-        Owner::new_public_keyhash(match payment_address.payment_cred().cloned().unwrap() {
+        Owner::new_p_k_h(match payment_address.payment_cred().cloned().unwrap() {
             StakeCredential::PubKey { hash, .. } => hash,
             _ => {
                 return Err(anyhow!(
@@ -278,6 +281,7 @@ async fn handle_unlock_nft(
         hex::decode(config.locked_on).map_err(|err| anyhow!("Can't decode contract hex {err}"))?,
     )
     .map_err(|err| anyhow!("Can't decode PlutusV2 contract {err}"))?;
+
     let lock_on =
         EnterpriseAddress::new(network, StakeCredential::new_script(contract.hash())).to_address();
     println!("Locked on contract: {}", lock_on.to_bech32(None).unwrap());
@@ -285,7 +289,8 @@ async fn handle_unlock_nft(
     let mut builder = create_tx_builder_plutus(true);
 
     let blockfrost = Blockfrost::new(blockfrost)?;
-    let (inputs_value, inputs) = fetch_inputs(config.inputs, &blockfrost, &payment_address).await?;
+    let (_inputs_value, inputs) =
+        fetch_inputs(config.inputs, &blockfrost, &payment_address).await?;
     for input in inputs {
         builder
             .add_input(input)
@@ -306,8 +311,8 @@ async fn handle_unlock_nft(
             return Err(anyhow!("doesn't work"));
         }
     });
-    let datum = State::new(
-        Owner::new_public_keyhash(match payment_address.payment_cred().cloned().unwrap() {
+    let old_datum = State::new(
+        Owner::new_p_k_h(match payment_address.payment_cred().cloned().unwrap() {
             StakeCredential::PubKey { hash, .. } => hash,
             _ => {
                 return Err(anyhow!(
@@ -317,11 +322,37 @@ async fn handle_unlock_nft(
         }),
         Status::new_locked(),
     );
-    let plutus_data = PlutusData::from_bytes(datum.to_canonical_cbor_bytes()).unwrap();
-    let partial_witness = PartialPlutusWitness::new(
-        PlutusScriptWitness::Script(PlutusV2(contract)),
-        plutus_data.clone(),
+    let old_plutus_data = PlutusData::from_bytes(old_datum.to_cbor_bytes()).unwrap();
+
+    let new_datum = State::new(
+        Owner::new_p_k_h(match payment_address.payment_cred().cloned().unwrap() {
+            StakeCredential::PubKey { hash, .. } => hash,
+            _ => {
+                return Err(anyhow!(
+                    "ScriptHash is not supported as the owner of locked nft"
+                ))
+            }
+        }),
+        Status::Unlocking(Unlocking::new(
+            TransactionInput::new(config.locked.hash.clone(), config.locked.index),
+            config.ttl as i64 + 300,
+        )),
     );
+    let new_plutus_data = PlutusData::from_bytes(new_datum.to_cbor_bytes()).unwrap();
+
+    let script_witness = PlutusScriptWitness::Script(PlutusScript::PlutusV2(contract.clone()));
+    // PlutusData::from_bytes doesn't work with redeemer
+    let redeemer_data = PlutusData::new_list(vec![
+        PlutusData::new_bytes(hex::decode("F4").unwrap()),
+        PlutusData::new_bytes(hex::decode("F6").unwrap()),
+        PlutusData::new_bytes(hex::decode("F6").unwrap()),
+    ]);
+    println!(
+        "redeemer bytes: {}",
+        hex::encode(redeemer_data.to_canonical_cbor_bytes())
+    );
+
+    let partial_witness = PartialPlutusWitness::new(script_witness, redeemer_data);
 
     builder
         .add_input(
@@ -330,11 +361,11 @@ async fn handle_unlock_nft(
                 TransactionOutput::new(
                     lock_on.clone(),
                     locked_balance.clone(),
-                    Some(DatumOption::new_datum(plutus_data.clone())),
+                    Some(DatumOption::new_datum(old_plutus_data.clone())),
                     None,
                 ),
             )
-            .plutus_script(partial_witness, signers, plutus_data)
+            .plutus_script(partial_witness, signers, old_plutus_data)
             .unwrap(),
         )
         .unwrap();
@@ -359,29 +390,17 @@ async fn handle_unlock_nft(
     let ttl = config.ttl;
 
     builder.set_ttl(Slot::from(ttl));
-    let datum = State::new(
-        Owner::new_public_keyhash(match payment_address.payment_cred().cloned().unwrap() {
-            StakeCredential::PubKey { hash, .. } => hash,
-            _ => {
-                return Err(anyhow!(
-                    "ScriptHash is not supported as the owner of locked nft"
-                ))
-            }
-        }),
-        Status::new_unlocking(StatusUnlocking::new(
-            TransactionInput::new(config.locked.hash, config.locked.index),
-            ttl as i64 + 300,
-        )),
+
+    builder.set_exunits(
+        RedeemerWitnessKey::new(RedeemerTag::Spend, 0),
+        ExUnits::new(14000000, 10000000000),
     );
-    let datum_byes = datum.to_cbor_bytes();
-    println!("hex: {}", hex::encode(datum_byes.clone()));
+
     builder
         .add_output(
             TransactionOutputBuilder::new()
                 .with_address(lock_on)
-                .with_data(DatumOption::new_datum(
-                    PlutusData::from_bytes(datum_byes).unwrap(),
-                ))
+                .with_data(DatumOption::new_datum(new_plutus_data))
                 .next()
                 .unwrap()
                 .with_value(locked_balance)
@@ -509,7 +528,7 @@ pub fn create_tx_builder_plutus(include_plutus: bool) -> TransactionBuilder {
             38887044, 32947, 10,
         ]
         .into_iter()
-        .map(|integer| Int::new_uint(integer))
+        .map(Int::new_uint)
         .collect::<Vec<Int>>();
 
         let costmodels = CostModels {
@@ -526,24 +545,24 @@ pub fn create_tx_builder_plutus(include_plutus: bool) -> TransactionBuilder {
     TransactionBuilder::new(config)
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, SerdeDeserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct BlockfrostConfiguration {
     pub endpoint: String,
     pub key: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(SerdeDeserialize, Debug)]
 struct TxUtxos {
     outputs: Vec<TxOutput>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(SerdeDeserialize, Debug)]
 struct TxOutput {
     amount: Vec<AssetAmount>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(SerdeDeserialize, Debug)]
 pub struct AssetAmount {
     pub unit: String,
     pub quantity: String,
@@ -666,7 +685,7 @@ impl Blockfrost {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(SerdeDeserialize)]
 struct BlockFrostError {
     error: String,
     message: String,
@@ -687,12 +706,12 @@ impl SerdeSerialize for UtxoPointer {
     }
 }
 
-impl<'de> Deserialize<'de> for UtxoPointer {
+impl<'de> SerdeDeserialize<'de> for UtxoPointer {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        let s: String = Deserialize::deserialize(deserializer)?;
+        let s: String = SerdeDeserialize::deserialize(deserializer)?;
         // do better hex decoding than this
         UtxoPointer::from_str(&s).map_err(|err| D::Error::custom(err.to_string()))
     }
@@ -815,7 +834,7 @@ pub fn get_payment_creds(
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, SerdeSerialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, SerdeSerialize, SerdeDeserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(tag = "type")]
 #[allow(clippy::enum_variant_names)]
@@ -887,7 +906,7 @@ impl Key {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, SerdeSerialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, SerdeSerialize, SerdeDeserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(tag = "type")]
 #[serde(rename_all = "camelCase")]
@@ -896,7 +915,7 @@ pub struct StakePoolVerificationKey {
     cbor_hex: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, SerdeSerialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, SerdeSerialize, SerdeDeserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(tag = "type")]
 #[serde(rename_all = "camelCase")]
@@ -905,7 +924,7 @@ pub struct StakePoolSigningKey {
     cbor_hex: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, SerdeSerialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, SerdeSerialize, SerdeDeserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(tag = "type")]
 #[serde(rename_all = "camelCase")]
@@ -914,7 +933,7 @@ pub struct StakeVerificationKeyShelley {
     cbor_hex: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, SerdeSerialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, SerdeSerialize, SerdeDeserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(tag = "type")]
 #[serde(rename_all = "camelCase")]
@@ -923,7 +942,7 @@ pub struct StakeSigningKeyShelley {
     cbor_hex: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, SerdeSerialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, SerdeSerialize, SerdeDeserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(tag = "type")]
 #[serde(rename_all = "camelCase")]
@@ -932,7 +951,7 @@ pub struct VrfVerificationKey {
     cbor_hex: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, SerdeSerialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, SerdeSerialize, SerdeDeserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(tag = "type")]
 #[serde(rename_all = "camelCase")]
@@ -941,7 +960,7 @@ pub struct VrfSigningKey {
     cbor_hex: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, SerdeSerialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, SerdeSerialize, SerdeDeserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(tag = "type")]
 #[serde(rename_all = "camelCase")]
@@ -950,7 +969,7 @@ pub struct PaymentVerificationKeyShelley {
     cbor_hex: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, SerdeSerialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, SerdeSerialize, SerdeDeserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(tag = "type")]
 #[serde(rename_all = "camelCase")]
@@ -959,7 +978,7 @@ pub struct PaymentSigningKeyShelley {
     cbor_hex: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, SerdeSerialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, SerdeSerialize, SerdeDeserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(tag = "type")]
 #[serde(rename_all = "camelCase")]

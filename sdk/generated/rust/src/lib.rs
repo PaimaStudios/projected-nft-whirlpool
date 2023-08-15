@@ -7,16 +7,52 @@ extern crate derivative;
 pub mod cbor_encodings;
 pub mod serialization;
 
-use cbor_encodings::{NFTEncoding, StateEncoding, StatusUnlockingEncoding};
-use cml_chain::plutus::PlutusData::List;
-use cml_chain::plutus::{ConstrPlutusData, PlutusData};
+use cbor_encodings::{
+    MintTokensEncoding, NFTEncoding, RedeemEncoding, StateEncoding, UnlockingEncoding,
+};
+
 use cml_chain::transaction::TransactionInput;
 use cml_chain::{AssetName, PolicyId};
-use cml_core::error::*;
-use cml_core::serialization::{LenEncoding, Serialize, StringEncoding};
-use cml_crypto::{Ed25519KeyHash as Keyhash, RawBytesEncoding};
-use std::collections::BTreeMap;
-use std::convert::TryFrom;
+
+use cml_core::serialization::{LenEncoding, StringEncoding};
+use cml_crypto::Ed25519KeyHash as Keyhash;
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+pub enum MintRedeemer {
+    MintTokens(MintTokens),
+    BurnTokens {
+        #[serde(skip)]
+        burn_tokens_encoding: Option<cbor_event::Sz>,
+    },
+}
+
+impl MintRedeemer {
+    pub fn new_mint_tokens(mint_tokens: MintTokens) -> Self {
+        Self::MintTokens(mint_tokens)
+    }
+
+    pub fn new_burn_tokens() -> Self {
+        Self::BurnTokens {
+            burn_tokens_encoding: None,
+        }
+    }
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+pub struct MintTokens {
+    pub total: i64,
+    #[serde(skip)]
+    pub encodings: Option<MintTokensEncoding>,
+}
+
+impl MintTokens {
+    pub fn new(total: i64) -> Self {
+        Self {
+            total,
+            encodings: None,
+        }
+    }
+}
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
 pub struct NFT {
@@ -48,19 +84,43 @@ pub enum Owner {
 }
 
 impl Owner {
-    pub fn new_public_keyhash(p_k_h: Keyhash) -> Self {
+    pub fn new_p_k_h(p_k_h: Keyhash) -> Self {
         Self::PKH {
             p_k_h,
             p_k_h_encoding: StringEncoding::default(),
         }
     }
 
-    pub fn new_nft(n_f_t: NFT) -> Self {
+    pub fn new_n_f_t(n_f_t: NFT) -> Self {
         Self::NFT(n_f_t)
     }
 
     pub fn new_receipt(receipt: AssetName) -> Self {
         Self::Receipt(receipt)
+    }
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+pub struct Redeem {
+    pub partial_withdraw: bool,
+    pub nft_input_owner: Option<TransactionInput>,
+    pub new_receipt_owner: Option<AssetName>,
+    #[serde(skip)]
+    pub encodings: Option<RedeemEncoding>,
+}
+
+impl Redeem {
+    pub fn new(
+        partial_withdraw: bool,
+        nft_input_owner: Option<TransactionInput>,
+        new_receipt_owner: Option<AssetName>,
+    ) -> Self {
+        Self {
+            partial_withdraw,
+            nft_input_owner,
+            new_receipt_owner,
+            encodings: None,
+        }
     }
 }
 
@@ -88,7 +148,7 @@ pub enum Status {
         #[serde(skip)]
         locked_encoding: Option<cbor_event::Sz>,
     },
-    Unlocking(StatusUnlocking),
+    Unlocking(Unlocking),
 }
 
 impl Status {
@@ -98,20 +158,20 @@ impl Status {
         }
     }
 
-    pub fn new_unlocking(unlocking: StatusUnlocking) -> Self {
+    pub fn new_unlocking(unlocking: Unlocking) -> Self {
         Self::Unlocking(unlocking)
     }
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
-pub struct StatusUnlocking {
+pub struct Unlocking {
     pub out_ref: TransactionInput,
     pub for_how_long: i64,
     #[serde(skip)]
-    pub encodings: Option<StatusUnlockingEncoding>,
+    pub encodings: Option<UnlockingEncoding>,
 }
 
-impl StatusUnlocking {
+impl Unlocking {
     pub fn new(out_ref: TransactionInput, for_how_long: i64) -> Self {
         Self {
             out_ref,

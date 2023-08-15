@@ -16,10 +16,11 @@ fn main() {
     }
     gen_json_schema!(projected_nft_structs::AssetName);
     gen_json_schema!(projected_nft_structs::Keyhash);
+    gen_json_schema!(projected_nft_structs::MintTokens);
     gen_json_schema!(projected_nft_structs::NFT);
     gen_json_schema!(projected_nft_structs::Owner);
     gen_json_schema!(projected_nft_structs::PolicyId);
     gen_json_schema!(projected_nft_structs::Status);
-    gen_json_schema!(projected_nft_structs::StatusUnlocking);
     gen_json_schema!(projected_nft_structs::TransactionInput);
+    gen_json_schema!(projected_nft_structs::Unlocking);
 }

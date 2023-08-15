@@ -11,12 +11,21 @@ owner =
   / asset_name                  ; @name Receipt
 
 status =
-    0                           ; @name Locked
-  / { out_ref: transaction_input
-    , for_how_long: int64
-    }            ; @name Unlocking
+    0                                                  ; @name Locked
+    / [out_ref: transaction_input, for_how_long: int64] ; @name Unlocking
+
 
 state =
     [ owner: owner
     , status: status
     ]
+
+redeem =
+    [ partial_withdraw: bool
+    , nft_input_owner: transaction_input / null
+    , new_receipt_owner: asset_name / null
+    ]
+
+mint_redeemer =
+    [total: int64] ; @name MintTokens
+    / 1            ; @name BurnTokens

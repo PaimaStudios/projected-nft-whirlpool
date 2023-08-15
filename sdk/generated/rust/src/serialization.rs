@@ -10,6 +10,143 @@ use cml_core::serialization::{fit_sz, CBORReadLen, Deserialize, Serialize};
 use cml_crypto::RawBytesEncoding;
 use std::io::{BufRead, Seek, SeekFrom, Write};
 
+impl Serialize for MintRedeemer {
+    fn serialize<'se, W: Write>(
+        &self,
+        serializer: &'se mut Serializer<W>,
+        force_canonical: bool,
+    ) -> cbor_event::Result<&'se mut Serializer<W>> {
+        match self {
+            MintRedeemer::MintTokens(mint_tokens) => {
+                mint_tokens.serialize(serializer, force_canonical)
+            }
+            MintRedeemer::BurnTokens {
+                burn_tokens_encoding,
+            } => serializer.write_unsigned_integer_sz(
+                1u64,
+                fit_sz(1u64, *burn_tokens_encoding, force_canonical),
+            ),
+        }
+    }
+}
+
+impl Deserialize for MintRedeemer {
+    fn deserialize<R: BufRead + Seek>(raw: &mut Deserializer<R>) -> Result<Self, DeserializeError> {
+        (|| -> Result<_, DeserializeError> {
+            match raw.cbor_type()? {
+                cbor_event::Type::Array => {
+                    Ok(MintRedeemer::MintTokens(MintTokens::deserialize(raw)?))
+                }
+                cbor_event::Type::UnsignedInteger => {
+                    let (burn_tokens_value, burn_tokens_encoding) = raw.unsigned_integer_sz()?;
+                    if burn_tokens_value != 1 {
+                        return Err(DeserializeFailure::FixedValueMismatch {
+                            found: Key::Uint(burn_tokens_value),
+                            expected: Key::Uint(1),
+                        }
+                        .into());
+                    }
+                    let burn_tokens_encoding = Some(burn_tokens_encoding);
+                    Ok(Self::BurnTokens {
+                        burn_tokens_encoding,
+                    })
+                }
+                _ => Err(DeserializeError::new(
+                    "MintRedeemer",
+                    DeserializeFailure::NoVariantMatched,
+                )),
+            }
+        })()
+        .map_err(|e| e.annotate("MintRedeemer"))
+    }
+}
+
+impl Serialize for MintTokens {
+    fn serialize<'se, W: Write>(
+        &self,
+        serializer: &'se mut Serializer<W>,
+        force_canonical: bool,
+    ) -> cbor_event::Result<&'se mut Serializer<W>> {
+        serializer.write_array_sz(
+            self.encodings
+                .as_ref()
+                .map(|encs| encs.len_encoding)
+                .unwrap_or_default()
+                .to_len_sz(1, force_canonical),
+        )?;
+        if self.total >= 0 {
+            serializer.write_unsigned_integer_sz(
+                self.total as u64,
+                fit_sz(
+                    self.total as u64,
+                    self.encodings
+                        .as_ref()
+                        .map(|encs| encs.total_encoding)
+                        .unwrap_or_default(),
+                    force_canonical,
+                ),
+            )?;
+        } else {
+            serializer.write_negative_integer_sz(
+                self.total as i128,
+                fit_sz(
+                    (self.total + 1).unsigned_abs(),
+                    self.encodings
+                        .as_ref()
+                        .map(|encs| encs.total_encoding)
+                        .unwrap_or_default(),
+                    force_canonical,
+                ),
+            )?;
+        }
+        self.encodings
+            .as_ref()
+            .map(|encs| encs.len_encoding)
+            .unwrap_or_default()
+            .end(serializer, force_canonical)
+    }
+}
+
+impl Deserialize for MintTokens {
+    fn deserialize<R: BufRead + Seek>(raw: &mut Deserializer<R>) -> Result<Self, DeserializeError> {
+        let len = raw.array_sz()?;
+        let len_encoding: LenEncoding = len.into();
+        let mut read_len = CBORReadLen::new(len);
+        read_len.read_elems(1)?;
+        read_len.finish()?;
+        (|| -> Result<_, DeserializeError> {
+            let (total, total_encoding) = (|| -> Result<_, DeserializeError> {
+                Ok(match raw.cbor_type()? {
+                    cbor_event::Type::UnsignedInteger => {
+                        let (x, enc) = raw.unsigned_integer_sz()?;
+                        (x as i64, Some(enc))
+                    }
+                    _ => {
+                        let (x, enc) = raw.negative_integer_sz()?;
+                        (x as i64, Some(enc))
+                    }
+                })
+            })()
+            .map_err(|e| e.annotate("total"))?;
+            match len {
+                cbor_event::LenSz::Len(_, _) => (),
+                cbor_event::LenSz::Indefinite => match raw.special()? {
+                    cbor_event::Special::Break => (),
+                    _ => return Err(DeserializeFailure::EndingBreakMissing.into()),
+                },
+            }
+            Ok(MintTokens {
+                total,
+                encodings: Some(MintTokensEncoding {
+                    len_encoding,
+                    total_encoding,
+                }),
+            })
+        })()
+        .map_err(|e| e.annotate("MintTokens"))
+    }
+}
+
 impl Serialize for NFT {
     fn serialize<'se, W: Write>(
         &self,
@@ -24,7 +161,7 @@ impl Serialize for NFT {
                 .to_len_sz(2, force_canonical),
         )?;
         serializer.write_bytes_sz(
-            &self.policy_id.to_raw_bytes(),
+            self.policy_id.to_raw_bytes(),
             self.encodings
                 .as_ref()
                 .map(|encs| encs.policy_id_encoding.clone())
@@ -90,7 +227,7 @@ impl Serialize for Owner {
                 p_k_h,
                 p_k_h_encoding,
             } => serializer.write_bytes_sz(
-                &p_k_h.to_raw_bytes(),
+                p_k_h.to_raw_bytes(),
                 p_k_h_encoding.to_str_len_sz(p_k_h.to_raw_bytes().len() as u64, force_canonical),
             ),
             Owner::NFT(n_f_t) => n_f_t.serialize(serializer, force_canonical),
@@ -102,7 +239,7 @@ impl Serialize for Owner {
 impl Deserialize for Owner {
     fn deserialize<R: BufRead + Seek>(raw: &mut Deserializer<R>) -> Result<Self, DeserializeError> {
         (|| -> Result<_, DeserializeError> {
-            let initial_position = raw.as_mut_ref().seek(SeekFrom::Current(0)).unwrap();
+            let initial_position = raw.as_mut_ref().stream_position().unwrap();
             let mut errs = Vec::new();
             let deser_variant: Result<_, DeserializeError> = raw
                 .bytes_sz()
@@ -152,6 +289,89 @@ impl Deserialize for Owner {
             ))
         })()
         .map_err(|e| e.annotate("Owner"))
+    }
+}
+
+impl Serialize for Redeem {
+    fn serialize<'se, W: Write>(
+        &self,
+        serializer: &'se mut Serializer<W>,
+        force_canonical: bool,
+    ) -> cbor_event::Result<&'se mut Serializer<W>> {
+        serializer.write_array_sz(
+            self.encodings
+                .as_ref()
+                .map(|encs| encs.len_encoding)
+                .unwrap_or_default()
+                .to_len_sz(3, force_canonical),
+        )?;
+        serializer.write_special(cbor_event::Special::Bool(self.partial_withdraw))?;
+        match &self.nft_input_owner {
+            Some(x) => x.serialize(serializer, force_canonical),
+            None => serializer.write_special(cbor_event::Special::Null),
+        }?;
+        match &self.new_receipt_owner {
+            Some(x) => x.serialize(serializer, force_canonical),
+            None => serializer.write_special(cbor_event::Special::Null),
+        }?;
+        self.encodings
+            .as_ref()
+            .map(|encs| encs.len_encoding)
+            .unwrap_or_default()
+            .end(serializer, force_canonical)
+    }
+}
+
+impl Deserialize for Redeem {
+    fn deserialize<R: BufRead + Seek>(raw: &mut Deserializer<R>) -> Result<Self, DeserializeError> {
+        let len = raw.array_sz()?;
+        let len_encoding: LenEncoding = len.into();
+        let mut read_len = CBORReadLen::new(len);
+        read_len.read_elems(3)?;
+        read_len.finish()?;
+        (|| -> Result<_, DeserializeError> {
+            let partial_withdraw = raw.bool().map_err(|e| {
+                DeserializeError::new("partial_withdraw", DeserializeFailure::CBOR(e))
+            })?;
+            let nft_input_owner = (|| -> Result<_, DeserializeError> {
+                Ok(match raw.cbor_type()? != cbor_event::Type::Special {
+                    true => Some(TransactionInput::deserialize(raw)?),
+                    false => {
+                        if raw.special()? != cbor_event::Special::Null {
+                            return Err(DeserializeFailure::ExpectedNull.into());
+                        }
+                        None
+                    }
+                })
+            })()
+            .map_err(|e| e.annotate("nft_input_owner"))?;
+            let new_receipt_owner = (|| -> Result<_, DeserializeError> {
+                Ok(match raw.cbor_type()? != cbor_event::Type::Special {
+                    true => Some(AssetName::deserialize(raw)?),
+                    false => {
+                        if raw.special()? != cbor_event::Special::Null {
+                            return Err(DeserializeFailure::ExpectedNull.into());
+                        }
+                        None
+                    }
+                })
+            })()
+            .map_err(|e| e.annotate("new_receipt_owner"))?;
+            match len {
+                cbor_event::LenSz::Len(_, _) => (),
+                cbor_event::LenSz::Indefinite => match raw.special()? {
+                    cbor_event::Special::Break => (),
+                    _ => return Err(DeserializeFailure::EndingBreakMissing.into()),
+                },
+            }
+            Ok(Redeem {
+                partial_withdraw,
+                nft_input_owner,
+                new_receipt_owner,
+                encodings: Some(RedeemEncoding { len_encoding }),
+            })
+        })()
+        .map_err(|e| e.annotate("Redeem"))
     }
 }
 
@@ -237,7 +457,7 @@ impl Deserialize for Status {
                     let locked_encoding = Some(locked_encoding);
                     Ok(Self::Locked { locked_encoding })
                 }
-                cbor_event::Type::Map => Ok(Status::Unlocking(StatusUnlocking::deserialize(raw)?)),
+                cbor_event::Type::Array => Ok(Status::Unlocking(Unlocking::deserialize(raw)?)),
                 _ => Err(DeserializeError::new(
                     "Status",
                     DeserializeFailure::NoVariantMatched,
@@ -248,75 +468,44 @@ impl Deserialize for Status {
     }
 }
 
-impl Serialize for StatusUnlocking {
+impl Serialize for Unlocking {
     fn serialize<'se, W: Write>(
         &self,
         serializer: &'se mut Serializer<W>,
         force_canonical: bool,
     ) -> cbor_event::Result<&'se mut Serializer<W>> {
-        serializer.write_map_sz(
+        serializer.write_array_sz(
             self.encodings
                 .as_ref()
                 .map(|encs| encs.len_encoding)
                 .unwrap_or_default()
                 .to_len_sz(2, force_canonical),
         )?;
-        let deser_order = self
-            .encodings
-            .as_ref()
-            .filter(|encs| !force_canonical && encs.orig_deser_order.len() == 2)
-            .map(|encs| encs.orig_deser_order.clone())
-            .unwrap_or_else(|| vec![0, 1]);
-        for field_index in deser_order {
-            match field_index {
-                0 => {
-                    serializer.write_text_sz(
-                        &"out_ref",
-                        self.encodings
-                            .as_ref()
-                            .map(|encs| encs.out_ref_key_encoding.clone())
-                            .unwrap_or_default()
-                            .to_str_len_sz("out_ref".len() as u64, force_canonical),
-                    )?;
-                    self.out_ref.serialize(serializer, force_canonical)?;
-                }
-                1 => {
-                    serializer.write_text_sz(
-                        &"for_how_long",
-                        self.encodings
-                            .as_ref()
-                            .map(|encs| encs.for_how_long_key_encoding.clone())
-                            .unwrap_or_default()
-                            .to_str_len_sz("for_how_long".len() as u64, force_canonical),
-                    )?;
-                    if self.for_how_long >= 0 {
-                        serializer.write_unsigned_integer_sz(
-                            self.for_how_long as u64,
-                            fit_sz(
-                                self.for_how_long as u64,
-                                self.encodings
-                                    .as_ref()
-                                    .map(|encs| encs.for_how_long_encoding)
-                                    .unwrap_or_default(),
-                                force_canonical,
-                            ),
-                        )?;
-                    } else {
-                        serializer.write_negative_integer_sz(
-                            self.for_how_long as i128,
-                            fit_sz(
-                                (self.for_how_long + 1).abs() as u64,
-                                self.encodings
-                                    .as_ref()
-                                    .map(|encs| encs.for_how_long_encoding)
-                                    .unwrap_or_default(),
-                                force_canonical,
-                            ),
-                        )?;
-                    }
-                }
-                _ => unreachable!(),
-            };
+        self.out_ref.serialize(serializer, force_canonical)?;
+        if self.for_how_long >= 0 {
+            serializer.write_unsigned_integer_sz(
+                self.for_how_long as u64,
+                fit_sz(
+                    self.for_how_long as u64,
+                    self.encodings
+                        .as_ref()
+                        .map(|encs| encs.for_how_long_encoding)
+                        .unwrap_or_default(),
+                    force_canonical,
+                ),
+            )?;
+        } else {
+            serializer.write_negative_integer_sz(
+                self.for_how_long as i128,
+                fit_sz(
+                    (self.for_how_long + 1).unsigned_abs(),
+                    self.encodings
+                        .as_ref()
+                        .map(|encs| encs.for_how_long_encoding)
+                        .unwrap_or_default(),
+                    force_canonical,
+                ),
+            )?;
         }
         self.encodings
             .as_ref()
@@ -326,130 +515,45 @@ impl Serialize for StatusUnlocking {
     }
 }
 
-impl Deserialize for StatusUnlocking {
+impl Deserialize for Unlocking {
     fn deserialize<R: BufRead + Seek>(raw: &mut Deserializer<R>) -> Result<Self, DeserializeError> {
-        let len = raw.map_sz()?;
+        let len = raw.array_sz()?;
         let len_encoding: LenEncoding = len.into();
         let mut read_len = CBORReadLen::new(len);
         read_len.read_elems(2)?;
         read_len.finish()?;
         (|| -> Result<_, DeserializeError> {
-            let mut orig_deser_order = Vec::new();
-            let mut out_ref_key_encoding = StringEncoding::default();
-            let mut out_ref = None;
-            let mut for_how_long_encoding = None;
-            let mut for_how_long_key_encoding = StringEncoding::default();
-            let mut for_how_long = None;
-            let mut read = 0;
-            while match len {
-                cbor_event::LenSz::Len(n, _) => read < n,
-                cbor_event::LenSz::Indefinite => true,
-            } {
-                match raw.cbor_type()? {
+            let out_ref = TransactionInput::deserialize(raw)
+                .map_err(|e: DeserializeError| e.annotate("out_ref"))?;
+            let (for_how_long, for_how_long_encoding) = (|| -> Result<_, DeserializeError> {
+                Ok(match raw.cbor_type()? {
                     cbor_event::Type::UnsignedInteger => {
-                        return Err(DeserializeFailure::UnknownKey(Key::Uint(
-                            raw.unsigned_integer()?,
-                        ))
-                        .into())
+                        let (x, enc) = raw.unsigned_integer_sz()?;
+                        (x as i64, Some(enc))
                     }
-                    cbor_event::Type::Text => {
-                        let (text_key, key_enc) = raw.text_sz()?;
-                        match text_key.as_str() {
-                            "out_ref" => {
-                                if out_ref.is_some() {
-                                    return Err(DeserializeFailure::DuplicateKey(Key::Str(
-                                        "out_ref".into(),
-                                    ))
-                                    .into());
-                                }
-                                let tmp_out_ref = TransactionInput::deserialize(raw)
-                                    .map_err(|e: DeserializeError| e.annotate("out_ref"))?;
-                                out_ref = Some(tmp_out_ref);
-                                out_ref_key_encoding = StringEncoding::from(key_enc);
-                                orig_deser_order.push(0);
-                            }
-                            "for_how_long" => {
-                                if for_how_long.is_some() {
-                                    return Err(DeserializeFailure::DuplicateKey(Key::Str(
-                                        "for_how_long".into(),
-                                    ))
-                                    .into());
-                                }
-                                let (tmp_for_how_long, tmp_for_how_long_encoding) =
-                                    (|| -> Result<_, DeserializeError> {
-                                        Ok(match raw.cbor_type()? {
-                                            cbor_event::Type::UnsignedInteger => {
-                                                let (x, enc) = raw.unsigned_integer_sz()?;
-                                                (x as i64, Some(enc))
-                                            }
-                                            _ => {
-                                                let (x, enc) = raw.negative_integer_sz()?;
-                                                (x as i64, Some(enc))
-                                            }
-                                        })
-                                    })()
-                                    .map_err(|e| e.annotate("for_how_long"))?;
-                                for_how_long = Some(tmp_for_how_long);
-                                for_how_long_encoding = tmp_for_how_long_encoding;
-                                for_how_long_key_encoding = StringEncoding::from(key_enc);
-                                orig_deser_order.push(1);
-                            }
-                            unknown_key => {
-                                return Err(DeserializeFailure::UnknownKey(Key::Str(
-                                    unknown_key.to_owned(),
-                                ))
-                                .into())
-                            }
-                        }
+                    _ => {
+                        let (x, enc) = raw.negative_integer_sz()?;
+                        (x as i64, Some(enc))
                     }
-                    cbor_event::Type::Special => match len {
-                        cbor_event::LenSz::Len(_, _) => {
-                            return Err(DeserializeFailure::BreakInDefiniteLen.into())
-                        }
-                        cbor_event::LenSz::Indefinite => match raw.special()? {
-                            cbor_event::Special::Break => break,
-                            _ => return Err(DeserializeFailure::EndingBreakMissing.into()),
-                        },
-                    },
-                    other_type => {
-                        return Err(DeserializeFailure::UnexpectedKeyType(other_type).into())
-                    }
-                }
-                read += 1;
+                })
+            })()
+            .map_err(|e| e.annotate("for_how_long"))?;
+            match len {
+                cbor_event::LenSz::Len(_, _) => (),
+                cbor_event::LenSz::Indefinite => match raw.special()? {
+                    cbor_event::Special::Break => (),
+                    _ => return Err(DeserializeFailure::EndingBreakMissing.into()),
+                },
             }
-            let out_ref =
-                match out_ref {
-                    Some(x) => x,
-                    None => {
-                        return Err(DeserializeFailure::MandatoryFieldMissing(Key::Str(
-                            String::from("out_ref"),
-                        ))
-                        .into())
-                    }
-                };
-            let for_how_long =
-                match for_how_long {
-                    Some(x) => x,
-                    None => {
-                        return Err(DeserializeFailure::MandatoryFieldMissing(Key::Str(
-                            String::from("for_how_long"),
-                        ))
-                        .into())
-                    }
-                };
-            ();
-            Ok(Self {
+            Ok(Unlocking {
                 out_ref,
                 for_how_long,
-                encodings: Some(StatusUnlockingEncoding {
+                encodings: Some(UnlockingEncoding {
                     len_encoding,
-                    orig_deser_order,
-                    out_ref_key_encoding,
-                    for_how_long_key_encoding,
                     for_how_long_encoding,
                 }),
             })
         })()
-        .map_err(|e| e.annotate("StatusUnlocking"))
+        .map_err(|e| e.annotate("Unlocking"))
     }
 }
