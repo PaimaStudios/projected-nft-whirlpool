@@ -67,6 +67,13 @@ pub struct PaymentConfiguration {
 
 #[derive(Clone, Debug, SerdeDeserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub struct ControlNft {
+    pub policy_id: String,
+    pub asset_name: String,
+}
+
+#[derive(Clone, Debug, SerdeDeserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct LockConfiguration {
     pub payment_configuration: PaymentConfiguration,
 
@@ -74,6 +81,9 @@ pub struct LockConfiguration {
 
     pub lock_on: String,
     pub lock_ada: u64,
+
+    #[serde(default)]
+    pub control_nft: Option<ControlNft>,
 }
 
 #[derive(Clone, Debug, SerdeDeserialize)]
@@ -87,6 +97,9 @@ pub struct LockNftConfiguration {
     pub lock_ada: u64,
     pub nft_policy_id: String,
     pub nft_asset_name: String,
+
+    #[serde(default)]
+    pub control_nft: Option<ControlNft>,
 }
 
 #[derive(Clone, Debug, SerdeDeserialize)]
@@ -99,6 +112,9 @@ pub struct UnlockConfiguration {
     pub locked: UtxoPointer,
 
     pub locked_on: String,
+
+    #[serde(default)]
+    pub control_nft: Option<ControlNft>,
 }
 
 #[tokio::main]
@@ -165,10 +181,20 @@ async fn handle_lock(
         EnterpriseAddress::new(network, &StakeCredential::from_scripthash(&contract.hash())).to_address();
     println!("Lock on contract: {}", lock_on.to_bech32(None).unwrap());
 
-    let datum = ProjectedNFTDatums::State(State {
-        owner: Owner::PKH(EnterpriseAddress::from_address(&payment_address).ok_or(anyhow!("payment address is not base"))?.payment_cred().to_keyhash().unwrap().to_bytes()),
-        status: Status::Locked,
-    });
+    let datum = match config.control_nft.clone() {
+        None => {
+            ProjectedNFTDatums::State(State {
+                owner: Owner::PKH(EnterpriseAddress::from_address(&payment_address).ok_or(anyhow!("payment address is not base"))?.payment_cred().to_keyhash().unwrap().to_bytes()),
+                status: Status::Locked,
+            })
+        }
+        Some(nft) => {
+            ProjectedNFTDatums::State(State {
+                owner: Owner::NFT(hex::decode(nft.policy_id).unwrap(), nft.asset_name.as_bytes().to_vec()),
+                status: Status::Locked,
+            })
+        }
+    };
 
     builder
         .add_output(
@@ -182,6 +208,25 @@ async fn handle_lock(
                 .unwrap(),
         )
         .map_err(|err| anyhow!("Can't add output: {err}"))?;
+
+    if let Some(nft) = config.control_nft {
+        let mut ma = MultiAsset::new();
+        let mut assets = Assets::new();
+        assets.insert(&AssetName::new(nft.asset_name.as_bytes().to_vec()).unwrap(), &BigNum::one());
+        ma.insert(&PolicyID::from_bytes(hex::decode(nft.policy_id).unwrap()).unwrap(), &assets);
+
+        builder
+            .add_output(
+                &TransactionOutputBuilder::new()
+                    .with_address(&payment_address)
+                    .next()
+                    .unwrap()
+                    .with_value(&Value::new_with_assets(&BigNum::from(2000000u64), &ma))
+                    .build()
+                    .unwrap(),
+            )
+            .map_err(|err| anyhow!("Can't add output: {err}"))?;
+    };
 
     builder
         .add_change_if_needed(&payment_address).unwrap();
@@ -260,10 +305,20 @@ async fn handle_lock_nft(
         EnterpriseAddress::new(network, &StakeCredential::from_scripthash(&contract.hash())).to_address();
     println!("Lock on contract: {}", lock_on.to_bech32(None).unwrap());
 
-    let datum = ProjectedNFTDatums::State(State {
-        owner: Owner::PKH(EnterpriseAddress::from_address(&payment_address).ok_or(anyhow!("payment address is not base"))?.payment_cred().to_keyhash().unwrap().to_bytes()),
-        status: Status::Locked,
-    });
+    let datum = match config.control_nft.clone() {
+        None => {
+            ProjectedNFTDatums::State(State {
+                owner: Owner::PKH(EnterpriseAddress::from_address(&payment_address).ok_or(anyhow!("payment address is not base"))?.payment_cred().to_keyhash().unwrap().to_bytes()),
+                status: Status::Locked,
+            })
+        }
+        Some(nft) => {
+            ProjectedNFTDatums::State(State {
+                owner: Owner::NFT(hex::decode(nft.policy_id).unwrap(), nft.asset_name.as_bytes().to_vec()),
+                status: Status::Locked,
+            })
+        }
+    };
 
     let mut ma = MultiAsset::new();
     let mut assets = Assets::new();
@@ -282,6 +337,25 @@ async fn handle_lock_nft(
                 .unwrap(),
         )
         .map_err(|err| anyhow!("Can't add output: {err}"))?;
+
+    if let Some(nft) = config.control_nft {
+        let mut ma = MultiAsset::new();
+        let mut assets = Assets::new();
+        assets.insert(&AssetName::new(nft.asset_name.as_bytes().to_vec()).unwrap(), &BigNum::one());
+        ma.insert(&PolicyID::from_bytes(hex::decode(nft.policy_id).unwrap()).unwrap(), &assets);
+
+        builder
+            .add_output(
+                &TransactionOutputBuilder::new()
+                    .with_address(&payment_address)
+                    .next()
+                    .unwrap()
+                    .with_value(&Value::new_with_assets(&BigNum::from(2000000u64), &ma))
+                    .build()
+                    .unwrap(),
+            )
+            .map_err(|err| anyhow!("Can't add output: {err}"))?;
+    };
 
     builder
         .add_change_if_needed(&payment_address).unwrap();
@@ -361,11 +435,19 @@ async fn handle_unlock(
 
     let redeemer = ProjectedNFTRedeemers::Redeem(Redeem {
         partial_withdraw: false,
-        nft_input_owner: None,
+        nft_input_owner: match config.control_nft {
+            None => None,
+            Some(_) => {
+                Some(OutRef {
+                    tx_id: config.inputs.last().cloned().unwrap().hash.to_bytes(),
+                    index: config.inputs.last().cloned().unwrap().index,
+                })
+            }
+        },
         new_receipt_owner: None,
     });
 
-    let (_, contract_inputs) =
+    let (contract_balance, contract_inputs) =
         fetch_inputs(vec![config.locked], &blockfrost).await?;
 
     let (contract_input_pointer, contract_input) = contract_inputs.get(0).cloned().unwrap();
@@ -413,16 +495,32 @@ async fn handle_unlock(
     let ttl = ttl_by_posix(now + 100);
     let for_how_long = (now + 400) * 1000;
 
-    let new_datum = ProjectedNFTDatums::State(State {
-        owner: Owner::PKH(EnterpriseAddress::from_address(&payment_address).ok_or(anyhow!("payment address is not base"))?.payment_cred().to_keyhash().unwrap().to_bytes()),
-        status: Status::Unlocking {
-            out_ref: OutRef {
-                tx_id: contract_input_pointer.hash.to_bytes(),
-                index: contract_input_pointer.index,
-            },
-            for_how_long,
-        },
-    });
+    let new_datum = match config.control_nft.clone() {
+        None => {
+            ProjectedNFTDatums::State(State {
+                owner: Owner::PKH(EnterpriseAddress::from_address(&payment_address).ok_or(anyhow!("payment address is not base"))?.payment_cred().to_keyhash().unwrap().to_bytes()),
+                status: Status::Unlocking {
+                    out_ref: OutRef {
+                        tx_id: contract_input_pointer.hash.to_bytes(),
+                        index: contract_input_pointer.index,
+                    },
+                    for_how_long,
+                },
+            })
+        }
+        Some(nft) => {
+            ProjectedNFTDatums::State(State {
+                owner: Owner::NFT(hex::decode(nft.policy_id).unwrap(), nft.asset_name.as_bytes().to_vec()),
+                status: Status::Unlocking {
+                    out_ref: OutRef {
+                        tx_id: contract_input_pointer.hash.to_bytes(),
+                        index: contract_input_pointer.index,
+                    },
+                    for_how_long,
+                },
+            })
+        }
+    };
 
     builder.set_ttl_bignum(&BigNum::from(ttl));
     builder.set_validity_start_interval_bignum(BigNum::from(validity));
@@ -439,13 +537,32 @@ async fn handle_unlock(
         )
         .map_err(|err| anyhow!("Can't add output: {err}"))?;
 
+    if let Some(nft) = config.control_nft {
+        let mut ma = MultiAsset::new();
+        let mut assets = Assets::new();
+        assets.insert(&AssetName::new(nft.asset_name.as_bytes().to_vec()).unwrap(), &BigNum::one());
+        ma.insert(&PolicyID::from_bytes(hex::decode(nft.policy_id).unwrap()).unwrap(), &assets);
+
+        builder
+            .add_output(
+                &TransactionOutputBuilder::new()
+                    .with_address(&payment_address)
+                    .next()
+                    .unwrap()
+                    .with_value(&Value::new_with_assets(&BigNum::from(2000000u64), &ma))
+                    .build()
+                    .unwrap(),
+            )
+            .map_err(|err| anyhow!("Can't add output: {err}"))?;
+    };
+
     builder
         .add_output(
             &TransactionOutputBuilder::new()
                 .with_address(&payment_address)
                 .next()
                 .unwrap()
-                .with_value(&Value::new(&normal_input_balance.coin().checked_sub(&BigNum::from(10000000u64)).unwrap()))
+                .with_value(&Value::new(&normal_input_balance.coin().checked_sub(&BigNum::from(12000000u64)).unwrap()))
                 .build()
                 .unwrap(),
         )
@@ -526,7 +643,15 @@ async fn handle_claim(
 
     let redeemer = ProjectedNFTRedeemers::Redeem(Redeem {
         partial_withdraw: false,
-        nft_input_owner: None,
+        nft_input_owner: match config.control_nft {
+            None => None,
+            Some(_) => {
+                Some(OutRef {
+                    tx_id: config.inputs.last().cloned().unwrap().hash.to_bytes(),
+                    index: config.inputs.last().cloned().unwrap().index,
+                })
+            }
+        },
         new_receipt_owner: None,
     });
 
@@ -591,13 +716,32 @@ async fn handle_claim(
         )
         .map_err(|err| anyhow!("Can't add output: {err}"))?;
 
+    if let Some(nft) = config.control_nft {
+        let mut ma = MultiAsset::new();
+        let mut assets = Assets::new();
+        assets.insert(&AssetName::new(nft.asset_name.as_bytes().to_vec()).unwrap(), &BigNum::one());
+        ma.insert(&PolicyID::from_bytes(hex::decode(nft.policy_id).unwrap()).unwrap(), &assets);
+
+        builder
+            .add_output(
+                &TransactionOutputBuilder::new()
+                    .with_address(&payment_address)
+                    .next()
+                    .unwrap()
+                    .with_value(&Value::new_with_assets(&BigNum::from(2000000u64), &ma))
+                    .build()
+                    .unwrap(),
+            )
+            .map_err(|err| anyhow!("Can't add output: {err}"))?;
+    };
+
     builder
         .add_output(
             &TransactionOutputBuilder::new()
                 .with_address(&payment_address)
                 .next()
                 .unwrap()
-                .with_value(&Value::new(&normal_input_balance.coin().checked_sub(&BigNum::from(10000000u64)).unwrap()))
+                .with_value(&Value::new(&normal_input_balance.coin().checked_sub(&BigNum::from(12000000u64)).unwrap()))
                 .build()
                 .unwrap(),
         )
