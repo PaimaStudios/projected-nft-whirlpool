@@ -171,7 +171,7 @@ validator {
         let for_how_long = upper + minimum_lock_time
 
         let outputs_offset =
-          find_outputs_offset(outputs, for_how_long)
+          find_outputs_offset(outputs, own_out_ref, for_how_long)
 
         if redeemer.partial_withdraw {
           // case for partial withdraws
@@ -244,6 +244,7 @@ validator {
 // returns that output, along with all ouputs that come afterwards
 fn find_outputs_offset(
   outputs: List<Output>,
+  match_out_ref: OutputReference,
   match_for_how_long: Int,
 ) -> List<Output> {
   expect [output, ..rest_outputs] = outputs
@@ -253,17 +254,17 @@ fn find_outputs_offset(
       expect outbound_datum: State = outbound_datum
       when outbound_datum.status is {
         Unlocking { out_ref, for_how_long } ->
-          if for_how_long == match_for_how_long {
+          if for_how_long == match_for_how_long && match_out_ref == out_ref {
             outputs
           } else {
-            find_outputs_offset(rest_outputs, match_for_how_long)
+            find_outputs_offset(rest_outputs, match_out_ref, match_for_how_long)
           }
         _ ->
-          find_outputs_offset(rest_outputs, match_for_how_long)
+          find_outputs_offset(rest_outputs, match_out_ref, match_for_how_long)
       }
     }
     _ ->
-      find_outputs_offset(rest_outputs, match_for_how_long)
+      find_outputs_offset(rest_outputs, match_out_ref, match_for_how_long)
   }
 }
 
