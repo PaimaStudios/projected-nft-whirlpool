@@ -295,9 +295,9 @@ async fn handle_unlock(
         .unwrap()
         .as_secs();
 
-    let validity = ttl_by_posix(now) - 100;
-    let ttl = ttl_by_posix(now) + 100;
-    let for_how_long = ttl + 300;
+    let validity = ttl_by_posix(now - 100);
+    let ttl = ttl_by_posix(now + 100);
+    let for_how_long = (now + 400) * 1000;
 
     let new_datum = ProjectedNFTDatums::State(State {
         owner: Owner::PKH(EnterpriseAddress::from_address(&payment_address).ok_or(anyhow!("payment address is not base"))?.payment_cred().to_keyhash().unwrap().to_bytes()),
@@ -460,8 +460,8 @@ async fn handle_claim(
         .unwrap()
         .as_secs();
 
-    let validity = ttl_by_posix(now) - 100;
-    let ttl = ttl_by_posix(now) + 100;
+    let validity = ttl_by_posix(now - 100);
+    let ttl = ttl_by_posix(now + 100);
 
     builder.set_ttl_bignum(&BigNum::from(ttl));
     builder.set_validity_start_interval_bignum(BigNum::from(validity));
