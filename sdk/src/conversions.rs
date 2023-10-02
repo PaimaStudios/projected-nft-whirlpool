@@ -1,4 +1,3 @@
-use std::fmt::format;
 use cardano_serialization_lib::plutus::{ConstrPlutusData, PlutusData, PlutusList};
 use cardano_serialization_lib::utils::{BigInt, BigNum};
 use serde::{Deserialize, Serialize};
@@ -26,21 +25,12 @@ impl From<MintRedeemer> for PlutusData {
                 let mut list = PlutusList::new();
                 list.add(&PlutusData::new_integer(&BigInt::from(BigNum::from(total))));
 
-                PlutusData::new_constr_plutus_data(
-                    &ConstrPlutusData::new(
-                        &BigNum::zero(),
-                        &list,
-                    )
-                )
+                PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(&BigNum::zero(), &list))
             }
-            MintRedeemer::BurnTokens => {
-                PlutusData::new_constr_plutus_data(
-                    &ConstrPlutusData::new(
-                        &BigNum::one(),
-                        &PlutusList::new(),
-                    )
-                )
-            }
+            MintRedeemer::BurnTokens => PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(
+                &BigNum::one(),
+                &PlutusList::new(),
+            )),
         }
     }
 }
@@ -50,18 +40,23 @@ impl TryFrom<PlutusData> for MintRedeemer {
 
     fn try_from(value: PlutusData) -> Result<Self, Self::Error> {
         let Some(constr) = value.as_constr_plutus_data() else {
-            return Err("upper value is not constr".to_string())
+            return Err("upper value is not constr".to_string());
         };
 
         match u64::from(constr.alternative()) {
             0 => match constr.data().get(0).as_integer() {
                 Some(bigint) => Ok(MintRedeemer::MintTokens {
-                    total: u64::from(bigint.as_u64().ok_or(format!("Mint tokens total valus can't be represented as u64"))?),
+                    total: u64::from(bigint.as_u64().ok_or(
+                        "Mint tokens total valus can't be represented as u64".to_string(),
+                    )?),
                 }),
-                _ => return Err("constr field is not bigint".to_string()),
-            }
+                _ => Err("constr field is not bigint".to_string()),
+            },
             1 => Ok(MintRedeemer::BurnTokens),
-            _ => return Err(format!("constr alternative is not correct {}", constr.alternative())),
+            _ => Err(format!(
+                "constr alternative is not correct {}",
+                constr.alternative()
+            )),
         }
     }
 }
@@ -88,10 +83,7 @@ pub struct OutRef {
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Deserialize, Serialize)]
 pub enum Status {
     Locked,
-    Unlocking {
-        out_ref: OutRef,
-        for_how_long: u64,
-    }
+    Unlocking { out_ref: OutRef, for_how_long: u64 },
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Deserialize, Serialize)]
@@ -109,30 +101,23 @@ impl From<Redeem> for ProjectedNFTRedeemers {
 
 impl From<ProjectedNFTRedeemers> for PlutusData {
     fn from(value: ProjectedNFTRedeemers) -> Self {
-        let redeem = match value { ProjectedNFTRedeemers::Redeem(redeem) =>
-            redeem
-        };
+        let ProjectedNFTRedeemers::Redeem(redeem) = value;
 
-        let partial_withdraw = PlutusData::new_constr_plutus_data(
-            &ConstrPlutusData::new(
-                &match redeem.partial_withdraw {
-                    true => BigNum::one(),
-                    false => BigNum::zero(),
-                },
-                &PlutusList::new(),
-            )
-        );
+        let partial_withdraw = PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(
+            &match redeem.partial_withdraw {
+                true => BigNum::one(),
+                false => BigNum::zero(),
+            },
+            &PlutusList::new(),
+        ));
 
         let nft_input_owner = if let Some(out_ref) = redeem.nft_input_owner {
-            let out_ref= PlutusData::from(out_ref);
+            let out_ref = PlutusData::from(out_ref);
 
             let mut list = PlutusList::new();
             list.add(&out_ref);
 
-            PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(
-                &BigNum::zero(),
-                &list,
-            ))
+            PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(&BigNum::zero(), &list))
         } else {
             PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(
                 &BigNum::one(),
@@ -143,10 +128,7 @@ impl From<ProjectedNFTRedeemers> for PlutusData {
             let mut list = PlutusList::new();
             list.add(&PlutusData::new_bytes(asset_name));
 
-            PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(
-                &BigNum::zero(),
-                &list,
-            ))
+            PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(&BigNum::zero(), &list))
         } else {
             PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(
                 &BigNum::one(),
@@ -158,20 +140,13 @@ impl From<ProjectedNFTRedeemers> for PlutusData {
         list.add(&nft_input_owner);
         list.add(&nft_receipt_owner);
 
-        let redeemer = PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(
-            &BigNum::zero(),
-            &list,
-        ));
+        let redeemer =
+            PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(&BigNum::zero(), &list));
 
         let mut list = PlutusList::new();
         list.add(&redeemer);
 
-        PlutusData::new_constr_plutus_data(
-            &ConstrPlutusData::new(
-                &BigNum::one(),
-                &list,
-            )
-        )
+        PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(&BigNum::one(), &list))
     }
 }
 
@@ -180,18 +155,28 @@ impl TryFrom<PlutusData> for ProjectedNFTRedeemers {
 
     fn try_from(value: PlutusData) -> Result<Self, Self::Error> {
         let Some(constr) = value.as_constr_plutus_data() else {
-            return Err("upper value is not constr".to_string())
+            return Err("upper value is not constr".to_string());
         };
         if constr.alternative() != BigNum::one() {
-            return Err(format!("expected constr = 1 got {}", constr.alternative()))
+            return Err(format!("expected constr = 1 got {}", constr.alternative()));
         }
         let Some(redeemer_constr) = constr.data().get(0).as_constr_plutus_data() else {
-            return Err(format!("expected constr.fields.len = 1 got {}", constr.data().len()))
+            return Err(format!(
+                "expected constr.fields.len = 1 got {}",
+                constr.data().len()
+            ));
         };
 
-        let Some(constr_withdraw) = redeemer_constr.data().get(0).as_constr_plutus_data() else { return Err(format!("can't parse withdraw"))};
-        let Some(constr_input_owner) = redeemer_constr.data().get(1).as_constr_plutus_data() else { return Err(format!("can't parse nft input owner"))};
-        let Some(constr_receipt_owner) = redeemer_constr.data().get(2).as_constr_plutus_data() else { return Err(format!("can't parse new receipt owner: no field"))};
+        let Some(constr_withdraw) = redeemer_constr.data().get(0).as_constr_plutus_data() else {
+            return Err("can't parse withdraw".to_string());
+        };
+        let Some(constr_input_owner) = redeemer_constr.data().get(1).as_constr_plutus_data() else {
+            return Err("can't parse nft input owner".to_string());
+        };
+        let Some(constr_receipt_owner) = redeemer_constr.data().get(2).as_constr_plutus_data()
+        else {
+            return Err("can't parse new receipt owner: no field".to_string());
+        };
 
         let partial_withdraw = get_partial_withdraw(constr_withdraw)?;
         let nft_input_owner = get_nft_input_owner(constr_input_owner)?;
@@ -205,39 +190,36 @@ impl TryFrom<PlutusData> for ProjectedNFTRedeemers {
     }
 }
 
-
 fn get_partial_withdraw(constr: ConstrPlutusData) -> Result<bool, String> {
     match u64::from(constr.alternative()) {
         0 => Ok(false),
         1 => Ok(true),
-        _ => Err(format!("improper constr: {}", constr.alternative()))
+        _ => Err(format!("improper constr: {}", constr.alternative())),
     }
 }
 
 fn get_nft_input_owner(constr: ConstrPlutusData) -> Result<Option<OutRef>, String> {
     match u64::from(constr.alternative()) {
-        0 => {
-            OutRef::try_from(constr.data().get(0)).map(|res| Some(res))
-        }
-        1 => {
-            Ok(None)
-        }
-        _ => Err(format!("nft_input_owner: expected to see other constr {}", constr.alternative()))
+        0 => OutRef::try_from(constr.data().get(0)).map(Some),
+        1 => Ok(None),
+        _ => Err(format!(
+            "nft_input_owner: expected to see other constr {}",
+            constr.alternative()
+        )),
     }
 }
 
 fn get_new_receipt_owner(constr: ConstrPlutusData) -> Result<Option<Vec<u8>>, String> {
     match u64::from(constr.alternative()) {
-        0 => {
-            match constr.data().get(0).as_bytes() {
-                Some(bytes) => Ok(Some(bytes)),
-                _ => Err(format!("new_receipt_owner: expected to see bytes"))
-            }
-        }
-        1 => {
-            Ok(None)
-        }
-        _ => Err(format!("new_receipt_owner: expected to see other constr {}", constr.alternative()))
+        0 => match constr.data().get(0).as_bytes() {
+            Some(bytes) => Ok(Some(bytes)),
+            _ => Err("new_receipt_owner: expected to see bytes".to_string()),
+        },
+        1 => Ok(None),
+        _ => Err(format!(
+            "new_receipt_owner: expected to see other constr {}",
+            constr.alternative()
+        )),
     }
 }
 
@@ -249,31 +231,21 @@ impl From<State> for ProjectedNFTDatums {
 
 impl From<ProjectedNFTDatums> for PlutusData {
     fn from(value: ProjectedNFTDatums) -> Self {
-        let state = match value {
-            ProjectedNFTDatums::State(state) => {
-                state
-            }
-        };
+        let ProjectedNFTDatums::State(state) = value;
 
         let owner_data = match state.owner {
             Owner::PKH(pkh) => {
                 let mut list = PlutusList::new();
                 list.add(&PlutusData::new_bytes(pkh));
 
-                PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(
-                    &BigNum::zero(),
-                    &list,
-                ))
+                PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(&BigNum::zero(), &list))
             }
             Owner::NFT(policy_id, asset_name) => {
                 let mut list = PlutusList::new();
                 list.add(&PlutusData::new_bytes(policy_id));
                 list.add(&PlutusData::new_bytes(asset_name));
 
-                PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(
-                    &BigNum::one(),
-                    &list,
-                ))
+                PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(&BigNum::one(), &list))
             }
             Owner::Receipt(asset_name) => {
                 let mut list = PlutusList::new();
@@ -287,25 +259,24 @@ impl From<ProjectedNFTDatums> for PlutusData {
         };
 
         let status = match state.status {
-            Status::Locked => {
-                PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(
-                    &BigNum::zero(),
-                    &PlutusList::new(),
-                ))
-            }
-            Status::Unlocking { out_ref, for_how_long } => {
+            Status::Locked => PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(
+                &BigNum::zero(),
+                &PlutusList::new(),
+            )),
+            Status::Unlocking {
+                out_ref,
+                for_how_long,
+            } => {
                 let out_ref = PlutusData::from(out_ref);
 
-                let for_how_long = PlutusData::new_integer(&BigInt::from(BigNum::from(for_how_long)));
+                let for_how_long =
+                    PlutusData::new_integer(&BigInt::from(BigNum::from(for_how_long)));
 
                 let mut list = PlutusList::new();
                 list.add(&out_ref);
                 list.add(&for_how_long);
 
-                PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(
-                    &BigNum::one(),
-                    &list
-                ))
+                PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(&BigNum::one(), &list))
             }
         };
 
@@ -313,11 +284,7 @@ impl From<ProjectedNFTDatums> for PlutusData {
         list.add(&owner_data);
         list.add(&status);
 
-
-        PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(
-            &BigNum::zero(),
-            &list,
-        ))
+        PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(&BigNum::zero(), &list))
     }
 }
 
@@ -326,65 +293,57 @@ impl TryFrom<PlutusData> for ProjectedNFTDatums {
 
     fn try_from(value: PlutusData) -> Result<Self, Self::Error> {
         let Some(constr) = value.as_constr_plutus_data() else {
-            return Err(format!("expected to see constr"))
+            return Err("expected to see constr".to_string());
         };
 
-        let Some(constr_owner) = constr.data().get(0).as_constr_plutus_data() else { return Err(format!("owner parse error"))};
-        let Some(constr_status) = constr.data().get(1).as_constr_plutus_data() else { return Err(format!("status parse error"))};
+        let Some(constr_owner) = constr.data().get(0).as_constr_plutus_data() else {
+            return Err("owner parse error".to_string());
+        };
+        let Some(constr_status) = constr.data().get(1).as_constr_plutus_data() else {
+            return Err("status parse error".to_string());
+        };
 
         let owner = get_owner(constr_owner)?;
         let status = get_status(constr_status)?;
 
-        Ok(ProjectedNFTDatums::State(State {
-            owner,
-            status,
-        }))
+        Ok(ProjectedNFTDatums::State(State { owner, status }))
     }
 }
 
 fn get_owner(constr: ConstrPlutusData) -> Result<Owner, String> {
     match u64::from(constr.alternative()) {
         0 => match constr.data().get(0).as_bytes() {
-            Some(bytes) => {
-                Ok(Owner::PKH(bytes))
-            }
-            _ => {
-                return Err(format!("PKH parse error"));
-            }
+            Some(bytes) => Ok(Owner::PKH(bytes)),
+            _ => Err("PKH parse error".to_string()),
         },
         1 => {
             let policy_id = match constr.data().get(0).as_bytes() {
-                Some(bytes) => {
-                    bytes
-                }
+                Some(bytes) => bytes,
                 _ => {
-                    return Err(format!("NFT PolicyID parse error"));
+                    return Err("NFT PolicyID parse error".to_string());
                 }
             };
             let asset_name = match constr.data().get(1).as_bytes() {
-                Some(bytes) => {
-                    bytes
-                }
+                Some(bytes) => bytes,
                 _ => {
-                    return Err(format!("NFT asset name parse error"));
+                    return Err("NFT asset name parse error".to_string());
                 }
             };
             Ok(Owner::NFT(policy_id, asset_name))
-        },
+        }
         2 => {
             let asset_name = match constr.data().get(0).as_bytes() {
-                Some(bytes) => {
-                    bytes
-                }
+                Some(bytes) => bytes,
                 _ => {
-                    return Err(format!("Receipt asset name parse error"));
+                    return Err("Receipt asset name parse error".to_string());
                 }
             };
             Ok(Owner::Receipt(asset_name))
-        },
-        _ => {
-            return Err(format!("Owner parse error: invalid constr {}", constr.alternative()));
         }
+        _ => Err(format!(
+            "Owner parse error: invalid constr {}",
+            constr.alternative()
+        )),
     }
 }
 
@@ -394,21 +353,23 @@ fn get_status(constr: ConstrPlutusData) -> Result<Status, String> {
         1 => {
             let out_ref = OutRef::try_from(constr.data().get(0))?;
             let for_how_long = match constr.data().get(1).as_integer() {
-                Some(bigint) => {
-                    bigint.as_u64().ok_or(format!("can't convert bigint to u64"))?.into()
-                }
+                Some(bigint) => bigint
+                    .as_u64()
+                    .ok_or("can't convert bigint to u64".to_string())?
+                    .into(),
                 _ => {
-                    return Err(format!("for how long unlocking parse error"));
+                    return Err("for how long unlocking parse error".to_string());
                 }
             };
             Ok(Status::Unlocking {
                 out_ref,
                 for_how_long,
             })
-        },
-        _ => {
-            return Err(format!("status parse error: invalid constr {}", constr.alternative()));
         }
+        _ => Err(format!(
+            "status parse error: invalid constr {}",
+            constr.alternative()
+        )),
     }
 }
 
@@ -430,10 +391,8 @@ impl From<OutRef> for PlutusData {
         let mut list = PlutusList::new();
         list.add(&PlutusData::new_bytes(out_ref.tx_id));
 
-        let transaction_id = PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(
-            &BigNum::zero(),
-            &list,
-        ));
+        let transaction_id =
+            PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(&BigNum::zero(), &list));
 
         let output_index = PlutusData::new_integer(&BigInt::from(BigNum::from(out_ref.index)));
 
@@ -441,42 +400,46 @@ impl From<OutRef> for PlutusData {
         list.add(&transaction_id);
         list.add(&output_index);
 
-        let out_ref = PlutusData::new_constr_plutus_data(
-            &ConstrPlutusData::new(
-                &BigNum::zero(),
-                &list,
-            )
-        );
-        out_ref
+        PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(&BigNum::zero(), &list))
     }
 }
 
 fn get_out_ref(constr: ConstrPlutusData) -> Result<OutRef, String> {
     if constr.alternative() != BigNum::zero() {
-        return Err(format!("OutRef parse error: invalid constr {}", constr.alternative()));
+        return Err(format!(
+            "OutRef parse error: invalid constr {}",
+            constr.alternative()
+        ));
     }
     if constr.data().len() != 2 {
-        return Err(format!("OutRef parse error: invalid fields len {}", constr.data().len()));
+        return Err(format!(
+            "OutRef parse error: invalid fields len {}",
+            constr.data().len()
+        ));
     }
     let transaction_id = match constr.data().get(0).as_constr_plutus_data() {
         Some(constr) => {
             if constr.alternative() != BigNum::zero() || constr.data().len() != 1 {
-                return Err(format!("OutRef parse error: constr or fields len {}, {}", constr.alternative(), constr.data().len()));
+                return Err(format!(
+                    "OutRef parse error: constr or fields len {}, {}",
+                    constr.alternative(),
+                    constr.data().len()
+                ));
             }
             match constr.data().get(0).as_bytes() {
-                Some(bytes) => {
-                    bytes
-                }
-                _ => return Err(format!("OutRef parse error: tx bytes are not found"))
+                Some(bytes) => bytes,
+                _ => return Err("OutRef parse error: tx bytes are not found".to_string()),
             }
         }
-        _ => return Err(format!("OutRef parse error: tx bytes are not found"))
+        _ => return Err("OutRef parse error: tx bytes are not found".to_string()),
     };
     let output_index = match constr.data().get(1).as_integer() {
-        Some(index) => {
-            u64::from(index.as_u64().ok_or(format!("can't convert bigint to u64"))?)
-        }
-        _ => return Err(format!("OutRef parse error: output index is not found"))
+        Some(index) => u64::from(
+            index
+                .as_u64()
+                .ok_or("can't convert bigint to u64".to_string())?,
+        ),
+        _ => return Err("OutRef parse error: output index is not found".to_string()),
     };
     Ok(OutRef {
         tx_id: transaction_id,
@@ -486,8 +449,11 @@ fn get_out_ref(constr: ConstrPlutusData) -> Result<OutRef, String> {
 
 #[cfg(test)]
 mod tests {
+    use crate::conversions::{
+        MintRedeemer, OutRef, Owner, ProjectedNFTDatums, ProjectedNFTRedeemers, Redeem, State,
+        Status,
+    };
     use cardano_serialization_lib::plutus::PlutusData;
-    use crate::conversions::{MintRedeemer, OutRef, Owner, ProjectedNFTDatums, ProjectedNFTRedeemers, Redeem, State, Status};
 
     #[test]
     fn test_datum_pkh() {
@@ -547,15 +513,11 @@ mod tests {
     fn test_redeem() {
         let redeem = ProjectedNFTRedeemers::Redeem(Redeem {
             partial_withdraw: false,
-            nft_input_owner: Some(
-                OutRef {
-                    tx_id: vec![3, 4, 5],
-                    index: 2,
-                },
-            ),
-            new_receipt_owner: Some(
-                vec![1, 2, 3, 7],
-            ),
+            nft_input_owner: Some(OutRef {
+                tx_id: vec![3, 4, 5],
+                index: 2,
+            }),
+            new_receipt_owner: Some(vec![1, 2, 3, 7]),
         });
         let plutus_datum = PlutusData::from(redeem.clone());
         let convert_back = ProjectedNFTRedeemers::try_from(plutus_datum);
@@ -578,13 +540,15 @@ mod tests {
 
     #[test]
     fn test_mint_redeemer() {
-        let mint_redeemer = vec![MintRedeemer::MintTokens { total: 253 }, MintRedeemer::BurnTokens];
+        let mint_redeemer = vec![
+            MintRedeemer::MintTokens { total: 253 },
+            MintRedeemer::BurnTokens,
+        ];
         for redeem in mint_redeemer.into_iter() {
             let plutus_datum = PlutusData::from(redeem.clone());
             let convert_back = MintRedeemer::try_from(plutus_datum);
             assert!(convert_back.is_ok(), "{:?}", convert_back.err());
             assert_eq!(convert_back.unwrap(), redeem);
-
         }
     }
 }
