@@ -168,10 +168,13 @@ validator {
         expect Finite(upper) = bound_type
 
         // upper bound + minimum_lock_time = for_how_long
-        let for_how_long = upper + minimum_lock_time
+        let status: Status = Unlocking {
+          out_ref: own_out_ref,
+          for_how_long: upper + minimum_lock_time,
+        }
 
         let outputs_offset =
-          find_outputs_offset(outputs, own_out_ref, for_how_long)
+          find_outputs_offset(outputs, status)
 
         if redeemer.partial_withdraw {
           // case for partial withdraws
@@ -244,27 +247,21 @@ validator {
 // returns that output, along with all ouputs that come afterwards
 fn find_outputs_offset(
   outputs: List<Output>,
-  match_out_ref: OutputReference,
-  match_for_how_long: Int,
+  match_status: Status,
 ) -> List<Output> {
   expect [output, ..rest_outputs] = outputs
 
   when output.datum is {
     InlineDatum(outbound_datum) -> {
       expect outbound_datum: State = outbound_datum
-      when outbound_datum.status is {
-        Unlocking { out_ref, for_how_long } ->
-          if for_how_long == match_for_how_long && match_out_ref == out_ref {
-            outputs
-          } else {
-            find_outputs_offset(rest_outputs, match_out_ref, match_for_how_long)
-          }
-        _ ->
-          find_outputs_offset(rest_outputs, match_out_ref, match_for_how_long)
+      if outbound_datum.status == match_status {
+        outputs
+      } else {
+        find_outputs_offset(rest_outputs, match_status)
       }
     }
     _ ->
-      find_outputs_offset(rest_outputs, match_out_ref, match_for_how_long)
+      find_outputs_offset(rest_outputs, match_status)
   }
 }
 
