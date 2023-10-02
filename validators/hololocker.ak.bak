@@ -5,7 +5,7 @@ use aiken/hash.{blake2b_256}
 use aiken/interval.{Finite, Interval, IntervalBound}
 use aiken/list
 use aiken/transaction.{
-  Datum, InlineDatum, Input, Mint, Output, OutputReference, ScriptContext, Spend,
+  InlineDatum, Input, Mint, Output, OutputReference, ScriptContext, Spend,
   Transaction,
 }
 use aiken/transaction/credential.{Address, PaymentCredential, ScriptCredential}
@@ -71,7 +71,7 @@ type MintRedeemer {
 /// of the validity range to get an exact slot
 /// that the assets can be claimed at.
 /// note: denominated in slots, but equals ~15 blocks (5 * 60 / slot_time)
-const minimum_lock_time = 300
+const minimum_lock_time = 300000
 
 const ada_policy = ""
 
@@ -105,15 +105,14 @@ validator {
 
     let State { owner, status } = datum
 
-    // Checks current owner is valid and gets next owner
-    let next_owner =
+    // Checks current owner is valid
+    expect True =
       when owner is {
         // An owner can be a public key, a spent NFT, or a burned receipt token that was minted by this script
         PKH(signer) -> {
-          expect True = list.has(extra_signatories, signer)
-          owner
+          list.has(extra_signatories, signer)
         }
-        // In this case the redeemer out ref refers to some other input that holds the nft 
+        // In this case the redeemer out ref refers to some other input that holds the nft
         // that we check is spent
         NFT(policy, token_name) -> {
           // look up the NFT to be used using `nft_input_owner` as a performance optimization
@@ -126,9 +125,7 @@ validator {
             )
 
           // note: we do not burn the NFT - only that it's included in a tx input
-          expect True =
-            quantity_of(nft_input.output.value, policy, token_name) == 1
-          owner
+          quantity_of(nft_input.output.value, policy, token_name) == 1
         }
 
         Receipt(token_name) -> {
@@ -147,15 +144,13 @@ validator {
 
               // mint a new NFT so it can be used as the condition for withdrawing
               // note: `next_receipt_name` user input here is implicitly constained to match `create_expected_minted_nfts`
-              //       since that's the only way a token can be minted from this policy 
-              expect True =
-                quantity_of(mint, policy, next_receipt_name) == 1
-
-              Receipt(next_receipt_name)
+              //       since that's the only way a token can be minted from this policy
+              quantity_of(mint, policy, next_receipt_name) == 1
             }
-            Unlocking { .. } ->
+            Unlocking { .. } -> {
               // no need to mint a new NFT if the user is withdrawing
-              owner
+              True
+            }
           }
         }
       }
@@ -169,17 +164,13 @@ validator {
         expect Finite(upper) = bound_type
 
         // upper bound + minimum_lock_time = for_how_long
-        let output_unlocking_datum =
-          State {
-            owner: next_owner,
-            status: Unlocking {
-              out_ref: own_out_ref,
-              for_how_long: upper + minimum_lock_time,
-            },
-          }
+        let status: Status = Unlocking {
+          out_ref: own_out_ref,
+          for_how_long: upper + minimum_lock_time,
+        }
 
         let outputs_offset =
-          find_outputs_offset(outputs, InlineDatum(output_unlocking_datum))
+          find_outputs_offset(outputs, status)
 
         if redeemer.partial_withdraw {
           // case for partial withdraws
@@ -254,15 +245,21 @@ validator {
 // returns that output, along with all ouputs that come afterwards
 fn find_outputs_offset(
   outputs: List<Output>,
-  output_datum: Datum,
+  match_status: Status,
 ) -> List<Output> {
   expect [output, ..rest_outputs] = outputs
 
-  // note: this implicitly checks out_ref equality
-  if output.datum == output_datum {
-    outputs
-  } else {
-    find_outputs_offset(rest_outputs, output_datum)
+  when output.datum is {
+    InlineDatum(outbound_datum) -> {
+      expect outbound_datum: State = outbound_datum
+      if outbound_datum.status == match_status {
+        outputs
+      } else {
+        find_outputs_offset(rest_outputs, match_status)
+      }
+    }
+    _ ->
+      find_outputs_offset(rest_outputs, match_status)
   }
 }
 

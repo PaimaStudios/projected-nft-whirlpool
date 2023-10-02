@@ -21,13 +21,15 @@ use cardano_serialization_lib::{AssetName, Assets, MultiAsset, PolicyID, Require
 use cardano_serialization_lib::address::{Address, BaseAddress, EnterpriseAddress, StakeCredential};
 use cardano_serialization_lib::crypto::{Bip32PrivateKey, PrivateKey, PublicKey, ScriptHash, TransactionHash, Vkeywitnesses};
 use cardano_serialization_lib::output_builder::TransactionOutputBuilder;
+use cardano_serialization_lib::tx_builder::mint_builder::{MintBuilder, MintWitness};
 use cardano_serialization_lib::tx_builder::tx_inputs_builder::ScriptWitnessType::PlutusScriptWitness;
 use cardano_serialization_lib::tx_builder::tx_inputs_builder::{DatumSource, PlutusScriptSource, PlutusWitness, TxInputsBuilder};
 use cardano_serialization_lib::tx_builder_constants::TxBuilderConstants;
-use cardano_serialization_lib::utils::{BigNum, hash_transaction, make_vkey_witness, Value};
+use cardano_serialization_lib::utils::{BigNum, hash_transaction, Int, make_vkey_witness, Value};
 use cbored::{Bytes, Writer};
+use cryptoxide::hashing::blake2b_256;
 use minicbor::{Decoder, Encoder};
-use projected_nft_sdk::conversions::{OutRef, Owner, ProjectedNFTDatums, ProjectedNFTRedeemers, Redeem, State, Status};
+use projected_nft_sdk::conversions::{MintRedeemer, OutRef, Owner, ProjectedNFTDatums, ProjectedNFTRedeemers, Redeem, State, Status};
 
 #[derive(Parser)]
 pub struct CommandLine {
@@ -74,16 +76,27 @@ pub struct ControlNft {
 
 #[derive(Clone, Debug, SerdeDeserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub struct ReceiptNft {
+    pub minting_script: String,
+    pub asset_name: String,
+}
+
+#[derive(Clone, Debug, SerdeDeserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct LockConfiguration {
     pub payment_configuration: PaymentConfiguration,
 
     pub inputs: Vec<UtxoPointer>,
+    pub collateral: UtxoPointer,
 
     pub lock_on: String,
     pub lock_ada: u64,
 
     #[serde(default)]
     pub control_nft: Option<ControlNft>,
+
+    #[serde(default)]
+    pub receipt_nft: Option<ReceiptNft>,
 }
 
 #[derive(Clone, Debug, SerdeDeserialize)]
@@ -100,6 +113,9 @@ pub struct LockNftConfiguration {
 
     #[serde(default)]
     pub control_nft: Option<ControlNft>,
+
+    #[serde(default)]
+    pub receipt_nft: Option<ReceiptNft>,
 }
 
 #[derive(Clone, Debug, SerdeDeserialize)]
@@ -115,6 +131,9 @@ pub struct UnlockConfiguration {
 
     #[serde(default)]
     pub control_nft: Option<ControlNft>,
+
+    #[serde(default)]
+    pub receipt_nft: Option<ReceiptNft>,
 }
 
 #[tokio::main]
@@ -163,7 +182,7 @@ async fn handle_lock(
     let blockfrost = Blockfrost::new(blockfrost)?;
     let mut inputs_builder = TxInputsBuilder::new();
     let (_, inputs) =
-        fetch_inputs(config.inputs, &blockfrost).await?;
+        fetch_inputs(config.inputs.clone(), &blockfrost).await?;
 
     for (pointer, input) in inputs {
         inputs_builder
@@ -171,6 +190,29 @@ async fn handle_lock(
     }
 
     builder.set_inputs(&inputs_builder);
+
+    // collateral
+
+    if config.receipt_nft.is_some() {
+        let mut collateral_inputs_builder = TxInputsBuilder::new();
+        let (_, collateral) =
+            fetch_inputs(vec![config.collateral], &blockfrost).await?;
+
+        for (pointer, input) in collateral {
+            collateral_inputs_builder
+                .add_input(&payment_address, &TransactionInput::new(&pointer.hash, pointer.index as u32), &input);
+        }
+
+        builder.set_collateral(&collateral_inputs_builder);
+    }
+
+    let now = std::time::SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+
+    let validity = ttl_by_posix(now - 100);
+    let ttl = ttl_by_posix(now + 100);
 
     let contract = PlutusScript::from_hex_with_version(
         &config.lock_on, &Language::new_plutus_v2(),
@@ -181,10 +223,56 @@ async fn handle_lock(
         EnterpriseAddress::new(network, &StakeCredential::from_scripthash(&contract.hash())).to_address();
     println!("Lock on contract: {}", lock_on.to_bech32(None).unwrap());
 
+    let receipt_asset_name = if let Some(nft) = config.receipt_nft.clone() {
+        let mint_contract = PlutusScript::from_hex_with_version(
+            &nft.minting_script, &Language::new_plutus_v2(),
+        )
+            .map_err(|err| anyhow!("Can't deserialize plutus script: {err}"))?;
+
+        let mut mint_builder = MintBuilder::new();
+        let asset_name = OutRef { tx_id: config.inputs.first().cloned().unwrap().hash.to_bytes(), index: config.inputs.first().cloned().unwrap().index };
+        let mut asset_name = PlutusData::from(asset_name).to_bytes();
+        asset_name.push(1);
+        let asset_name = blake2b_256(&asset_name).to_vec();
+        mint_builder.add_asset(
+            &MintWitness::new_plutus_script(
+                &PlutusScriptSource::new(&mint_contract),
+                &Redeemer::new(&RedeemerTag::new_mint(), &BigNum::zero(), &PlutusData::from(MintRedeemer::MintTokens { total: 1 }), &ExUnits::new(&BigNum::from(1400000u64), &BigNum::from(1000000000u64))),
+            ),
+            &AssetName::new(asset_name.clone()).unwrap(),
+            &Int::new(&BigNum::one()),
+        );
+        builder.set_mint_builder(&mint_builder);
+
+        let ma = mint_builder.build().as_positive_multiasset();
+
+        builder
+            .add_output(
+                &TransactionOutputBuilder::new()
+                    .with_address(&payment_address)
+                    .next()
+                    .unwrap()
+                    .with_value(&Value::new_with_assets(&BigNum::from(2000000u64), &ma))
+                    .build()
+                    .unwrap(),
+            )
+            .map_err(|err| anyhow!("Can't add output: {err}"))?;
+        Some(asset_name)
+    } else {
+        None
+    };
+
     let datum = match config.control_nft.clone() {
-        None => {
+        None if config.receipt_nft.is_none() => {
             ProjectedNFTDatums::State(State {
                 owner: Owner::PKH(EnterpriseAddress::from_address(&payment_address).ok_or(anyhow!("payment address is not base"))?.payment_cred().to_keyhash().unwrap().to_bytes()),
+                status: Status::Locked,
+            })
+        }
+        None => {
+            println!("hex asset: {}", hex::encode(receipt_asset_name.clone().unwrap()));
+            ProjectedNFTDatums::State(State {
+                owner: Owner::Receipt(receipt_asset_name.unwrap()),
                 status: Status::Locked,
             })
         }
@@ -227,6 +315,11 @@ async fn handle_lock(
             )
             .map_err(|err| anyhow!("Can't add output: {err}"))?;
     };
+
+
+    builder.set_ttl_bignum(&BigNum::from(ttl));
+    builder.set_validity_start_interval_bignum(BigNum::from(validity));
+    builder.calc_script_data_hash(&TxBuilderConstants::plutus_vasil_cost_models()).unwrap();
 
     builder
         .add_change_if_needed(&payment_address).unwrap();
@@ -338,7 +431,7 @@ async fn handle_lock_nft(
         )
         .map_err(|err| anyhow!("Can't add output: {err}"))?;
 
-    if let Some(nft) = config.control_nft {
+    if let Some(nft) = config.control_nft.clone() {
         let mut ma = MultiAsset::new();
         let mut assets = Assets::new();
         assets.insert(&AssetName::new(nft.asset_name.as_bytes().to_vec()).unwrap(), &BigNum::one());
@@ -435,7 +528,7 @@ async fn handle_unlock(
 
     let redeemer = ProjectedNFTRedeemers::Redeem(Redeem {
         partial_withdraw: false,
-        nft_input_owner: match config.control_nft {
+        nft_input_owner: match config.control_nft.clone() {
             None => None,
             Some(_) => {
                 Some(OutRef {
@@ -473,6 +566,7 @@ async fn handle_unlock(
     }
 
     builder.set_inputs(&inputs_builder);
+    builder.add_required_signer(&EnterpriseAddress::from_address(&payment_address).unwrap().payment_cred().to_keyhash().unwrap());
     // collateral
 
     let mut collateral_inputs_builder = TxInputsBuilder::new();
@@ -537,7 +631,7 @@ async fn handle_unlock(
         )
         .map_err(|err| anyhow!("Can't add output: {err}"))?;
 
-    if let Some(nft) = config.control_nft {
+    if let Some(nft) = config.control_nft.clone() {
         let mut ma = MultiAsset::new();
         let mut assets = Assets::new();
         assets.insert(&AssetName::new(nft.asset_name.as_bytes().to_vec()).unwrap(), &BigNum::one());
@@ -562,7 +656,7 @@ async fn handle_unlock(
                 .with_address(&payment_address)
                 .next()
                 .unwrap()
-                .with_value(&Value::new(&normal_input_balance.coin().checked_sub(&BigNum::from(12000000u64)).unwrap()))
+                .with_value(&Value::new(&normal_input_balance.coin().checked_sub(&BigNum::from(10000000u64 + config.control_nft.map(|_| 2000000u64).unwrap_or(0))).unwrap()))
                 .build()
                 .unwrap(),
         )
@@ -699,7 +793,7 @@ async fn handle_claim(
         .unwrap()
         .as_secs();
 
-    let validity = ttl_by_posix(now - 100);
+    let validity = ttl_by_posix(now - 120);
     let ttl = ttl_by_posix(now + 100);
 
     builder.set_ttl_bignum(&BigNum::from(ttl));
@@ -716,7 +810,7 @@ async fn handle_claim(
         )
         .map_err(|err| anyhow!("Can't add output: {err}"))?;
 
-    if let Some(nft) = config.control_nft {
+    if let Some(nft) = config.control_nft.clone() {
         let mut ma = MultiAsset::new();
         let mut assets = Assets::new();
         assets.insert(&AssetName::new(nft.asset_name.as_bytes().to_vec()).unwrap(), &BigNum::one());
@@ -741,7 +835,7 @@ async fn handle_claim(
                 .with_address(&payment_address)
                 .next()
                 .unwrap()
-                .with_value(&Value::new(&normal_input_balance.coin().checked_sub(&BigNum::from(12000000u64)).unwrap()))
+                .with_value(&Value::new(&normal_input_balance.coin().checked_sub(&BigNum::from(10000000u64 + config.control_nft.map(|_| 2000000u64).unwrap_or(0))).unwrap()))
                 .build()
                 .unwrap(),
         )

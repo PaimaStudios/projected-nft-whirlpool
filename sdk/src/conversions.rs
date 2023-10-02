@@ -14,6 +14,59 @@ pub enum ProjectedNFTRedeemers {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Deserialize, Serialize)]
+pub enum MintRedeemer {
+    MintTokens { total: u64 },
+    BurnTokens,
+}
+
+impl From<MintRedeemer> for PlutusData {
+    fn from(value: MintRedeemer) -> Self {
+        match value {
+            MintRedeemer::MintTokens { total } => {
+                let mut list = PlutusList::new();
+                list.add(&PlutusData::new_integer(&BigInt::from(BigNum::from(total))));
+
+                PlutusData::new_constr_plutus_data(
+                    &ConstrPlutusData::new(
+                        &BigNum::zero(),
+                        &list,
+                    )
+                )
+            }
+            MintRedeemer::BurnTokens => {
+                PlutusData::new_constr_plutus_data(
+                    &ConstrPlutusData::new(
+                        &BigNum::one(),
+                        &PlutusList::new(),
+                    )
+                )
+            }
+        }
+    }
+}
+
+impl TryFrom<PlutusData> for MintRedeemer {
+    type Error = String;
+
+    fn try_from(value: PlutusData) -> Result<Self, Self::Error> {
+        let Some(constr) = value.as_constr_plutus_data() else {
+            return Err("upper value is not constr".to_string())
+        };
+
+        match u64::from(constr.alternative()) {
+            0 => match constr.data().get(0).as_integer() {
+                Some(bigint) => Ok(MintRedeemer::MintTokens {
+                    total: u64::from(bigint.as_u64().ok_or(format!("Mint tokens total valus can't be represented as u64"))?),
+                }),
+                _ => return Err("constr field is not bigint".to_string()),
+            }
+            1 => Ok(MintRedeemer::BurnTokens),
+            _ => return Err(format!("constr alternative is not correct {}", constr.alternative())),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Deserialize, Serialize)]
 pub struct State {
     pub owner: Owner,
     pub status: Status,
@@ -71,24 +124,7 @@ impl From<ProjectedNFTRedeemers> for PlutusData {
         );
 
         let nft_input_owner = if let Some(out_ref) = redeem.nft_input_owner {
-            let mut list = PlutusList::new();
-            list.add(&PlutusData::new_bytes(out_ref.tx_id));
-            let transaction_id = PlutusData::new_constr_plutus_data(
-                &ConstrPlutusData::new(
-                    &BigNum::zero(),
-                    &list
-                )
-            );
-            let mut list = PlutusList::new();
-            list.add(&transaction_id);
-            list.add(&PlutusData::new_integer(&BigInt::from(out_ref.index as i64)));
-
-            let out_ref = PlutusData::new_constr_plutus_data(
-                &ConstrPlutusData::new(
-                    &BigNum::zero(),
-                    &list
-                )
-            );
+            let out_ref= PlutusData::from(out_ref);
 
             let mut list = PlutusList::new();
             list.add(&out_ref);
@@ -181,12 +217,7 @@ fn get_partial_withdraw(constr: ConstrPlutusData) -> Result<bool, String> {
 fn get_nft_input_owner(constr: ConstrPlutusData) -> Result<Option<OutRef>, String> {
     match u64::from(constr.alternative()) {
         0 => {
-            match constr.data().get(0).as_constr_plutus_data() {
-                Some(constr) => {
-                    Ok(Some(get_out_ref(constr)?))
-                }
-                _ => Err(format!("nft_input_owner: expected to see out ref"))
-            }
+            OutRef::try_from(constr.data().get(0)).map(|res| Some(res))
         }
         1 => {
             Ok(None)
@@ -263,26 +294,7 @@ impl From<ProjectedNFTDatums> for PlutusData {
                 ))
             }
             Status::Unlocking { out_ref, for_how_long } => {
-                let mut list = PlutusList::new();
-                list.add(&PlutusData::new_bytes(out_ref.tx_id));
-
-                let transaction_id = PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(
-                    &BigNum::zero(),
-                    &list,
-                ));
-
-                let output_index = PlutusData::new_integer(&BigInt::from(BigNum::from(out_ref.index)));
-
-                let mut list = PlutusList::new();
-                list.add(&transaction_id);
-                list.add(&output_index);
-
-                let out_ref = PlutusData::new_constr_plutus_data(
-                    &ConstrPlutusData::new(
-                        &BigNum::zero(),
-                        &list,
-                    )
-                );
+                let out_ref = PlutusData::from(out_ref);
 
                 let for_how_long = PlutusData::new_integer(&BigInt::from(BigNum::from(for_how_long)));
 
@@ -380,14 +392,7 @@ fn get_status(constr: ConstrPlutusData) -> Result<Status, String> {
     match u64::from(constr.alternative()) {
         0 => Ok(Status::Locked),
         1 => {
-            let out_ref = match constr.data().get(0).as_constr_plutus_data() {
-                Some(constr) => {
-                    get_out_ref(constr)?
-                }
-                _ => {
-                    return Err(format!("Out ref unlocking parse error"));
-                }
-            };
+            let out_ref = OutRef::try_from(constr.data().get(0))?;
             let for_how_long = match constr.data().get(1).as_integer() {
                 Some(bigint) => {
                     bigint.as_u64().ok_or(format!("can't convert bigint to u64"))?.into()
@@ -404,6 +409,45 @@ fn get_status(constr: ConstrPlutusData) -> Result<Status, String> {
         _ => {
             return Err(format!("status parse error: invalid constr {}", constr.alternative()));
         }
+    }
+}
+
+impl TryFrom<PlutusData> for OutRef {
+    type Error = String;
+
+    fn try_from(value: PlutusData) -> Result<Self, Self::Error> {
+        let constr = match value.as_constr_plutus_data() {
+            None => return Err("value is not constr plutus data".to_string()),
+            Some(constr) => constr,
+        };
+
+        get_out_ref(constr)
+    }
+}
+
+impl From<OutRef> for PlutusData {
+    fn from(out_ref: OutRef) -> Self {
+        let mut list = PlutusList::new();
+        list.add(&PlutusData::new_bytes(out_ref.tx_id));
+
+        let transaction_id = PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(
+            &BigNum::zero(),
+            &list,
+        ));
+
+        let output_index = PlutusData::new_integer(&BigInt::from(BigNum::from(out_ref.index)));
+
+        let mut list = PlutusList::new();
+        list.add(&transaction_id);
+        list.add(&output_index);
+
+        let out_ref = PlutusData::new_constr_plutus_data(
+            &ConstrPlutusData::new(
+                &BigNum::zero(),
+                &list,
+            )
+        );
+        out_ref
     }
 }
 
@@ -443,7 +487,7 @@ fn get_out_ref(constr: ConstrPlutusData) -> Result<OutRef, String> {
 #[cfg(test)]
 mod tests {
     use cardano_serialization_lib::plutus::PlutusData;
-    use crate::conversions::{OutRef, Owner, ProjectedNFTDatums, ProjectedNFTRedeemers, Redeem, State, Status};
+    use crate::conversions::{MintRedeemer, OutRef, Owner, ProjectedNFTDatums, ProjectedNFTRedeemers, Redeem, State, Status};
 
     #[test]
     fn test_datum_pkh() {
@@ -530,5 +574,17 @@ mod tests {
         let convert_back = ProjectedNFTRedeemers::try_from(plutus_datum);
         assert!(convert_back.is_ok(), "{:?}", convert_back.err());
         assert_eq!(convert_back.unwrap(), redeem);
+    }
+
+    #[test]
+    fn test_mint_redeemer() {
+        let mint_redeemer = vec![MintRedeemer::MintTokens { total: 253 }, MintRedeemer::BurnTokens];
+        for redeem in mint_redeemer.into_iter() {
+            let plutus_datum = PlutusData::from(redeem.clone());
+            let convert_back = MintRedeemer::try_from(plutus_datum);
+            assert!(convert_back.is_ok(), "{:?}", convert_back.err());
+            assert_eq!(convert_back.unwrap(), redeem);
+
+        }
     }
 }

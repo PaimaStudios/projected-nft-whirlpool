@@ -9,9 +9,8 @@ use aiken/transaction.{
   Transaction,
 }
 use aiken/transaction/credential.{Address, PaymentCredential, ScriptCredential}
-use aiken/transaction/minted_value
 use aiken/transaction/value.{
-  AssetName, PolicyId, Value, merge, quantity_of, to_dict, without_lovelace,
+  AssetName, PolicyId, Value, from_minted_value, merge, quantity_of, to_dict, without_lovelace,
 }
 
 /// The datum for the locked assets
@@ -114,7 +113,7 @@ validator {
           expect True = list.has(extra_signatories, signer)
           owner
         }
-        // In this case the redeemer out ref refers to some other input that holds the nft 
+        // In this case the redeemer out ref refers to some other input that holds the nft
         // that we check is spent
         NFT(policy, token_name) -> {
           // look up the NFT to be used using `nft_input_owner` as a performance optimization
@@ -137,8 +136,10 @@ validator {
 
           expect ScriptCredential(policy) = payc
 
+          let mint = from_minted_value(mint)
+
           // ensure that we burn the previous receipt NFT
-          expect True = minted_value.quantity_of(mint, policy, token_name) == -1
+          expect True = quantity_of(mint, policy, token_name) == -1
 
           when status is {
             Locked -> {
@@ -148,7 +149,7 @@ validator {
               // note: `next_receipt_name` user input here is implicitly constained to match `create_expected_minted_nfts`
               //       since that's the only way a token can be minted from this policy 
               expect True =
-                minted_value.quantity_of(mint, policy, next_receipt_name) == 1
+                quantity_of(mint, policy, next_receipt_name) == 1
 
               Receipt(next_receipt_name)
             }
@@ -168,13 +169,17 @@ validator {
         expect Finite(upper) = bound_type
 
         // upper bound + minimum_lock_time = for_how_long
-        let status: Status = Unlocking {
-          out_ref: own_out_ref,
-          for_how_long: upper + minimum_lock_time,
-        }
+        let output_unlocking_datum =
+          State {
+            owner: next_owner,
+            status: Unlocking {
+              out_ref: own_out_ref,
+              for_how_long: upper + minimum_lock_time,
+            },
+          }
 
         let outputs_offset =
-          find_outputs_offset(outputs, status)
+          find_outputs_offset(outputs, InlineDatum(output_unlocking_datum))
 
         if redeemer.partial_withdraw {
           // case for partial withdraws
@@ -206,9 +211,11 @@ validator {
 
     let Transaction { inputs, outputs, mint, .. } = transaction
 
+    let mint = from_minted_value(mint)
+
     let minted_assets =
       mint
-        |> minted_value.tokens(policy_id)
+        |> value.tokens(policy_id)
         |> dict.to_list()
 
     when redeemer is {
@@ -247,21 +254,15 @@ validator {
 // returns that output, along with all ouputs that come afterwards
 fn find_outputs_offset(
   outputs: List<Output>,
-  match_status: Status,
+  output_datum: Datum,
 ) -> List<Output> {
   expect [output, ..rest_outputs] = outputs
 
-  when output.datum is {
-    InlineDatum(outbound_datum) -> {
-      expect outbound_datum: State = outbound_datum
-      if outbound_datum.status == match_status {
-        outputs
-      } else {
-        find_outputs_offset(rest_outputs, match_status)
-      }
-    }
-    _ ->
-      find_outputs_offset(rest_outputs, match_status)
+  // note: this implicitly checks out_ref equality
+  if output.datum == output_datum {
+    outputs
+  } else {
+    find_outputs_offset(rest_outputs, output_datum)
   }
 }
 
