@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cardano-serialization-lib = "11.5.0"
+cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib.git", rev = "9550de054937c2d686ca8474b6bd4c74e3ddd4ad" }
 cbor_event = { version = "2.4.0" }
 cryptoxide = { version = "0.4.4" }
 hex = { version = "0.4.3" }

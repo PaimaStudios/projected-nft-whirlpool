@@ -1,5 +1,5 @@
-use cardano_serialization_lib::plutus::{ConstrPlutusData, PlutusData, PlutusList};
-use cardano_serialization_lib::utils::{BigInt, BigNum};
+use cardano_multiplatform_lib::ledger::common::value::{BigInt, BigNum};
+use cardano_multiplatform_lib::plutus::{ConstrPlutusData, PlutusData, PlutusList};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Deserialize, Serialize)]
@@ -23,12 +23,12 @@ impl From<MintRedeemer> for PlutusData {
         match value {
             MintRedeemer::MintTokens { total } => {
                 let mut list = PlutusList::new();
-                list.add(&PlutusData::new_integer(&BigInt::from(BigNum::from(total))));
+                list.add(&PlutusData::new_integer(&BigInt::from(total)));
 
                 PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(&BigNum::zero(), &list))
             }
             MintRedeemer::BurnTokens => PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(
-                &BigNum::one(),
+                &BigNum::from(1),
                 &PlutusList::new(),
             )),
         }
@@ -54,7 +54,7 @@ impl TryFrom<PlutusData> for MintRedeemer {
             },
             1 => Ok(MintRedeemer::BurnTokens),
             _ => Err(format!(
-                "constr alternative is not correct {}",
+                "constr alternative is not correct {:?}",
                 constr.alternative()
             )),
         }
@@ -105,7 +105,7 @@ impl From<ProjectedNFTRedeemers> for PlutusData {
 
         let partial_withdraw = PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(
             &match redeem.partial_withdraw {
-                true => BigNum::one(),
+                true => BigNum::from(1),
                 false => BigNum::zero(),
             },
             &PlutusList::new(),
@@ -120,7 +120,7 @@ impl From<ProjectedNFTRedeemers> for PlutusData {
             PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(&BigNum::zero(), &list))
         } else {
             PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(
-                &BigNum::one(),
+                &BigNum::from(1),
                 &PlutusList::new(),
             ))
         };
@@ -131,7 +131,7 @@ impl From<ProjectedNFTRedeemers> for PlutusData {
             PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(&BigNum::zero(), &list))
         } else {
             PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(
-                &BigNum::one(),
+                &BigNum::from(1),
                 &PlutusList::new(),
             ))
         };
@@ -146,7 +146,7 @@ impl From<ProjectedNFTRedeemers> for PlutusData {
         let mut list = PlutusList::new();
         list.add(&redeemer);
 
-        PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(&BigNum::one(), &list))
+        PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(&BigNum::from(1), &list))
     }
 }
 
@@ -157,8 +157,11 @@ impl TryFrom<PlutusData> for ProjectedNFTRedeemers {
         let Some(constr) = value.as_constr_plutus_data() else {
             return Err("upper value is not constr".to_string());
         };
-        if constr.alternative() != BigNum::one() {
-            return Err(format!("expected constr = 1 got {}", constr.alternative()));
+        if constr.alternative() != BigNum::from(1) {
+            return Err(format!(
+                "expected constr = 1 got {:?}",
+                constr.alternative()
+            ));
         }
         let Some(redeemer_constr) = constr.data().get(0).as_constr_plutus_data() else {
             return Err(format!(
@@ -194,7 +197,7 @@ fn get_partial_withdraw(constr: ConstrPlutusData) -> Result<bool, String> {
     match u64::from(constr.alternative()) {
         0 => Ok(false),
         1 => Ok(true),
-        _ => Err(format!("improper constr: {}", constr.alternative())),
+        _ => Err(format!("improper constr: {:?}", constr.alternative())),
     }
 }
 
@@ -203,7 +206,7 @@ fn get_nft_input_owner(constr: ConstrPlutusData) -> Result<Option<OutRef>, Strin
         0 => OutRef::try_from(constr.data().get(0)).map(Some),
         1 => Ok(None),
         _ => Err(format!(
-            "nft_input_owner: expected to see other constr {}",
+            "nft_input_owner: expected to see other constr {:?}",
             constr.alternative()
         )),
     }
@@ -217,7 +220,7 @@ fn get_new_receipt_owner(constr: ConstrPlutusData) -> Result<Option<Vec<u8>>, St
         },
         1 => Ok(None),
         _ => Err(format!(
-            "new_receipt_owner: expected to see other constr {}",
+            "new_receipt_owner: expected to see other constr {:?}",
             constr.alternative()
         )),
     }
@@ -245,7 +248,7 @@ impl From<ProjectedNFTDatums> for PlutusData {
                 list.add(&PlutusData::new_bytes(policy_id));
                 list.add(&PlutusData::new_bytes(asset_name));
 
-                PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(&BigNum::one(), &list))
+                PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(&BigNum::from(1), &list))
             }
             Owner::Receipt(asset_name) => {
                 let mut list = PlutusList::new();
@@ -269,14 +272,13 @@ impl From<ProjectedNFTDatums> for PlutusData {
             } => {
                 let out_ref = PlutusData::from(out_ref);
 
-                let for_how_long =
-                    PlutusData::new_integer(&BigInt::from(BigNum::from(for_how_long)));
+                let for_how_long = PlutusData::new_integer(&BigInt::from(for_how_long));
 
                 let mut list = PlutusList::new();
                 list.add(&out_ref);
                 list.add(&for_how_long);
 
-                PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(&BigNum::one(), &list))
+                PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(&BigNum::from(1), &list))
             }
         };
 
@@ -341,7 +343,7 @@ fn get_owner(constr: ConstrPlutusData) -> Result<Owner, String> {
             Ok(Owner::Receipt(asset_name))
         }
         _ => Err(format!(
-            "Owner parse error: invalid constr {}",
+            "Owner parse error: invalid constr {:?}",
             constr.alternative()
         )),
     }
@@ -367,7 +369,7 @@ fn get_status(constr: ConstrPlutusData) -> Result<Status, String> {
             })
         }
         _ => Err(format!(
-            "status parse error: invalid constr {}",
+            "status parse error: invalid constr {:?}",
             constr.alternative()
         )),
     }
@@ -394,7 +396,7 @@ impl From<OutRef> for PlutusData {
         let transaction_id =
             PlutusData::new_constr_plutus_data(&ConstrPlutusData::new(&BigNum::zero(), &list));
 
-        let output_index = PlutusData::new_integer(&BigInt::from(BigNum::from(out_ref.index)));
+        let output_index = PlutusData::new_integer(&BigInt::from(out_ref.index));
 
         let mut list = PlutusList::new();
         list.add(&transaction_id);
@@ -407,7 +409,7 @@ impl From<OutRef> for PlutusData {
 fn get_out_ref(constr: ConstrPlutusData) -> Result<OutRef, String> {
     if constr.alternative() != BigNum::zero() {
         return Err(format!(
-            "OutRef parse error: invalid constr {}",
+            "OutRef parse error: invalid constr {:?}",
             constr.alternative()
         ));
     }
@@ -421,7 +423,7 @@ fn get_out_ref(constr: ConstrPlutusData) -> Result<OutRef, String> {
         Some(constr) => {
             if constr.alternative() != BigNum::zero() || constr.data().len() != 1 {
                 return Err(format!(
-                    "OutRef parse error: constr or fields len {}, {}",
+                    "OutRef parse error: constr or fields len {:?}, {}",
                     constr.alternative(),
                     constr.data().len()
                 ));
@@ -453,7 +455,7 @@ mod tests {
         MintRedeemer, OutRef, Owner, ProjectedNFTDatums, ProjectedNFTRedeemers, Redeem, State,
         Status,
     };
-    use cardano_serialization_lib::plutus::PlutusData;
+    use cardano_multiplatform_lib::plutus::PlutusData;
 
     #[test]
     fn test_datum_pkh() {
