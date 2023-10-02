@@ -78,6 +78,19 @@ pub struct LockConfiguration {
 
 #[derive(Clone, Debug, SerdeDeserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub struct LockNftConfiguration {
+    pub payment_configuration: PaymentConfiguration,
+
+    pub inputs: Vec<UtxoPointer>,
+
+    pub lock_on: String,
+    pub lock_ada: u64,
+    pub nft_policy_id: String,
+    pub nft_asset_name: String,
+}
+
+#[derive(Clone, Debug, SerdeDeserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct UnlockConfiguration {
     pub payment_configuration: PaymentConfiguration,
 
@@ -107,6 +120,7 @@ pub async fn main() -> anyhow::Result<()> {
         }
 
         Command::Lock(params) => handle_lock(params, config, submit).await,
+        Command::LockNft(params) => handle_lock_nft(params, config, submit).await,
         Command::Unlock(params) => handle_unlock(params, config, submit).await,
         Command::Claim(params) => handle_claim(params, config, submit).await,
         _ => todo!(),
@@ -164,6 +178,106 @@ async fn handle_lock(
                 .next()
                 .unwrap()
                 .with_value(&Value::new(&BigNum::from(config.lock_ada)))
+                .build()
+                .unwrap(),
+        )
+        .map_err(|err| anyhow!("Can't add output: {err}"))?;
+
+    builder
+        .add_change_if_needed(&payment_address).unwrap();
+
+    let body = builder.build()
+        .map_err(|err| anyhow!("Can't create tx body {err}"))?;
+
+    if config.payment_configuration.payment_skey.is_none() && config.payment_configuration.payment_mnemonics.is_none() {
+        println!("inputs {:?}", body.inputs());
+        println!("outputs {:?}", body.outputs());
+        println!("collateral {:?}", body.collateral());
+        println!("collateral return {:?}", body.collateral_return());
+        println!("fee {:?}", body.fee());
+
+        println!(
+            "body: {}",
+            Transaction::new(&body, &TransactionWitnessSet::new(), None).to_hex()
+        );
+
+        return Ok(());
+    }
+
+    let payment_address_sk = get_signing_creds(config.payment_configuration.payment_skey, config.payment_configuration.payment_mnemonics)?;
+
+    let mut witness_set = builder.build_tx().unwrap().witness_set();
+    let mut vkeys = Vkeywitnesses::new();
+    vkeys.add(&make_vkey_witness(&hash_transaction(&body), &payment_address_sk));
+    witness_set.set_vkeys(&vkeys);
+
+    let tx = Transaction::new(&body, &witness_set, None);
+
+    println!("inputs {:?}", body.inputs());
+    println!("outputs {:?}", body.outputs());
+    println!("collateral {:?}", body.collateral());
+    println!("collateral return {:?}", body.collateral());
+    println!("fee {:?}", body.fee());
+
+    finalize_and_submit_tx(tx, blockfrost, submit).await
+}
+
+async fn handle_lock_nft(
+    config: ConfigPath,
+    blockfrost: BlockfrostConfiguration,
+    submit: bool,
+) -> anyhow::Result<()> {
+    let config: LockNftConfiguration = serde_yaml::from_reader(
+        File::open(config.config).context("failed to open the delegate rewards config file")?,
+    )?;
+
+    let network = blockfrost.get_network();
+    println!("Network:\t{network}");
+
+    let payment_address = get_payment_creds(network, config.payment_configuration.payment_vkey, config.payment_configuration.payment_bech32)?;
+    println!("Address:\t{}", payment_address.to_bech32(None).unwrap());
+
+    let mut builder = create_tx_builder();
+
+    let blockfrost = Blockfrost::new(blockfrost)?;
+    let mut inputs_builder = TxInputsBuilder::new();
+    let (_, inputs) =
+        fetch_inputs(config.inputs, &blockfrost).await?;
+
+    for (pointer, input) in inputs {
+        inputs_builder
+            .add_input(&payment_address, &TransactionInput::new(&pointer.hash, pointer.index as u32), &input);
+    }
+
+    builder.set_inputs(&inputs_builder);
+
+    let contract = PlutusScript::from_hex_with_version(
+        &config.lock_on, &Language::new_plutus_v2(),
+    )
+        .map_err(|err| anyhow!("Can't deserialize plutus script: {err}"))?;
+
+    let lock_on =
+        EnterpriseAddress::new(network, &StakeCredential::from_scripthash(&contract.hash())).to_address();
+    println!("Lock on contract: {}", lock_on.to_bech32(None).unwrap());
+
+    let datum = ProjectedNFTDatums::State(State {
+        owner: Owner::PKH(EnterpriseAddress::from_address(&payment_address).ok_or(anyhow!("payment address is not base"))?.payment_cred().to_keyhash().unwrap().to_bytes()),
+        status: Status::Locked,
+    });
+
+    let mut ma = MultiAsset::new();
+    let mut assets = Assets::new();
+    assets.insert(&AssetName::new(config.nft_asset_name.as_bytes().to_vec()).unwrap(), &BigNum::one());
+    ma.insert(&PolicyID::from_bytes(hex::decode(config.nft_policy_id).unwrap()).unwrap(), &assets);
+
+    builder
+        .add_output(
+            &TransactionOutputBuilder::new()
+                .with_address(&lock_on)
+                .with_plutus_data(&PlutusData::from(datum))
+                .next()
+                .unwrap()
+                .with_value(&Value::new_with_assets(&BigNum::from(config.lock_ada), &ma))
                 .build()
                 .unwrap(),
         )
