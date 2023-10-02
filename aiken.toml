@@ -5,7 +5,7 @@ description = "Aiken contracts for the Projected NFT Whirlpool"
 
 [repository]
 user = "dcspark"
-project = " projected-nft-whirlpool"
+project = "projected-nft-whirlpool"
 platform = "github"
 
 [[dependencies]]

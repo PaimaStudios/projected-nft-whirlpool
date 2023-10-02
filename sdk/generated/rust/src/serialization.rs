@@ -90,7 +90,7 @@ impl Serialize for MintTokens {
             serializer.write_negative_integer_sz(
                 self.total as i128,
                 fit_sz(
-                    (self.total + 1).unsigned_abs(),
+                    (self.total + 1).abs() as u64,
                     self.encodings
                         .as_ref()
                         .map(|encs| encs.total_encoding)
@@ -161,7 +161,7 @@ impl Serialize for NFT {
                 .to_len_sz(2, force_canonical),
         )?;
         serializer.write_bytes_sz(
-            self.policy_id.to_raw_bytes(),
+            &self.policy_id.to_raw_bytes(),
             self.encodings
                 .as_ref()
                 .map(|encs| encs.policy_id_encoding.clone())
@@ -227,7 +227,7 @@ impl Serialize for Owner {
                 p_k_h,
                 p_k_h_encoding,
             } => serializer.write_bytes_sz(
-                p_k_h.to_raw_bytes(),
+                &p_k_h.to_raw_bytes(),
                 p_k_h_encoding.to_str_len_sz(p_k_h.to_raw_bytes().len() as u64, force_canonical),
             ),
             Owner::NFT(n_f_t) => n_f_t.serialize(serializer, force_canonical),
@@ -239,7 +239,7 @@ impl Serialize for Owner {
 impl Deserialize for Owner {
     fn deserialize<R: BufRead + Seek>(raw: &mut Deserializer<R>) -> Result<Self, DeserializeError> {
         (|| -> Result<_, DeserializeError> {
-            let initial_position = raw.as_mut_ref().stream_position().unwrap();
+            let initial_position = raw.as_mut_ref().seek(SeekFrom::Current(0)).unwrap();
             let mut errs = Vec::new();
             let deser_variant: Result<_, DeserializeError> = raw
                 .bytes_sz()
@@ -498,7 +498,7 @@ impl Serialize for Unlocking {
             serializer.write_negative_integer_sz(
                 self.for_how_long as i128,
                 fit_sz(
-                    (self.for_how_long + 1).unsigned_abs(),
+                    (self.for_how_long + 1).abs() as u64,
                     self.encodings
                         .as_ref()
                         .map(|encs| encs.for_how_long_encoding)

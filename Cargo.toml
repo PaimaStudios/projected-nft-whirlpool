@@ -1,7 +1,7 @@
 [workspace]
 members = [
-    "sdk/generated/rust",
-    "sdk/generated/wasm",
+#    "sdk/generated/rust",
+#    "sdk/generated/wasm",
     "sdk",
 ]
 
