@@ -1,8 +1,7 @@
 [workspace]
 members = [
-#    "sdk/generated/rust",
-#    "sdk/generated/wasm",
-    "sdk",
+    "sdk/rust",
+    "sdk/wasm",
 ]
 
 [workspace.metadata.release]
