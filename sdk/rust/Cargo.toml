@@ -15,6 +15,7 @@ hex = { version = "0.4.3" }
 serde = { version = "1.0.171" }
 serde_derive = { version = "1.0.171" }
 serde_json = { version = "1.0.100" }
+schemars = "0.8.8"
 
 [dev-dependencies]
 anyhow = { version = "1.0.71" }

@@ -13,7 +13,6 @@ use cml_chain::transaction::{
     DatumOption, RequiredSigners, Transaction, TransactionInput, TransactionOutput,
     TransactionWitnessSet,
 };
-use projected_nft_sdk::conversions::{OutRef, Owner, Redeem, State, Status};
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::{header, Client, StatusCode};
 use serde::de::Error;
@@ -43,6 +42,7 @@ use cml_core::Int;
 use cml_crypto::{
     Bip32PrivateKey, PrivateKey, PublicKey, RawBytesEncoding, ScriptHash, TransactionHash,
 };
+use projected_nft_sdk::{OutRef, Owner, Redeem, State, Status};
 
 #[derive(Parser)]
 pub struct CommandLine {
@@ -292,7 +292,7 @@ async fn handle_lock(
     let datum = match config.control_nft.clone() {
         None if config.receipt_nft.is_none() => State {
             owner: Owner::PKH(match payment_address.payment_cred().unwrap() {
-                StakeCredential::PubKey { hash, .. } => hash.to_raw_bytes().to_vec(),
+                StakeCredential::PubKey { hash, .. } => hash.clone(),
                 StakeCredential::Script { .. } => {
                     return Err(anyhow!("Expected payment address, not script"))
                 }
@@ -312,8 +312,8 @@ async fn handle_lock(
         }
         Some(nft) => State {
             owner: Owner::NFT(
-                hex::decode(nft.policy_id).unwrap(),
-                nft.asset_name.as_bytes().to_vec(),
+                PolicyId::from_raw_bytes(&hex::decode(nft.policy_id).unwrap()).unwrap(),
+                AssetName::new(nft.asset_name.as_bytes().to_vec()).unwrap(),
             ),
             status: Status::Locked,
         },
@@ -456,7 +456,7 @@ async fn handle_lock_nft(
     let datum = match config.control_nft.clone() {
         None => State {
             owner: Owner::PKH(match payment_address.payment_cred().unwrap() {
-                StakeCredential::PubKey { hash, .. } => hash.to_raw_bytes().to_vec(),
+                StakeCredential::PubKey { hash, .. } => hash.clone(),
                 StakeCredential::Script { .. } => {
                     return Err(anyhow!("Expected payment address, not script"))
                 }
@@ -465,8 +465,8 @@ async fn handle_lock_nft(
         },
         Some(nft) => State {
             owner: Owner::NFT(
-                hex::decode(nft.policy_id).unwrap(),
-                nft.asset_name.as_bytes().to_vec(),
+                PolicyId::from_raw_bytes(&hex::decode(nft.policy_id).unwrap()).unwrap(),
+                AssetName::new(nft.asset_name.as_bytes().to_vec()).unwrap(),
             ),
             status: Status::Locked,
         },
@@ -609,14 +609,7 @@ async fn handle_unlock(
         nft_input_owner: match config.control_nft.clone() {
             None => None,
             Some(_) => Some(OutRef {
-                tx_id: config
-                    .inputs
-                    .last()
-                    .cloned()
-                    .unwrap()
-                    .hash
-                    .to_raw_bytes()
-                    .to_vec(),
+                tx_id: config.inputs.last().cloned().unwrap().hash.clone(),
                 index: config.inputs.last().cloned().unwrap().index,
             }),
         },
@@ -698,14 +691,14 @@ async fn handle_unlock(
     let new_datum = match config.control_nft.clone() {
         None => State {
             owner: Owner::PKH(match payment_address.payment_cred().unwrap() {
-                StakeCredential::PubKey { hash, .. } => hash.to_raw_bytes().to_vec(),
+                StakeCredential::PubKey { hash, .. } => hash.clone(),
                 StakeCredential::Script { .. } => {
                     return Err(anyhow!("Expected payment address, not script"))
                 }
             }),
             status: Status::Unlocking {
                 out_ref: OutRef {
-                    tx_id: contract_input_pointer.hash.to_raw_bytes().to_vec(),
+                    tx_id: contract_input_pointer.hash,
                     index: contract_input_pointer.index,
                 },
                 for_how_long,
@@ -713,12 +706,12 @@ async fn handle_unlock(
         },
         Some(nft) => State {
             owner: Owner::NFT(
-                hex::decode(nft.policy_id).unwrap(),
-                nft.asset_name.as_bytes().to_vec(),
+                PolicyId::from_raw_bytes(&hex::decode(nft.policy_id).unwrap()).unwrap(),
+                AssetName::new(nft.asset_name.as_bytes().to_vec()).unwrap(),
             ),
             status: Status::Unlocking {
                 out_ref: OutRef {
-                    tx_id: contract_input_pointer.hash.to_raw_bytes().to_vec(),
+                    tx_id: contract_input_pointer.hash,
                     index: contract_input_pointer.index,
                 },
                 for_how_long,
@@ -778,7 +771,7 @@ async fn handle_unlock(
                     normal_input_balance
                         .coin
                         .checked_sub(
-                            10000000u64 + config.control_nft.map(|_| 2000000u64).unwrap_or(0),
+                            500000u64 + config.control_nft.map(|_| 2000000u64).unwrap_or(0),
                         )
                         .unwrap(),
                     MultiAsset::new(),
@@ -788,12 +781,12 @@ async fn handle_unlock(
         )
         .map_err(|err| anyhow!("Can't add output: {err}"))?;
 
-    builder.set_fee(10000000u64);
-
     builder.set_exunits(
         RedeemerWitnessKey::new(RedeemerTag::Spend, 0),
         ExUnits::new(14000000u64, 10000000000u64),
     );
+
+    builder.set_fee(500000u64);
 
     let mut signed_tx_builder = builder
         .build(ChangeSelectionAlgo::Default, &payment_address)
@@ -879,14 +872,7 @@ async fn handle_claim(
         nft_input_owner: match config.control_nft {
             None => None,
             Some(_) => Some(OutRef {
-                tx_id: config
-                    .inputs
-                    .last()
-                    .cloned()
-                    .unwrap()
-                    .hash
-                    .to_raw_bytes()
-                    .to_vec(),
+                tx_id: config.inputs.last().cloned().unwrap().hash,
                 index: config.inputs.last().cloned().unwrap().index,
             }),
         },
@@ -899,7 +885,10 @@ async fn handle_claim(
     builder
         .add_input(
             SingleInputBuilder::new(
-                TransactionInput::new(contract_input_pointer.hash, contract_input_pointer.index),
+                TransactionInput::new(
+                    contract_input_pointer.hash.clone(),
+                    contract_input_pointer.index,
+                ),
                 TransactionOutput::new(lock_on.clone(), contract_input.clone(), None, None),
             )
             .plutus_script_inline_datum(
@@ -1011,7 +1000,7 @@ async fn handle_claim(
                     normal_input_balance
                         .coin
                         .checked_sub(
-                            10000000u64 + config.control_nft.map(|_| 2000000u64).unwrap_or(0),
+                            500000u64 + config.control_nft.map(|_| 2000000u64).unwrap_or(0),
                         )
                         .unwrap(),
                     MultiAsset::new(),
@@ -1021,12 +1010,12 @@ async fn handle_claim(
         )
         .map_err(|err| anyhow!("Can't add output: {err}"))?;
 
-    builder.set_fee(10000000u64);
-
     builder.set_exunits(
         RedeemerWitnessKey::new(RedeemerTag::Spend, 0),
-        ExUnits::new(14000000u64, 10000000000u64),
+        ExUnits::new(1400000u64, 1000000000u64),
     );
+
+    builder.set_fee(500000);
 
     let mut signed_tx_builder = builder
         .build(ChangeSelectionAlgo::Default, &payment_address)
