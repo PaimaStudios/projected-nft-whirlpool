@@ -6,7 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib.git", rev = "acca172633d0570a7432058aa5b0717ad2f0c6d7" }
+cml-core = { git = "https://github.com/dcSpark/cardano-multiplatform-lib.git", rev = "acca172633d0570a7432058aa5b0717ad2f0c6d7" }
+cml-chain = { git = "https://github.com/dcSpark/cardano-multiplatform-lib.git", rev = "acca172633d0570a7432058aa5b0717ad2f0c6d7" }
+cml-crypto = { git = "https://github.com/dcSpark/cardano-multiplatform-lib.git", rev = "acca172633d0570a7432058aa5b0717ad2f0c6d7" }
+
 cbor_event = { version = "2.4.0" }
 hex = { version = "0.4.3" }
 serde = { version = "1.0.171" }

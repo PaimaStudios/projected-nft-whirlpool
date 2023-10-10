@@ -1,35 +1,19 @@
 use anyhow::{anyhow, bail, Context};
 use clap::Parser;
 
-use cardano_multiplatform_lib::address::{Address, EnterpriseAddress, StakeCredential};
-use cardano_multiplatform_lib::builders::input_builder::SingleInputBuilder;
-use cardano_multiplatform_lib::builders::output_builder::TransactionOutputBuilder;
-use cardano_multiplatform_lib::builders::redeemer_builder::RedeemerWitnessKey;
-use cardano_multiplatform_lib::builders::tx_builder::{
-    ChangeSelectionAlgo, TransactionBuilder, TransactionBuilderConfigBuilder,
+use cml_chain::address::{Address, EnterpriseAddress};
+use cml_chain::assets::{AssetName, MultiAsset};
+use cml_chain::builders::input_builder::SingleInputBuilder;
+use cml_chain::builders::output_builder::TransactionOutputBuilder;
+use cml_chain::certs::{Credential, StakeCredential};
+use cml_chain::plutus::{
+    CostModels, ExUnitPrices, ExUnits, PlutusData, PlutusScript, PlutusV2Script, RedeemerTag,
 };
-use cardano_multiplatform_lib::builders::witness_builder::{
-    PartialPlutusWitness, PlutusScriptWitness,
+use cml_chain::transaction::{
+    DatumOption, RequiredSigners, Transaction, TransactionInput, TransactionOutput,
+    TransactionWitnessSet,
 };
-use cardano_multiplatform_lib::crypto::{
-    Bip32PrivateKey, PrivateKey, PublicKey, ScriptHash, TransactionHash,
-};
-use cardano_multiplatform_lib::ledger::alonzo::fees::LinearFee;
-use cardano_multiplatform_lib::ledger::common::hash::hash_transaction;
-use cardano_multiplatform_lib::ledger::common::value::{BigNum, Int, Value};
-use cardano_multiplatform_lib::ledger::shelley::witness::make_vkey_witness;
-use cardano_multiplatform_lib::plutus::{
-    CostModel, Costmdls, ExUnitPrices, ExUnits, Language, PlutusData, PlutusScript, PlutusV2Script,
-    RedeemerTag,
-};
-use cardano_multiplatform_lib::{
-    AssetName, Assets, Datum, MultiAsset, PolicyID, RequiredSigners, Transaction, TransactionInput,
-    TransactionOutput, TransactionWitnessSet, UnitInterval,
-};
-
-use projected_nft_sdk::conversions::{
-    OutRef, Owner, ProjectedNFTDatums, ProjectedNFTRedeemers, Redeem, State, Status,
-};
+use projected_nft_sdk::conversions::{OutRef, Owner, Redeem, State, Status};
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::{header, Client, StatusCode};
 use serde::de::Error;
@@ -43,6 +27,22 @@ use std::io::{Cursor, Read};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::UNIX_EPOCH;
+
+use cml_chain::builders::redeemer_builder::RedeemerWitnessKey;
+use cml_chain::builders::tx_builder::{
+    ChangeSelectionAlgo, TransactionBuilder, TransactionBuilderConfigBuilder,
+};
+use cml_chain::builders::witness_builder::{PartialPlutusWitness, PlutusScriptWitness};
+use cml_chain::crypto::hash::hash_transaction;
+use cml_chain::crypto::utils::make_vkey_witness;
+use cml_chain::fees::LinearFee;
+use cml_chain::{PolicyId, Rational, Value};
+use cml_core::ordered_hash_map::OrderedHashMap;
+use cml_core::serialization::{FromBytes, Serialize};
+use cml_core::Int;
+use cml_crypto::{
+    Bip32PrivateKey, PrivateKey, PublicKey, RawBytesEncoding, ScriptHash, TransactionHash,
+};
 
 #[derive(Parser)]
 pub struct CommandLine {
@@ -199,9 +199,9 @@ async fn handle_lock(
     for (pointer, input) in inputs {
         builder
             .add_input(
-                &SingleInputBuilder::new(
-                    &TransactionInput::new(&pointer.hash, &BigNum::from(pointer.index)),
-                    &TransactionOutput::new(&payment_address, &input),
+                SingleInputBuilder::new(
+                    TransactionInput::new(pointer.hash, pointer.index),
+                    TransactionOutput::new(payment_address.clone(), input, None, None),
                 )
                 .payment_key()
                 .unwrap(),
@@ -217,9 +217,9 @@ async fn handle_lock(
         for (pointer, input) in collateral {
             builder
                 .add_collateral(
-                    &SingleInputBuilder::new(
-                        &TransactionInput::new(&pointer.hash, &BigNum::from(pointer.index)),
-                        &TransactionOutput::new(&payment_address, &input),
+                    SingleInputBuilder::new(
+                        TransactionInput::new(pointer.hash, pointer.index),
+                        TransactionOutput::new(payment_address.clone(), input, None, None),
                     )
                     .payment_key()
                     .unwrap(),
@@ -237,11 +237,10 @@ async fn handle_lock(
     let ttl = ttl_by_posix(now + 100);
 
     let script = PlutusV2Script::from_bytes(hex::decode(config.lock_on).unwrap()).unwrap();
-    let contract = PlutusScript::from_v2(&script);
+    let contract = PlutusScript::PlutusV2(script);
 
     let lock_on =
-        EnterpriseAddress::new(network, &StakeCredential::from_scripthash(&contract.hash()))
-            .to_address();
+        EnterpriseAddress::new(network, Credential::new_script(contract.hash())).to_address();
     println!("Lock on contract: {}", lock_on.to_bech32(None).unwrap());
 
     // let receipt_asset_name = if let Some(nft) = config.receipt_nft.clone() {
@@ -277,7 +276,7 @@ async fn handle_lock(
     //     builder
     //         .add_output(
     //             &TransactionOutputBuilder::new()
-    //                 .with_address(&payment_address)
+    //                 .with_address(payment_address.clone())
     //                 .next()
     //                 .unwrap()
     //                 .with_value(&Value::new_with_assets(&BigNum::from(2000000u64), &ma))
@@ -291,17 +290,15 @@ async fn handle_lock(
     // };
 
     let datum = match config.control_nft.clone() {
-        None if config.receipt_nft.is_none() => ProjectedNFTDatums::State(State {
-            owner: Owner::PKH(
-                EnterpriseAddress::from_address(&payment_address)
-                    .ok_or(anyhow!("payment address is not base"))?
-                    .payment_cred()
-                    .to_keyhash()
-                    .unwrap()
-                    .to_bytes(),
-            ),
+        None if config.receipt_nft.is_none() => State {
+            owner: Owner::PKH(match payment_address.payment_cred().unwrap() {
+                StakeCredential::PubKey { hash, .. } => hash.to_raw_bytes().to_vec(),
+                StakeCredential::Script { .. } => {
+                    return Err(anyhow!("Expected payment address, not script"))
+                }
+            }),
             status: Status::Locked,
-        }),
+        },
         None => {
             todo!()
             // println!(
@@ -313,23 +310,23 @@ async fn handle_lock(
             //     status: Status::Locked,
             // })
         }
-        Some(nft) => ProjectedNFTDatums::State(State {
+        Some(nft) => State {
             owner: Owner::NFT(
                 hex::decode(nft.policy_id).unwrap(),
                 nft.asset_name.as_bytes().to_vec(),
             ),
             status: Status::Locked,
-        }),
+        },
     };
 
     builder
         .add_output(
-            &TransactionOutputBuilder::new()
-                .with_address(&lock_on)
-                .with_data(&Datum::new_data(&PlutusData::from(datum)))
+            TransactionOutputBuilder::new()
+                .with_address(lock_on)
+                .with_data(DatumOption::new_datum(PlutusData::from(datum)))
                 .next()
                 .unwrap()
-                .with_value(&Value::new(&BigNum::from(config.lock_ada)))
+                .with_value(Value::new(config.lock_ada, MultiAsset::new()))
                 .build()
                 .unwrap(),
         )
@@ -337,34 +334,33 @@ async fn handle_lock(
 
     if let Some(nft) = config.control_nft {
         let mut ma = MultiAsset::new();
-        let mut assets = Assets::new();
+        let mut assets = OrderedHashMap::new();
         assets.insert(
-            &AssetName::new(nft.asset_name.as_bytes().to_vec()).unwrap(),
-            &BigNum::from(1),
+            AssetName::new(nft.asset_name.as_bytes().to_vec()).unwrap(),
+            1,
         );
         ma.insert(
-            &PolicyID::from_bytes(hex::decode(nft.policy_id).unwrap()).unwrap(),
-            &assets,
+            PolicyId::from_raw_bytes(&hex::decode(nft.policy_id).unwrap()).unwrap(),
+            assets,
         );
 
-        let mut value = Value::new(&BigNum::from(2000000u64));
-        value.set_multiasset(&ma);
+        let value = Value::new(2000000u64, ma);
 
         builder
             .add_output(
-                &TransactionOutputBuilder::new()
-                    .with_address(&payment_address)
+                TransactionOutputBuilder::new()
+                    .with_address(payment_address.clone())
                     .next()
                     .unwrap()
-                    .with_value(&value)
+                    .with_value(value)
                     .build()
                     .unwrap(),
             )
             .map_err(|err| anyhow!("Can't add output: {err}"))?;
     };
 
-    builder.set_ttl(&BigNum::from(ttl));
-    builder.set_validity_start_interval(&BigNum::from(validity));
+    builder.set_ttl(ttl);
+    builder.set_validity_start_interval(validity);
 
     let mut signed_tx_builder = builder
         .build(ChangeSelectionAlgo::Default, &payment_address)
@@ -375,15 +371,18 @@ async fn handle_lock(
     if config.payment_configuration.payment_skey.is_none()
         && config.payment_configuration.payment_mnemonics.is_none()
     {
-        println!("inputs {:?}", body.inputs());
-        println!("outputs {:?}", body.outputs());
-        println!("collateral {:?}", body.collateral());
-        println!("collateral return {:?}", body.collateral_return());
-        println!("fee {:?}", body.fee());
+        println!("inputs {:?}", body.inputs);
+        println!("outputs {:?}", body.outputs);
+        println!("collateral {:?}", body.collateral_inputs);
+        println!("collateral return {:?}", body.collateral_return);
+        println!("fee {:?}", body.fee);
 
         println!(
             "body: {}",
-            hex::encode(Transaction::new(&body, &TransactionWitnessSet::new(), None).to_bytes())
+            hex::encode(
+                Transaction::new(body, TransactionWitnessSet::new(), true, None)
+                    .to_canonical_cbor_bytes()
+            )
         );
 
         return Ok(());
@@ -394,18 +393,18 @@ async fn handle_lock(
         config.payment_configuration.payment_mnemonics,
     )?;
 
-    signed_tx_builder.add_vkey(&make_vkey_witness(
+    signed_tx_builder.add_vkey(make_vkey_witness(
         &hash_transaction(&body),
         &payment_address_sk,
     ));
 
     let tx = signed_tx_builder.build_checked().unwrap();
 
-    println!("inputs {:?}", body.inputs());
-    println!("outputs {:?}", body.outputs());
-    println!("collateral {:?}", body.collateral());
-    println!("collateral return {:?}", body.collateral());
-    println!("fee {:?}", body.fee());
+    println!("inputs {:?}", body.inputs);
+    println!("outputs {:?}", body.outputs);
+    println!("collateral {:?}", body.collateral_inputs);
+    println!("collateral {:?}", body.collateral_return);
+    println!("fee {:?}", body.fee);
 
     finalize_and_submit_tx(tx, blockfrost, submit).await
 }
@@ -437,9 +436,9 @@ async fn handle_lock_nft(
     for (pointer, input) in inputs {
         builder
             .add_input(
-                &SingleInputBuilder::new(
-                    &TransactionInput::new(&pointer.hash, &BigNum::from(pointer.index)),
-                    &TransactionOutput::new(&payment_address, &input),
+                SingleInputBuilder::new(
+                    TransactionInput::new(pointer.hash, pointer.index),
+                    TransactionOutput::new(payment_address.clone(), input, None, None),
                 )
                 .payment_key()
                 .unwrap(),
@@ -448,56 +447,52 @@ async fn handle_lock_nft(
     }
 
     let script = PlutusV2Script::from_bytes(hex::decode(config.lock_on).unwrap()).unwrap();
-    let contract = PlutusScript::from_v2(&script);
+    let contract = PlutusScript::PlutusV2(script);
 
     let lock_on =
-        EnterpriseAddress::new(network, &StakeCredential::from_scripthash(&contract.hash()))
-            .to_address();
+        EnterpriseAddress::new(network, Credential::new_script(contract.hash())).to_address();
     println!("Lock on contract: {}", lock_on.to_bech32(None).unwrap());
 
     let datum = match config.control_nft.clone() {
-        None => ProjectedNFTDatums::State(State {
-            owner: Owner::PKH(
-                EnterpriseAddress::from_address(&payment_address)
-                    .ok_or(anyhow!("payment address is not base"))?
-                    .payment_cred()
-                    .to_keyhash()
-                    .unwrap()
-                    .to_bytes(),
-            ),
+        None => State {
+            owner: Owner::PKH(match payment_address.payment_cred().unwrap() {
+                StakeCredential::PubKey { hash, .. } => hash.to_raw_bytes().to_vec(),
+                StakeCredential::Script { .. } => {
+                    return Err(anyhow!("Expected payment address, not script"))
+                }
+            }),
             status: Status::Locked,
-        }),
-        Some(nft) => ProjectedNFTDatums::State(State {
+        },
+        Some(nft) => State {
             owner: Owner::NFT(
                 hex::decode(nft.policy_id).unwrap(),
                 nft.asset_name.as_bytes().to_vec(),
             ),
             status: Status::Locked,
-        }),
+        },
     };
 
     let mut ma = MultiAsset::new();
-    let mut assets = Assets::new();
+    let mut assets = OrderedHashMap::new();
     assets.insert(
-        &AssetName::new(config.nft_asset_name.as_bytes().to_vec()).unwrap(),
-        &BigNum::from(1),
+        AssetName::new(config.nft_asset_name.as_bytes().to_vec()).unwrap(),
+        1,
     );
     ma.insert(
-        &PolicyID::from_bytes(hex::decode(config.nft_policy_id).unwrap()).unwrap(),
-        &assets,
+        PolicyId::from_raw_bytes(&hex::decode(config.nft_policy_id).unwrap()).unwrap(),
+        assets,
     );
 
-    let mut value = Value::new(&BigNum::from(config.lock_ada));
-    value.set_multiasset(&ma);
+    let value = Value::new(config.lock_ada, ma);
 
     builder
         .add_output(
-            &TransactionOutputBuilder::new()
-                .with_address(&lock_on)
-                .with_data(&Datum::new_data(&PlutusData::from(datum)))
+            TransactionOutputBuilder::new()
+                .with_address(lock_on)
+                .with_data(DatumOption::new_datum(PlutusData::from(datum)))
                 .next()
                 .unwrap()
-                .with_value(&value)
+                .with_value(value)
                 .build()
                 .unwrap(),
         )
@@ -505,26 +500,25 @@ async fn handle_lock_nft(
 
     if let Some(nft) = config.control_nft.clone() {
         let mut ma = MultiAsset::new();
-        let mut assets = Assets::new();
+        let mut assets = OrderedHashMap::new();
         assets.insert(
-            &AssetName::new(nft.asset_name.as_bytes().to_vec()).unwrap(),
-            &BigNum::from(1),
+            AssetName::new(nft.asset_name.as_bytes().to_vec()).unwrap(),
+            1,
         );
         ma.insert(
-            &PolicyID::from_bytes(hex::decode(nft.policy_id).unwrap()).unwrap(),
-            &assets,
+            PolicyId::from_raw_bytes(&hex::decode(nft.policy_id).unwrap()).unwrap(),
+            assets,
         );
 
-        let mut value = Value::new(&BigNum::from(2000000u64));
-        value.set_multiasset(&ma);
+        let value = Value::new(2000000u64, ma);
 
         builder
             .add_output(
-                &TransactionOutputBuilder::new()
-                    .with_address(&payment_address)
+                TransactionOutputBuilder::new()
+                    .with_address(payment_address.clone())
                     .next()
                     .unwrap()
-                    .with_value(&value)
+                    .with_value(value)
                     .build()
                     .unwrap(),
             )
@@ -540,15 +534,18 @@ async fn handle_lock_nft(
     if config.payment_configuration.payment_skey.is_none()
         && config.payment_configuration.payment_mnemonics.is_none()
     {
-        println!("inputs {:?}", body.inputs());
-        println!("outputs {:?}", body.outputs());
-        println!("collateral {:?}", body.collateral());
-        println!("collateral return {:?}", body.collateral_return());
-        println!("fee {:?}", body.fee());
+        println!("inputs {:?}", body.inputs);
+        println!("outputs {:?}", body.outputs);
+        println!("collateral {:?}", body.collateral_inputs);
+        println!("collateral return {:?}", body.collateral_return);
+        println!("fee {:?}", body.fee);
 
         println!(
             "body: {}",
-            hex::encode(Transaction::new(&body, &TransactionWitnessSet::new(), None).to_bytes())
+            hex::encode(
+                Transaction::new(body, TransactionWitnessSet::new(), true, None)
+                    .to_canonical_cbor_bytes()
+            )
         );
 
         return Ok(());
@@ -559,18 +556,18 @@ async fn handle_lock_nft(
         config.payment_configuration.payment_mnemonics,
     )?;
 
-    signed_tx_builder.add_vkey(&make_vkey_witness(
+    signed_tx_builder.add_vkey(make_vkey_witness(
         &hash_transaction(&body),
         &payment_address_sk,
     ));
 
     let tx = signed_tx_builder.build_checked().unwrap();
 
-    println!("inputs {:?}", body.inputs());
-    println!("outputs {:?}", body.outputs());
-    println!("collateral {:?}", body.collateral());
-    println!("collateral return {:?}", body.collateral());
-    println!("fee {:?}", body.fee());
+    println!("inputs {:?}", body.inputs);
+    println!("outputs {:?}", body.outputs);
+    println!("collateral {:?}", body.collateral_inputs);
+    println!("collateral return {:?}", body.collateral_return);
+    println!("fee {:?}", body.fee);
 
     finalize_and_submit_tx(tx, blockfrost, submit).await
 }
@@ -601,36 +598,30 @@ async fn handle_unlock(
     // contract
 
     let script = PlutusV2Script::from_bytes(hex::decode(config.locked_on).unwrap()).unwrap();
-    let contract = PlutusScript::from_v2(&script);
+    let contract = PlutusScript::PlutusV2(script);
 
     let lock_on =
-        EnterpriseAddress::new(network, &StakeCredential::from_scripthash(&contract.hash()))
-            .to_address();
+        EnterpriseAddress::new(network, Credential::new_script(contract.hash())).to_address();
     println!("Lock on contract: {}", lock_on.to_bech32(None).unwrap());
 
-    let _old_datum = ProjectedNFTDatums::State(State {
-        owner: Owner::PKH(
-            EnterpriseAddress::from_address(&payment_address)
-                .ok_or(anyhow!("payment address is not base"))?
-                .payment_cred()
-                .to_keyhash()
-                .unwrap()
-                .to_bytes(),
-        ),
-        status: Status::Locked,
-    });
-
-    let redeemer = ProjectedNFTRedeemers::Redeem(Redeem {
+    let redeemer = Redeem {
         partial_withdraw: false,
         nft_input_owner: match config.control_nft.clone() {
             None => None,
             Some(_) => Some(OutRef {
-                tx_id: config.inputs.last().cloned().unwrap().hash.to_bytes(),
+                tx_id: config
+                    .inputs
+                    .last()
+                    .cloned()
+                    .unwrap()
+                    .hash
+                    .to_raw_bytes()
+                    .to_vec(),
                 index: config.inputs.last().cloned().unwrap().index,
             }),
         },
         new_receipt_owner: None,
-    });
+    };
 
     let (_contract_balance, contract_inputs) =
         fetch_inputs(vec![config.locked], &blockfrost).await?;
@@ -638,19 +629,19 @@ async fn handle_unlock(
     let (contract_input_pointer, contract_input) = contract_inputs.get(0).cloned().unwrap();
     builder
         .add_input(
-            &SingleInputBuilder::new(
-                &TransactionInput::new(
-                    &contract_input_pointer.hash,
-                    &BigNum::from(contract_input_pointer.index),
+            SingleInputBuilder::new(
+                TransactionInput::new(
+                    contract_input_pointer.hash.clone(),
+                    contract_input_pointer.index,
                 ),
-                &TransactionOutput::new(&lock_on, &contract_input),
+                TransactionOutput::new(lock_on.clone(), contract_input.clone(), None, None),
             )
             .plutus_script_inline_datum(
-                &PartialPlutusWitness::new(
-                    &PlutusScriptWitness::from_script(contract.clone()),
-                    &PlutusData::from(redeemer),
+                PartialPlutusWitness::new(
+                    PlutusScriptWitness::Script(contract.clone()),
+                    PlutusData::from(redeemer),
                 ),
-                &RequiredSigners::new(),
+                RequiredSigners::new(),
             )
             .unwrap(),
         )
@@ -661,9 +652,9 @@ async fn handle_unlock(
     for (pointer, input) in inputs {
         builder
             .add_input(
-                &SingleInputBuilder::new(
-                    &TransactionInput::new(&pointer.hash, &BigNum::from(pointer.index)),
-                    &TransactionOutput::new(&payment_address, &input),
+                SingleInputBuilder::new(
+                    TransactionInput::new(pointer.hash, pointer.index),
+                    TransactionOutput::new(payment_address.clone(), input, None, None),
                 )
                 .payment_key()
                 .unwrap(),
@@ -671,13 +662,13 @@ async fn handle_unlock(
             .unwrap();
     }
 
-    builder.add_required_signer(
-        &EnterpriseAddress::from_address(&payment_address)
-            .unwrap()
-            .payment_cred()
-            .to_keyhash()
-            .unwrap(),
-    );
+    builder.add_required_signer(match payment_address.payment_cred().unwrap() {
+        StakeCredential::PubKey { hash, .. } => hash.clone(),
+        StakeCredential::Script { .. } => {
+            return Err(anyhow!("script is not suported as required signer"));
+        }
+    });
+
     // collateral
 
     let (_, collateral) = fetch_inputs(vec![config.collateral], &blockfrost).await?;
@@ -685,9 +676,9 @@ async fn handle_unlock(
     for (pointer, input) in collateral {
         builder
             .add_collateral(
-                &SingleInputBuilder::new(
-                    &TransactionInput::new(&pointer.hash, &BigNum::from(pointer.index)),
-                    &TransactionOutput::new(&payment_address, &input),
+                SingleInputBuilder::new(
+                    TransactionInput::new(pointer.hash, pointer.index),
+                    TransactionOutput::new(payment_address.clone(), input, None, None),
                 )
                 .payment_key()
                 .unwrap(),
@@ -705,48 +696,46 @@ async fn handle_unlock(
     let for_how_long = (now + 400) * 1000;
 
     let new_datum = match config.control_nft.clone() {
-        None => ProjectedNFTDatums::State(State {
-            owner: Owner::PKH(
-                EnterpriseAddress::from_address(&payment_address)
-                    .ok_or(anyhow!("payment address is not base"))?
-                    .payment_cred()
-                    .to_keyhash()
-                    .unwrap()
-                    .to_bytes(),
-            ),
+        None => State {
+            owner: Owner::PKH(match payment_address.payment_cred().unwrap() {
+                StakeCredential::PubKey { hash, .. } => hash.to_raw_bytes().to_vec(),
+                StakeCredential::Script { .. } => {
+                    return Err(anyhow!("Expected payment address, not script"))
+                }
+            }),
             status: Status::Unlocking {
                 out_ref: OutRef {
-                    tx_id: contract_input_pointer.hash.to_bytes(),
+                    tx_id: contract_input_pointer.hash.to_raw_bytes().to_vec(),
                     index: contract_input_pointer.index,
                 },
                 for_how_long,
             },
-        }),
-        Some(nft) => ProjectedNFTDatums::State(State {
+        },
+        Some(nft) => State {
             owner: Owner::NFT(
                 hex::decode(nft.policy_id).unwrap(),
                 nft.asset_name.as_bytes().to_vec(),
             ),
             status: Status::Unlocking {
                 out_ref: OutRef {
-                    tx_id: contract_input_pointer.hash.to_bytes(),
+                    tx_id: contract_input_pointer.hash.to_raw_bytes().to_vec(),
                     index: contract_input_pointer.index,
                 },
                 for_how_long,
             },
-        }),
+        },
     };
 
-    builder.set_ttl(&BigNum::from(ttl));
-    builder.set_validity_start_interval(&BigNum::from(validity));
+    builder.set_ttl(ttl);
+    builder.set_validity_start_interval(validity);
     builder
         .add_output(
-            &TransactionOutputBuilder::new()
-                .with_address(&lock_on)
-                .with_data(&Datum::new_data(&PlutusData::from(new_datum)))
+            TransactionOutputBuilder::new()
+                .with_address(lock_on.clone())
+                .with_data(DatumOption::new_datum(PlutusData::from(new_datum)))
                 .next()
                 .unwrap()
-                .with_value(&contract_input)
+                .with_value(contract_input)
                 .build()
                 .unwrap(),
         )
@@ -754,26 +743,25 @@ async fn handle_unlock(
 
     if let Some(nft) = config.control_nft.clone() {
         let mut ma = MultiAsset::new();
-        let mut assets = Assets::new();
+        let mut assets = OrderedHashMap::new();
         assets.insert(
-            &AssetName::new(nft.asset_name.as_bytes().to_vec()).unwrap(),
-            &BigNum::from(1),
+            AssetName::new(nft.asset_name.as_bytes().to_vec()).unwrap(),
+            1,
         );
         ma.insert(
-            &PolicyID::from_bytes(hex::decode(nft.policy_id).unwrap()).unwrap(),
-            &assets,
+            PolicyId::from_raw_bytes(&hex::decode(nft.policy_id).unwrap()).unwrap(),
+            assets,
         );
 
-        let mut value = Value::new(&BigNum::from(2000000u64));
-        value.set_multiasset(&ma);
+        let value = Value::new(2000000u64, ma);
 
         builder
             .add_output(
-                &TransactionOutputBuilder::new()
-                    .with_address(&payment_address)
+                TransactionOutputBuilder::new()
+                    .with_address(payment_address.clone())
                     .next()
                     .unwrap()
-                    .with_value(&value)
+                    .with_value(value)
                     .build()
                     .unwrap(),
             )
@@ -782,28 +770,29 @@ async fn handle_unlock(
 
     builder
         .add_output(
-            &TransactionOutputBuilder::new()
-                .with_address(&payment_address)
+            TransactionOutputBuilder::new()
+                .with_address(payment_address.clone())
                 .next()
                 .unwrap()
-                .with_value(&Value::new(
-                    &normal_input_balance
-                        .coin()
-                        .checked_sub(&BigNum::from(
+                .with_value(Value::new(
+                    normal_input_balance
+                        .coin
+                        .checked_sub(
                             10000000u64 + config.control_nft.map(|_| 2000000u64).unwrap_or(0),
-                        ))
+                        )
                         .unwrap(),
+                    MultiAsset::new(),
                 ))
                 .build()
                 .unwrap(),
         )
         .map_err(|err| anyhow!("Can't add output: {err}"))?;
 
-    builder.set_fee(&BigNum::from(10000000u64));
+    builder.set_fee(10000000u64);
 
     builder.set_exunits(
-        &RedeemerWitnessKey::new(&RedeemerTag::new_spend(), &BigNum::zero()),
-        &ExUnits::new(&BigNum::from(14000000u64), &BigNum::from(10000000000u64)),
+        RedeemerWitnessKey::new(RedeemerTag::Spend, 0),
+        ExUnits::new(14000000u64, 10000000000u64),
     );
 
     let mut signed_tx_builder = builder
@@ -815,15 +804,18 @@ async fn handle_unlock(
     if config.payment_configuration.payment_skey.is_none()
         && config.payment_configuration.payment_mnemonics.is_none()
     {
-        println!("inputs {:?}", body.inputs());
-        println!("outputs {:?}", body.outputs());
-        println!("collateral {:?}", body.collateral());
-        println!("collateral return {:?}", body.collateral_return());
-        println!("fee {:?}", body.fee());
+        println!("inputs {:?}", body.inputs);
+        println!("outputs {:?}", body.outputs);
+        println!("collateral {:?}", body.collateral_inputs);
+        println!("collateral return {:?}", body.collateral_return);
+        println!("fee {:?}", body.fee);
 
         println!(
             "body: {}",
-            hex::encode(Transaction::new(&body, &TransactionWitnessSet::new(), None).to_bytes())
+            hex::encode(
+                Transaction::new(body, TransactionWitnessSet::new(), true, None)
+                    .to_canonical_cbor_bytes()
+            )
         );
 
         return Ok(());
@@ -834,18 +826,18 @@ async fn handle_unlock(
         config.payment_configuration.payment_mnemonics,
     )?;
 
-    signed_tx_builder.add_vkey(&make_vkey_witness(
+    signed_tx_builder.add_vkey(make_vkey_witness(
         &hash_transaction(&body),
         &payment_address_sk,
     ));
 
     let tx = signed_tx_builder.build_checked().unwrap();
 
-    println!("inputs {:?}", body.inputs());
-    println!("outputs {:?}", body.outputs());
-    println!("collateral {:?}", body.collateral());
-    println!("collateral return {:?}", body.collateral());
-    println!("fee {:?}", body.fee());
+    println!("inputs {:?}", body.inputs);
+    println!("outputs {:?}", body.outputs);
+    println!("collateral {:?}", body.collateral_inputs);
+    println!("collateral {:?}", body.collateral_return);
+    println!("fee {:?}", body.fee);
 
     finalize_and_submit_tx(tx, blockfrost, submit).await
 }
@@ -876,64 +868,66 @@ async fn handle_claim(
     // contract
 
     let script = PlutusV2Script::from_bytes(hex::decode(config.locked_on).unwrap()).unwrap();
-    let contract = PlutusScript::from_v2(&script);
+    let contract = PlutusScript::PlutusV2(script);
 
     let lock_on =
-        EnterpriseAddress::new(network, &StakeCredential::from_scripthash(&contract.hash()))
-            .to_address();
+        EnterpriseAddress::new(network, Credential::new_script(contract.hash())).to_address();
     println!("Lock on contract: {}", lock_on.to_bech32(None).unwrap());
 
-    let redeemer = ProjectedNFTRedeemers::Redeem(Redeem {
+    let redeemer = Redeem {
         partial_withdraw: false,
         nft_input_owner: match config.control_nft {
             None => None,
             Some(_) => Some(OutRef {
-                tx_id: config.inputs.last().cloned().unwrap().hash.to_bytes(),
+                tx_id: config
+                    .inputs
+                    .last()
+                    .cloned()
+                    .unwrap()
+                    .hash
+                    .to_raw_bytes()
+                    .to_vec(),
                 index: config.inputs.last().cloned().unwrap().index,
             }),
         },
         new_receipt_owner: None,
-    });
+    };
 
     let (_, contract_inputs) = fetch_inputs(vec![config.locked], &blockfrost).await?;
 
     let (contract_input_pointer, contract_input) = contract_inputs.get(0).cloned().unwrap();
     builder
         .add_input(
-            &SingleInputBuilder::new(
-                &TransactionInput::new(
-                    &contract_input_pointer.hash,
-                    &BigNum::from(contract_input_pointer.index),
-                ),
-                &TransactionOutput::new(&lock_on, &contract_input),
+            SingleInputBuilder::new(
+                TransactionInput::new(contract_input_pointer.hash, contract_input_pointer.index),
+                TransactionOutput::new(lock_on.clone(), contract_input.clone(), None, None),
             )
             .plutus_script_inline_datum(
-                &PartialPlutusWitness::new(
-                    &PlutusScriptWitness::from_script(contract.clone()),
-                    &PlutusData::from(redeemer),
+                PartialPlutusWitness::new(
+                    PlutusScriptWitness::Script(contract.clone()),
+                    PlutusData::from(redeemer),
                 ),
-                &RequiredSigners::new(),
+                RequiredSigners::new(),
             )
             .unwrap(),
         )
         .unwrap();
 
-    builder.add_required_signer(
-        &EnterpriseAddress::from_address(&payment_address)
-            .unwrap()
-            .payment_cred()
-            .to_keyhash()
-            .unwrap(),
-    );
+    builder.add_required_signer(match payment_address.payment_cred().unwrap() {
+        StakeCredential::PubKey { hash, .. } => hash.clone(),
+        StakeCredential::Script { .. } => {
+            return Err(anyhow!("script is not suported as required signer"));
+        }
+    });
 
     let (normal_input_balance, inputs) = fetch_inputs(config.inputs, &blockfrost).await?;
 
     for (pointer, input) in inputs {
         builder
             .add_input(
-                &SingleInputBuilder::new(
-                    &TransactionInput::new(&pointer.hash, &BigNum::from(pointer.index)),
-                    &TransactionOutput::new(&payment_address, &input),
+                SingleInputBuilder::new(
+                    TransactionInput::new(pointer.hash, pointer.index),
+                    TransactionOutput::new(payment_address.clone(), input, None, None),
                 )
                 .payment_key()
                 .unwrap(),
@@ -948,9 +942,9 @@ async fn handle_claim(
     for (pointer, input) in collateral {
         builder
             .add_collateral(
-                &SingleInputBuilder::new(
-                    &TransactionInput::new(&pointer.hash, &BigNum::from(pointer.index)),
-                    &TransactionOutput::new(&payment_address, &input),
+                SingleInputBuilder::new(
+                    TransactionInput::new(pointer.hash, pointer.index),
+                    TransactionOutput::new(payment_address.clone(), input, None, None),
                 )
                 .payment_key()
                 .unwrap(),
@@ -966,15 +960,15 @@ async fn handle_claim(
     let validity = ttl_by_posix(now - 120);
     let ttl = ttl_by_posix(now + 100);
 
-    builder.set_ttl(&BigNum::from(ttl));
-    builder.set_validity_start_interval(&BigNum::from(validity));
+    builder.set_ttl(ttl);
+    builder.set_validity_start_interval(validity);
     builder
         .add_output(
-            &TransactionOutputBuilder::new()
-                .with_address(&payment_address)
+            TransactionOutputBuilder::new()
+                .with_address(payment_address.clone())
                 .next()
                 .unwrap()
-                .with_value(&contract_input)
+                .with_value(contract_input)
                 .build()
                 .unwrap(),
         )
@@ -982,26 +976,25 @@ async fn handle_claim(
 
     if let Some(nft) = config.control_nft.clone() {
         let mut ma = MultiAsset::new();
-        let mut assets = Assets::new();
+        let mut assets = OrderedHashMap::new();
         assets.insert(
-            &AssetName::new(nft.asset_name.as_bytes().to_vec()).unwrap(),
-            &BigNum::from(1),
+            AssetName::new(nft.asset_name.as_bytes().to_vec()).unwrap(),
+            1,
         );
         ma.insert(
-            &PolicyID::from_bytes(hex::decode(nft.policy_id).unwrap()).unwrap(),
-            &assets,
+            PolicyId::from_raw_bytes(&hex::decode(nft.policy_id).unwrap()).unwrap(),
+            assets,
         );
 
-        let mut value = Value::new(&BigNum::from(2000000u64));
-        value.set_multiasset(&ma);
+        let value = Value::new(2000000u64, ma);
 
         builder
             .add_output(
-                &TransactionOutputBuilder::new()
-                    .with_address(&payment_address)
+                TransactionOutputBuilder::new()
+                    .with_address(payment_address.clone())
                     .next()
                     .unwrap()
-                    .with_value(&value)
+                    .with_value(value)
                     .build()
                     .unwrap(),
             )
@@ -1010,28 +1003,29 @@ async fn handle_claim(
 
     builder
         .add_output(
-            &TransactionOutputBuilder::new()
-                .with_address(&payment_address)
+            TransactionOutputBuilder::new()
+                .with_address(payment_address.clone())
                 .next()
                 .unwrap()
-                .with_value(&Value::new(
-                    &normal_input_balance
-                        .coin()
-                        .checked_sub(&BigNum::from(
+                .with_value(Value::new(
+                    normal_input_balance
+                        .coin
+                        .checked_sub(
                             10000000u64 + config.control_nft.map(|_| 2000000u64).unwrap_or(0),
-                        ))
+                        )
                         .unwrap(),
+                    MultiAsset::new(),
                 ))
                 .build()
                 .unwrap(),
         )
         .map_err(|err| anyhow!("Can't add output: {err}"))?;
 
-    builder.set_fee(&BigNum::from(10000000u64));
+    builder.set_fee(10000000u64);
 
     builder.set_exunits(
-        &RedeemerWitnessKey::new(&RedeemerTag::new_spend(), &BigNum::zero()),
-        &ExUnits::new(&BigNum::from(14000000u64), &BigNum::from(10000000000u64)),
+        RedeemerWitnessKey::new(RedeemerTag::Spend, 0),
+        ExUnits::new(14000000u64, 10000000000u64),
     );
 
     let mut signed_tx_builder = builder
@@ -1043,15 +1037,18 @@ async fn handle_claim(
     if config.payment_configuration.payment_skey.is_none()
         && config.payment_configuration.payment_mnemonics.is_none()
     {
-        println!("inputs {:?}", body.inputs());
-        println!("outputs {:?}", body.outputs());
-        println!("collateral {:?}", body.collateral());
-        println!("collateral return {:?}", body.collateral_return());
-        println!("fee {:?}", body.fee());
+        println!("inputs {:?}", body.inputs);
+        println!("outputs {:?}", body.outputs);
+        println!("collateral {:?}", body.collateral_inputs);
+        println!("collateral return {:?}", body.collateral_return);
+        println!("fee {:?}", body.fee);
 
         println!(
             "body: {}",
-            hex::encode(Transaction::new(&body, &TransactionWitnessSet::new(), None).to_bytes())
+            hex::encode(
+                Transaction::new(body, TransactionWitnessSet::new(), true, None)
+                    .to_canonical_cbor_bytes()
+            )
         );
 
         return Ok(());
@@ -1062,18 +1059,18 @@ async fn handle_claim(
         config.payment_configuration.payment_mnemonics,
     )?;
 
-    signed_tx_builder.add_vkey(&make_vkey_witness(
+    signed_tx_builder.add_vkey(make_vkey_witness(
         &hash_transaction(&body),
         &payment_address_sk,
     ));
 
     let tx = signed_tx_builder.build_checked().unwrap();
 
-    println!("inputs {:?}", body.inputs());
-    println!("outputs {:?}", body.outputs());
-    println!("collateral {:?}", body.collateral());
-    println!("collateral return {:?}", body.collateral());
-    println!("fee {:?}", body.fee());
+    println!("inputs {:?}", body.inputs);
+    println!("outputs {:?}", body.outputs);
+    println!("collateral {:?}", body.collateral_inputs);
+    println!("collateral {:?}", body.collateral_return);
+    println!("fee {:?}", body.fee);
 
     finalize_and_submit_tx(tx, blockfrost, submit).await
 }
@@ -1087,7 +1084,10 @@ pub async fn finalize_and_submit_tx(
     blockfrost: Blockfrost,
     submit: bool,
 ) -> anyhow::Result<()> {
-    println!("Final tx: {}", hex::encode(final_tx.to_bytes()));
+    println!(
+        "Final tx: {}",
+        hex::encode(final_tx.to_canonical_cbor_bytes())
+    );
 
     if submit {
         println!(
@@ -1135,31 +1135,32 @@ pub fn create_tx_builder() -> TransactionBuilder {
         57996947, 18975, 10, 38887044, 32947, 10,
     ]
     .into_iter()
-    .map(|x| Int::new(&BigNum::from(x)))
+    .map(Int::new_uint)
     .collect::<Vec<Int>>();
-    let mut cost_models = Costmdls::new();
-    cost_models.insert(&CostModel::new(&Language::new_plutus_v2(), &vasil_v2));
+    let cost_models = CostModels {
+        plutus_v1: None,
+        plutus_v2: Some(vasil_v2),
+        plutus_v3: None,
+        encodings: None,
+    };
     let config = TransactionBuilderConfigBuilder::new()
         .max_tx_size(16384)
         .max_collateral_inputs(3)
         .collateral_percentage(150)
-        .coins_per_utxo_byte(&BigNum::from(4310u64))
-        .key_deposit(&BigNum::from(2000000u64))
-        .pool_deposit(&BigNum::from(500000000u64))
+        .coins_per_utxo_byte(4310u64)
+        .key_deposit(2000000u64)
+        .pool_deposit(500000000u64)
         .max_value_size(5000)
-        .ex_unit_prices(&ExUnitPrices::new(
-            &UnitInterval::new(&BigNum::from(577u64), &BigNum::from(10000u64)),
-            &UnitInterval::new(&BigNum::from(721u64), &BigNum::from(10000000u64)),
+        .ex_unit_prices(ExUnitPrices::new(
+            Rational::new(577u64, 10000u64),
+            Rational::new(721u64, 10000000u64),
         ))
-        .fee_algo(&LinearFee::new(
-            &BigNum::from(44u64),
-            &BigNum::from(155381u64),
-        ))
-        .costmdls(&cost_models);
+        .fee_algo(LinearFee::new(44u64, 155381u64))
+        .cost_models(cost_models);
 
     let config = config.build().unwrap();
 
-    TransactionBuilder::new(&config)
+    TransactionBuilder::new(config)
 }
 
 #[derive(Clone, Debug, SerdeDeserialize)]
@@ -1269,7 +1270,7 @@ impl Blockfrost {
         &self,
         transaction: &Transaction,
     ) -> anyhow::Result<anyhow::Result<TransactionHash>> {
-        let bytes = transaction.to_bytes();
+        let bytes = transaction.to_canonical_cbor_bytes();
         let req = self
             .client
             .post(self.url("api/v0/tx/submit"))
@@ -1285,8 +1286,8 @@ impl Blockfrost {
                 anyhow!("Expect the end point to return confirmation about the transaction being submitted {err:?}")
             )?;
 
-            TransactionHash::from_bytes(
-                hex::decode(bf_id)
+            TransactionHash::from_raw_bytes(
+                &hex::decode(bf_id)
                     .map_err(|err| anyhow!("Blockfrost should return an ID: {err:?}"))?,
             )
             .map_err(|error| anyhow!("Failed to decode expected transaction id: {error}"))
@@ -1341,8 +1342,9 @@ impl std::str::FromStr for UtxoPointer {
             anyhow!("UtxoPointer should be formatted as `<hex hash> '@' <index>`")
         })?;
 
-        let hash = TransactionHash::from_bytes(hex::decode(hash).context("Invalid Hash format")?)
-            .map_err(|error| anyhow!("Invalid hash format: {}", error))?;
+        let hash =
+            TransactionHash::from_raw_bytes(&hex::decode(hash).context("Invalid Hash format")?)
+                .map_err(|error| anyhow!("Invalid hash format: {}", error))?;
 
         let index = u64::from_str(index).context("Invalid index format")?;
 
@@ -1361,24 +1363,25 @@ pub fn parse_asset(asset: &str) -> anyhow::Result<(ScriptHash, AssetName)> {
     let policy_id = asset[0..28].to_vec();
     let asset_name = asset[28..].to_vec();
     let asset_name = AssetName::new(asset_name).map_err(|_| anyhow!("invalid asset name"))?;
-    let policy_id = PolicyID::from_bytes(policy_id).map_err(|_| anyhow!("invalid policy id"))?;
+    let policy_id =
+        PolicyId::from_raw_bytes(&policy_id).map_err(|_| anyhow!("invalid policy id"))?;
     Ok((policy_id, asset_name))
 }
 
 impl From<AssetAmount> for Value {
     fn from(value: AssetAmount) -> Self {
         if value.unit == "lovelace" {
-            Value::new(&BigNum::from_str(&value.quantity).unwrap())
+            Value::new(u64::from_str(&value.quantity).unwrap(), MultiAsset::new())
         } else {
             let mut ma = MultiAsset::new();
 
             let (policy_id, asset_name) = parse_asset(&value.unit).unwrap();
 
-            let mut assets = Assets::new();
-            assets.insert(&asset_name, &BigNum::from_str(&value.quantity).unwrap());
-            ma.insert(&policy_id, &assets);
+            let mut assets = OrderedHashMap::new();
+            assets.insert(asset_name, u64::from_str(&value.quantity).unwrap());
+            ma.insert(policy_id, assets);
 
-            Value::new_from_assets(&ma)
+            Value::new(0, ma)
         }
     }
 }
@@ -1439,7 +1442,7 @@ pub fn get_payment_creds(
         let payment_address_pk = payment_address.public_key()?;
         Ok(EnterpriseAddress::new(
             network,
-            &StakeCredential::from_keyhash(&payment_address_pk.hash()),
+            StakeCredential::new_pub_key(payment_address_pk.hash()),
         )
         .to_address())
     } else if let Some(pk) = bech32 {
@@ -1492,7 +1495,7 @@ impl Key {
         };
         let mut deserializer = cbor_event::de::Deserializer::from(Cursor::new(bytes));
         let (bytes, _len) = deserializer.bytes_sz()?;
-        PublicKey::from_bytes(&bytes).map_err(|err| anyhow!("Can't decode PublicKey: {err}"))
+        PublicKey::from_raw_bytes(&bytes).map_err(|err| anyhow!("Can't decode PublicKey: {err}"))
     }
 
     pub fn private_key(self) -> anyhow::Result<PrivateKey> {
@@ -1516,8 +1519,8 @@ impl Key {
         };
         // let mut deserializer = cbor_event::de::Deserializer::from(Cursor::new(bytes));
         // let (bytes, len) = deserializer.bytes_sz()?;
-        Ok(PlutusScript::from_v2(
-            &PlutusV2Script::from_bytes(bytes).unwrap(),
+        Ok(PlutusScript::PlutusV2(
+            PlutusV2Script::from_bytes(bytes).unwrap(),
         ))
     }
 }
