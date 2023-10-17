@@ -13,6 +13,20 @@ pub struct Redeem {
     pub new_receipt_owner: Option<AssetName>,
 }
 
+impl Redeem {
+    pub fn new(
+        partial_withdraw: bool,
+        nft_input_owner: Option<OutRef>,
+        new_receipt_owner: Option<AssetName>,
+    ) -> Self {
+        Self {
+            partial_withdraw,
+            nft_input_owner,
+            new_receipt_owner,
+        }
+    }
+}
+
 impl From<Redeem> for PlutusData {
     fn from(redeem: Redeem) -> Self {
         let partial_withdraw = PlutusData::new_constr_plutus_data(ConstrPlutusData::new(

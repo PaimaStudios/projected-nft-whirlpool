@@ -13,3 +13,6 @@ sdk/target
 sdk/Cargo.lock
 
 **/target
+**/pkg
+**/node_modules
+**/package-lock.json

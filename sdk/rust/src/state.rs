@@ -16,6 +16,20 @@ pub enum Owner {
     Receipt(AssetName),
 }
 
+impl Owner {
+    pub fn new_keyhash(keyhash: Ed25519KeyHash) -> Self {
+        Self::PKH(keyhash)
+    }
+
+    pub fn new_nft(policy_id: PolicyId, asset_name: AssetName) -> Self {
+        Self::NFT(policy_id, asset_name)
+    }
+
+    pub fn new_receipt(asset_name: AssetName) -> Self {
+        Self::Receipt(asset_name)
+    }
+}
+
 impl From<Owner> for PlutusData {
     fn from(owner: Owner) -> Self {
         match owner {
@@ -60,6 +74,19 @@ pub enum Status {
     Unlocking { out_ref: OutRef, for_how_long: u64 },
 }
 
+impl Status {
+    pub fn new_locked() -> Self {
+        Self::Locked
+    }
+
+    pub fn new_unlocking(out_ref: OutRef, for_how_long: u64) -> Self {
+        Self::Unlocking {
+            out_ref,
+            for_how_long,
+        }
+    }
+}
+
 impl From<Status> for PlutusData {
     fn from(status: Status) -> Self {
         match status {
@@ -100,6 +127,12 @@ impl TryFrom<PlutusData> for Status {
 pub struct State {
     pub owner: Owner,
     pub status: Status,
+}
+
+impl State {
+    pub fn new(owner: Owner, status: Status) -> Self {
+        Self { owner, status }
+    }
 }
 
 impl From<State> for PlutusData {
