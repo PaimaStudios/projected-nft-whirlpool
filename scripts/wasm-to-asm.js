@@ -2,7 +2,7 @@ const fs = require('fs')
 
 const pkgModName = process.argv.slice(2)[0];
 
-const repoName = `cml`;
+const repoName = `projected_nft_whirlpool`;
 
 const paths = [
   `./pkg/${repoName}_${pkgModName}_bg.js`,

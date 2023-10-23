@@ -7,12 +7,12 @@ const buildType /* : '-browser' | '-asmjs' | '-nodejs' */ = process.argv.slice(2
 const pathToRepo = path.join(__dirname, '..', pkgModName, 'wasm');
 const oldPkg = require(`${pathToRepo}/publish/package.json`);
 
-const repoName = `cml`;
+const repoName = `projected_nft_whirlpool`;
 const baseHyphenName = repoName.replaceAll('_', '-');
 const underscorePkgModName = pkgModName.replaceAll('-', '_');
 
 if (oldPkg.name === `${baseHyphenName}-${pkgModName}-wasm`) {
-  oldPkg.name = '@dcspark/' + oldPkg.name + buildType;
+  oldPkg.name = '@paima/' + oldPkg.name + buildType;
 }
 if (buildType === '-browser' || buildType === '-asmjs') {
   // due to a bug in wasm-pack, this file is missing from browser builds
@@ -32,9 +32,9 @@ if (buildType === '-asmjs') {
 
 oldPkg.repository = {
   type: "git",
-  url: "git+https://github.com/dcSpark/cardano-multiplatform-lib.git"
+  url: "git+https://github.com/dcSpark/projected-nft-whirlpool.git"
 };
-oldPkg.author = "dcSpark";
+oldPkg.author = "paima";
 oldPkg.license = "MIT";
 console.log(oldPkg);
 fs.writeFileSync(`${pathToRepo}/publish/package.json`, JSON.stringify(oldPkg, null, 2));

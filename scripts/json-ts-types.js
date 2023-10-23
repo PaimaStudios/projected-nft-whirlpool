@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path')
 
-const repoName = `cml`;
+const repoName = `projected_nft_whirlpool`;
 const pkgModName = process.argv.slice(2)[0]; // hyphen name
 const pathToRepo = path.join(__dirname, '..', pkgModName, 'wasm');
 const underscorePkgModName = pkgModName.replaceAll('-', '_');
