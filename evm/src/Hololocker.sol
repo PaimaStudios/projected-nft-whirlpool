@@ -23,6 +23,11 @@ contract Hololocker is Ownable, IERC721Receiver {
     // token address => token ID => LockInfo
     mapping(address => mapping(uint256 => LockInfo)) public nftLockInfo;
 
+    event Lock(address indexed token, address indexed owner, uint256 tokenId, address operator);
+    event Unlock(address indexed token, address indexed owner, uint256 tokenId, address operator);
+    event Withdraw(address indexed token, address indexed owner, uint256 tokenId, address operator);
+    event LockTimeUpdate(uint256 newValue);
+
     error InvalidLockTime();
     error NotUnlockedYet();
     error TokenNotLocked();
@@ -39,6 +44,7 @@ contract Hololocker is Ownable, IERC721Receiver {
         IERC721(token).transferFrom(msg.sender, address(this), tokenId);
         nftLockInfo[token][tokenId].owner = msg.sender;
         nftLockInfo[token][tokenId].operator = msg.sender;
+        emit Lock(token, msg.sender, tokenId, msg.sender);
     }
 
     /// @dev Since only authorized user can use this function, it cannot be used without locking NFT beforehand
@@ -47,6 +53,7 @@ contract Hololocker is Ownable, IERC721Receiver {
             revert UnlockAlreadyRequested();
         }
         nftLockInfo[token][tokenId].unlockTime = block.number + lockTime;
+        emit Unlock(token, nftLockInfo[token][tokenId].owner, tokenId, nftLockInfo[token][tokenId].operator);
     }
 
     function withdraw(address token, uint256 tokenId) external authorized(token, tokenId) {
@@ -54,6 +61,7 @@ contract Hololocker is Ownable, IERC721Receiver {
             revert NotUnlockedYet();
         }
         IERC721(token).transferFrom(address(this), nftLockInfo[token][tokenId].owner, tokenId);
+        emit Withdraw(token, nftLockInfo[token][tokenId].owner, tokenId, nftLockInfo[token][tokenId].operator);
         delete nftLockInfo[token][tokenId];
     }
 
@@ -65,6 +73,7 @@ contract Hololocker is Ownable, IERC721Receiver {
         address token = msg.sender;
         nftLockInfo[token][tokenId].owner = from;
         nftLockInfo[token][tokenId].operator = operator;
+        emit Lock(token, from, tokenId, operator);
         return IERC721Receiver.onERC721Received.selector;
     }
 
@@ -73,6 +82,7 @@ contract Hololocker is Ownable, IERC721Receiver {
             revert InvalidLockTime();
         }
         lockTime = newLockTime;
+        emit LockTimeUpdate(newLockTime);
     }
 
     function _authorized(address token, uint256 tokenId) internal view {

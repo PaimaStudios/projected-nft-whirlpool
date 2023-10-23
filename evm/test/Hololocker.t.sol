@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
+/* solhint-disable no-console */
 
 import "forge-std/Test.sol";
+import "forge-std/console2.sol";
 import "../src/Hololocker.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
@@ -14,6 +16,11 @@ contract MockNFT is ERC721 {
 }
 
 contract HololockerTest is Test {
+    event Lock(address indexed token, address indexed owner, uint256 tokenId, address operator);
+    event Unlock(address indexed token, address indexed owner, uint256 tokenId, address operator);
+    event Withdraw(address indexed token, address indexed owner, uint256 tokenId, address operator);
+    event LockTimeUpdate(uint256 newValue);
+
     Hololocker hololocker;
     MockNFT mockNFT;
     address token;
@@ -29,37 +36,62 @@ contract HololockerTest is Test {
         mockNFT.setApprovalForAll(address(hololocker), true);
     }
 
-    function requestUnlockAndWithdrawAndAssert() public {
+    function requestUnlockAndWithdrawAndAssert(address owner_, address operator_) public {
         (uint256 unlockTime, address owner, address operator) = hololocker.nftLockInfo(token, tokenId);
         assertEq(unlockTime, 0);
-        assertEq(owner, address(this));
-        assertEq(operator, address(this));
+        assertEq(owner, owner_);
+        assertEq(operator, operator_);
         assertEq(mockNFT.ownerOf(tokenId), address(hololocker));
 
         vm.roll(block.number + 10);
+        vm.expectEmit(true, true, true, true);
+        emit Unlock(token, owner, tokenId, operator);
         hololocker.requestUnlock(token, tokenId);
         (unlockTime, owner, operator) = hololocker.nftLockInfo(token, tokenId);
         assertEq(unlockTime, block.number + hololocker.lockTime());
-        assertEq(owner, address(this));
-        assertEq(operator, address(this));
+        assertEq(owner, owner_);
+        assertEq(operator, operator_);
 
         vm.roll(block.number + hololocker.lockTime());
+        vm.expectEmit(true, true, true, true);
+        emit Withdraw(token, owner, tokenId, operator);
         hololocker.withdraw(token, tokenId);
         (unlockTime, owner, operator) = hololocker.nftLockInfo(token, tokenId);
         assertEq(unlockTime, 0);
         assertEq(owner, address(0));
         assertEq(operator, address(0));
-        assertEq(mockNFT.ownerOf(tokenId), address(this));
+        assertEq(mockNFT.ownerOf(tokenId), owner_);
     }
 
     function test_LockByLockFunction() public {
+        vm.expectEmit(true, true, true, true);
+        emit Lock(token, address(this), tokenId, address(this));
         hololocker.lock(token, tokenId);
-        requestUnlockAndWithdrawAndAssert();
+        requestUnlockAndWithdrawAndAssert(address(this), address(this));
     }
 
     function test_LockBySafeTransfer() public {
+        vm.expectEmit(true, true, true, true);
+        emit Lock(token, address(this), tokenId, address(this));
         ERC721(token).safeTransferFrom(address(this), address(hololocker), tokenId, "");
-        requestUnlockAndWithdrawAndAssert();
+        requestUnlockAndWithdrawAndAssert(address(this), address(this));
+    }
+
+    function test_LockByOperatorSafeTransfer() public {
+        mockNFT.setApprovalForAll(alice, true);
+        vm.startPrank(alice);
+        vm.expectEmit(true, true, true, true);
+        emit Lock(token, address(this), tokenId, alice);
+        ERC721(token).safeTransferFrom(address(this), address(hololocker), tokenId, "");
+        requestUnlockAndWithdrawAndAssert(address(this), alice);
+    }
+
+    function test_SetLockTime() public {
+        uint256 newValue = hololocker.MINIMUM_LOCK_TIME() + 10;
+        vm.expectEmit(true, true, true, true);
+        emit LockTimeUpdate(newValue);
+        hololocker.setLockTime(newValue);
+        assertEq(hololocker.lockTime(), newValue);
     }
 
     function test_CannotRequestUnlockMultipleTimes() public {
