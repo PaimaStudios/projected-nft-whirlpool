@@ -1,0 +1,27 @@
+{
+  "name": "example_dapp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/run.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node-dev --respawn ./src/run.ts",
+    "start": "ts-node ./src/run.ts"
+  },
+  "dependencies": {
+    "@assemblyscript/loader": "^0.27.13",
+    "cbor": "^9.0.1",
+    "deno": "^0.1.1",
+    "lucid-cardano": "^0.10.7",
+    "projected-nft-sdk": "file:../pkg"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.8.6",
+    "ts-node": "^10.9.1",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.2.2"
+  }
+}

@@ -9,9 +9,9 @@ use aiken/transaction.{
   Transaction,
 }
 use aiken/transaction/credential.{Address, PaymentCredential, ScriptCredential}
-use aiken/transaction/minted_value
 use aiken/transaction/value.{
-  AssetName, PolicyId, Value, merge, quantity_of, to_dict, without_lovelace,
+  AssetName, PolicyId, Value, from_minted_value, merge, quantity_of, to_dict,
+  without_lovelace,
 }
 
 /// The datum for the locked assets
@@ -72,7 +72,7 @@ type MintRedeemer {
 /// of the validity range to get an exact slot
 /// that the assets can be claimed at.
 /// note: denominated in slots, but equals ~15 blocks (5 * 60 / slot_time)
-const minimum_lock_time = 300
+const minimum_lock_time = 300000
 
 const ada_policy = ""
 
@@ -111,10 +111,10 @@ validator {
       when owner is {
         // An owner can be a public key, a spent NFT, or a burned receipt token that was minted by this script
         PKH(signer) -> {
-          expect True = list.has(extra_signatories, signer)
+          expect list.has(extra_signatories, signer)
           owner
         }
-        // In this case the redeemer out ref refers to some other input that holds the nft 
+        // In this case the redeemer out ref refers to some other input that holds the nft
         // that we check is spent
         NFT(policy, token_name) -> {
           // look up the NFT to be used using `nft_input_owner` as a performance optimization
@@ -127,8 +127,7 @@ validator {
             )
 
           // note: we do not burn the NFT - only that it's included in a tx input
-          expect True =
-            quantity_of(nft_input.output.value, policy, token_name) == 1
+          expect quantity_of(nft_input.output.value, policy, token_name) == 1
           owner
         }
 
@@ -137,9 +136,10 @@ validator {
 
           expect ScriptCredential(policy) = payc
 
-          // ensure that we burn the previous receipt NFT
-          expect True = minted_value.quantity_of(mint, policy, token_name) == -1
+          let mint = from_minted_value(mint)
 
+          // ensure that we burn the previous receipt NFT
+          expect quantity_of(mint, policy, token_name) == -1
           when status is {
             Locked -> {
               expect Some(next_receipt_name) = redeemer.new_receipt_owner
@@ -147,9 +147,7 @@ validator {
               // mint a new NFT so it can be used as the condition for withdrawing
               // note: `next_receipt_name` user input here is implicitly constained to match `create_expected_minted_nfts`
               //       since that's the only way a token can be minted from this policy 
-              expect True =
-                minted_value.quantity_of(mint, policy, next_receipt_name) == 1
-
+              expect quantity_of(mint, policy, next_receipt_name) == 1
               Receipt(next_receipt_name)
             }
             Unlocking { .. } ->
@@ -210,9 +208,11 @@ validator {
 
     let Transaction { inputs, outputs, mint, .. } = transaction
 
+    let mint = from_minted_value(mint)
+
     let minted_assets =
       mint
-        |> minted_value.tokens(policy_id)
+        |> value.tokens(policy_id)
         |> dict.to_list()
 
     when redeemer is {
@@ -283,8 +283,7 @@ fn check_partial_withdraw_outputs(
   expect InlineDatum(remainder_datum) = remainder_datum
   // note: we don't enforce that it's the same owner type
   expect State { status, .. }: State = remainder_datum
-  expect True = status == Locked
-
+  expect status == Locked
   // make sure no ADA is added to the state machine when unlocking
   expect [(in_ada_policy, in_ada_amount), ..in_rest_values] =
     input_value
@@ -307,10 +306,9 @@ fn check_partial_withdraw_outputs(
   expect Some(rem_ada_quantity) = dict.get(rem_ada_amount, ada_token_name)
 
   // <= instead of just equal to handle extra ADA having to be added to satisfy min UTXO
-  expect True = in_ada_quantity <= rem_ada_quantity + out_ada_quantity
-  expect True =
+  expect in_ada_quantity <= rem_ada_quantity + out_ada_quantity
+  expect
     in_ada_policy == ada_policy && out_ada_policy == ada_policy && rem_ada_policy == ada_policy
-
   // make sure native assets are exactly split between unlocking and funds remaining in the lock
   let rem_value_no_ada = rem_value |> without_lovelace
   let total_value_no_ada =
@@ -321,8 +319,7 @@ fn check_partial_withdraw_outputs(
       |> dict.to_list
 
   // Check other values have value conserved
-  expect True = in_rest_values == total_value_no_ada
-
+  expect in_rest_values == total_value_no_ada
   // Addresses are the same
   out_address == input_address && rem_address == input_address
 }
@@ -352,12 +349,10 @@ fn check_full_withdraw_outputs(
 
   // Check total ada quantity for the output is greater than or equal to input ada
   // <= instead of just equal to handle extra ADA having to be added to satisfy min UTXO
-  expect True =
+  expect
     in_ada_quantity <= out_ada_quantity && in_ada_policy == ada_policy && out_ada_policy == ada_policy
-
   // Check other values have value conserved
-  expect True = in_rest_values == out_rest_values
-
+  expect in_rest_values == out_rest_values
   // Addresses are the same
   out_address == input_address
 }
@@ -377,19 +372,18 @@ fn check_mint_to_output_datums(
     [(minted_asset_name, quantity), ..rest_assets] ->
       if quantity == 1 {
         // 1) ensure the expected asset exists 
-        expect True =
+        expect
           list.any(
             expected_assets,
             fn(expected_asset) { expected_asset == minted_asset_name },
           )
-
         // 2) ensure the expected asset is used as the lock for an output
         let expected_datum =
           InlineDatum(
             State { owner: Receipt(minted_asset_name), status: Locked },
           )
 
-        expect True =
+        expect
           list.any(
             outputs,
             fn(output) {
@@ -397,7 +391,6 @@ fn check_mint_to_output_datums(
               datum == expected_datum && address.payment_credential == validator_cred
             },
           )
-
         check_mint_to_output_datums(
           rest_assets,
           outputs,

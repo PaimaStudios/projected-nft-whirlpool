@@ -1,0 +1,26 @@
+[package]
+name = "projected-nft-sdk"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cml-core = { git = "https://github.com/dcSpark/cardano-multiplatform-lib.git", rev = "acca172633d0570a7432058aa5b0717ad2f0c6d7" }
+cml-chain = { git = "https://github.com/dcSpark/cardano-multiplatform-lib.git", rev = "acca172633d0570a7432058aa5b0717ad2f0c6d7" }
+cml-crypto = { git = "https://github.com/dcSpark/cardano-multiplatform-lib.git", rev = "acca172633d0570a7432058aa5b0717ad2f0c6d7" }
+
+cbor_event = { version = "2.4.0" }
+hex = { version = "0.4.3" }
+serde = { version = "1.0.171" }
+serde_derive = { version = "1.0.171" }
+serde_json = { version = "1.0.100" }
+schemars = "0.8.8"
+
+[dev-dependencies]
+anyhow = { version = "1.0.71" }
+bip39 = { version = "2.0.0" }
+clap = { version = "4.3", features = ["derive"] }
+reqwest = { version = "0.11.18", features = ["blocking", "json"] }
+serde_yaml = { version = "0.9.22" }
+tokio = { version = "1.29.1", features = ["full"]}

@@ -5,10 +5,10 @@ description = "Aiken contracts for the Projected NFT Whirlpool"
 
 [repository]
 user = "dcspark"
-project = " projected-nft-whirlpool"
+project = "projected-nft-whirlpool"
 platform = "github"
 
 [[dependencies]]
 name = "aiken-lang/stdlib"
-version = "1.1.0"
+version = "1.6.0"
 source = "github"
