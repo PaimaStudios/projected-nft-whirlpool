@@ -57,12 +57,12 @@ contract Hololocker is Ownable, IERC721Receiver {
         delete nftLockInfo[token][tokenId];
     }
 
-    /// @dev Handles initiating a lock upon direct NFT safeTransferFrom function call (must use token address as data)
-    function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data)
+    /// @dev Handles initiating a lock upon direct NFT safeTransferFrom function call
+    function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata)
         external
         returns (bytes4)
     {
-        (address token) = abi.decode(data, (address));
+        address token = msg.sender;
         nftLockInfo[token][tokenId].owner = from;
         nftLockInfo[token][tokenId].operator = operator;
         return IERC721Receiver.onERC721Received.selector;

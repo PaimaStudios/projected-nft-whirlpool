@@ -58,13 +58,8 @@ contract HololockerTest is Test {
     }
 
     function test_LockBySafeTransfer() public {
-        ERC721(token).safeTransferFrom(address(this), address(hololocker), tokenId, abi.encode(token));
+        ERC721(token).safeTransferFrom(address(this), address(hololocker), tokenId, "");
         requestUnlockAndWithdrawAndAssert();
-    }
-
-    function test_CannotSafeTransferWithoutData() public {
-        vm.expectRevert("ERC721: transfer to non ERC721Receiver implementer");
-        ERC721(token).safeTransferFrom(address(this), address(hololocker), tokenId);
     }
 
     function test_CannotRequestUnlockMultipleTimes() public {
