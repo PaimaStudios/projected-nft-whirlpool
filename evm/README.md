@@ -5,6 +5,15 @@ Sepolia is used as a testnet. Get test tokens [here](https://sepoliafaucet.com/)
 
 <!-- Deployed on Sepolia: [0x](https://sepolia.etherscan.io/address/0x) -->
 
+## Overview
+
+NFT can be locked in the Hololocker contract in the following ways:
+
+- by using the `lock` function of the Hololocker (requires owner to firstly set approval for the Hololocker contract to operate with the user's NFT), or
+- by directly transferring the NFT to the Hololocker contract via calling `safeTransferFrom` on the NFT contract (this can also be used by set operators of the NFT)
+
+After the NFT is locked, owner/operator can request an unlock via the `requestUnlock` function. After the unlock time has passed, the owner/operator can withdraw the NFT back to the original owner via the `withdraw` function.
+
 ### Preparing for usage
 
 1. Install Foundry by following the instructions from [their repository](https://github.com/foundry-rs/foundry#installation).
