@@ -18,7 +18,7 @@
     "deploy:localhost": "bash -c 'source .env && forge script script/Deploy.s.sol:Deploy --broadcast --private-key $LOCALCHAIN_DEPLOYER_PK --fork-url http://localhost:8545'",
     "deploy:mainnet": "bash -c 'source .env && forge script script/Deploy.s.sol:Deploy --rpc-url $MAINNET_RPC --broadcast --private-key $DEPLOYER_PK --verify'",
     "deploy:testnet": "bash -c 'source .env && forge script script/Deploy.s.sol:Deploy --rpc-url $TESTNET_RPC --broadcast --private-key $DEPLOYER_PK --verify'",
-    "format": "prettier --write '**/*.{sol,js,ts}'",
+    "format": "forge fmt",
     "lint": "solhint 'src/**/*.sol'",
     "snapshot": "forge snapshot",
     "snapshot:diff": "forge snapshot --diff",

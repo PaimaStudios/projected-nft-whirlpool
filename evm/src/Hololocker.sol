@@ -24,7 +24,7 @@ contract Hololocker is Ownable, IERC721Receiver {
     mapping(address => mapping(uint256 => LockInfo)) public nftLockInfo;
 
     event Lock(address indexed token, address indexed owner, uint256 tokenId, address operator);
-    event Unlock(address indexed token, address indexed owner, uint256 tokenId, address operator);
+    event Unlock(address indexed token, address indexed owner, uint256 tokenId, address operator, uint256 unlockTime);
     event Withdraw(address indexed token, address indexed owner, uint256 tokenId, address operator);
     event LockTimeUpdate(uint256 newValue);
 
@@ -52,8 +52,9 @@ contract Hololocker is Ownable, IERC721Receiver {
         if (nftLockInfo[token][tokenId].unlockTime != 0) {
             revert UnlockAlreadyRequested();
         }
-        nftLockInfo[token][tokenId].unlockTime = block.number + lockTime;
-        emit Unlock(token, nftLockInfo[token][tokenId].owner, tokenId, nftLockInfo[token][tokenId].operator);
+        uint256 unlockTime = block.number + lockTime;
+        nftLockInfo[token][tokenId].unlockTime = unlockTime;
+        emit Unlock(token, nftLockInfo[token][tokenId].owner, tokenId, nftLockInfo[token][tokenId].operator, unlockTime);
     }
 
     function withdraw(address token, uint256 tokenId) external authorized(token, tokenId) {

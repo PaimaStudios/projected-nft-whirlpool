@@ -17,7 +17,7 @@ contract MockNFT is ERC721 {
 
 contract HololockerTest is Test {
     event Lock(address indexed token, address indexed owner, uint256 tokenId, address operator);
-    event Unlock(address indexed token, address indexed owner, uint256 tokenId, address operator);
+    event Unlock(address indexed token, address indexed owner, uint256 tokenId, address operator, uint256 unlockTime);
     event Withdraw(address indexed token, address indexed owner, uint256 tokenId, address operator);
     event LockTimeUpdate(uint256 newValue);
 
@@ -45,7 +45,7 @@ contract HololockerTest is Test {
 
         vm.roll(block.number + 10);
         vm.expectEmit(true, true, true, true);
-        emit Unlock(token, owner, tokenId, operator);
+        emit Unlock(token, owner, tokenId, operator, block.number + hololocker.lockTime());
         hololocker.requestUnlock(token, tokenId);
         (unlockTime, owner, operator) = hololocker.nftLockInfo(token, tokenId);
         assertEq(unlockTime, block.number + hololocker.lockTime());
