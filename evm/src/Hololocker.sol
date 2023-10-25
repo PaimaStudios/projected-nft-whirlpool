@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
@@ -41,10 +41,10 @@ contract Hololocker is Ownable, IERC721Receiver {
     }
 
     function lock(address token, uint256 tokenId) external {
-        IERC721(token).transferFrom(msg.sender, address(this), tokenId);
         nftLockInfo[token][tokenId].owner = msg.sender;
         nftLockInfo[token][tokenId].operator = msg.sender;
         emit Lock(token, msg.sender, tokenId, msg.sender);
+        IERC721(token).transferFrom(msg.sender, address(this), tokenId);
     }
 
     /// @dev Since only authorized user can use this function, it cannot be used without locking NFT beforehand
@@ -63,9 +63,10 @@ contract Hololocker is Ownable, IERC721Receiver {
         if (info.unlockTime == 0 || block.number < info.unlockTime) {
             revert NotUnlockedYet();
         }
-        IERC721(token).transferFrom(address(this), info.owner, tokenId);
+        address owner = info.owner;
         emit Withdraw(token, info.owner, tokenId, info.operator);
         delete nftLockInfo[token][tokenId];
+        IERC721(token).transferFrom(address(this), owner, tokenId);
     }
 
     /// @dev Handles initiating a lock upon direct NFT safeTransferFrom function call

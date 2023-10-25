@@ -12,6 +12,7 @@
     "solhint-plugin-prettier": "^0.0.5"
   },
   "scripts": {
+    "analyze": "slither . --filter-paths \"lib|node_modules|test\"",
     "anvil": "bash -c 'source .env && anvil -m \"$LOCALCHAIN_DEPLOYER_MNEMONIC\"'",
     "compile": "forge build",
     "compile:sizes": "forge build --sizes",

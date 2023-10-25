@@ -42,3 +42,9 @@ Deploying will automatically verify the smart contracts on Etherscan. To disable
 yarn deploy:testnet
 yarn deploy:mainnet
 ```
+
+### Static analysis with [Slither](https://github.com/crytic/slither)
+
+```bash
+yarn analyze
+```
