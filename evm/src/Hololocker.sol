@@ -49,20 +49,22 @@ contract Hololocker is Ownable, IERC721Receiver {
 
     /// @dev Since only authorized user can use this function, it cannot be used without locking NFT beforehand
     function requestUnlock(address token, uint256 tokenId) external authorized(token, tokenId) {
-        if (nftLockInfo[token][tokenId].unlockTime != 0) {
+        LockInfo storage info = nftLockInfo[token][tokenId];
+        if (info.unlockTime != 0) {
             revert UnlockAlreadyRequested();
         }
         uint256 unlockTime = block.number + lockTime;
-        nftLockInfo[token][tokenId].unlockTime = unlockTime;
-        emit Unlock(token, nftLockInfo[token][tokenId].owner, tokenId, nftLockInfo[token][tokenId].operator, unlockTime);
+        info.unlockTime = unlockTime;
+        emit Unlock(token, info.owner, tokenId, info.operator, unlockTime);
     }
 
     function withdraw(address token, uint256 tokenId) external authorized(token, tokenId) {
-        if (nftLockInfo[token][tokenId].unlockTime == 0 || block.number < nftLockInfo[token][tokenId].unlockTime) {
+        LockInfo storage info = nftLockInfo[token][tokenId];
+        if (info.unlockTime == 0 || block.number < info.unlockTime) {
             revert NotUnlockedYet();
         }
-        IERC721(token).transferFrom(address(this), nftLockInfo[token][tokenId].owner, tokenId);
-        emit Withdraw(token, nftLockInfo[token][tokenId].owner, tokenId, nftLockInfo[token][tokenId].operator);
+        IERC721(token).transferFrom(address(this), info.owner, tokenId);
+        emit Withdraw(token, info.owner, tokenId, info.operator);
         delete nftLockInfo[token][tokenId];
     }
 
@@ -87,7 +89,8 @@ contract Hololocker is Ownable, IERC721Receiver {
     }
 
     function _authorized(address token, uint256 tokenId) internal view {
-        if (msg.sender != nftLockInfo[token][tokenId].owner && msg.sender != nftLockInfo[token][tokenId].operator) {
+        LockInfo storage info = nftLockInfo[token][tokenId];
+        if (msg.sender != info.owner && msg.sender != info.operator) {
             revert Unauthorized();
         }
     }
