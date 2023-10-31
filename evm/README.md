@@ -12,6 +12,8 @@ NFT can be locked in the Hololocker contract in the following ways:
 - by using the `lock` function of the Hololocker (requires owner to firstly set approval for the Hololocker contract to operate with the user's NFT), or
 - by directly transferring the NFT to the Hololocker contract via calling `safeTransferFrom` on the NFT contract (this can also be used by set operators of the NFT)
 
+  **WARNING**: Do **NOT** use `transferFrom` as a means of locking an NFT - The NFT will become **permanently stuck**. The `safeTransferFrom` variant must be used in order to initialize the lock and create a record of rightful owner.
+
 After the NFT is locked, the owner or the address who initiated the lock can request an unlock via the `requestUnlock` function. After the unlock time has passed, the owner or the address who initiated the lock can withdraw the NFT back to the original owner via the `withdraw` function.
 
 ### Preparing for usage
