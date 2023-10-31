@@ -13,7 +13,8 @@ contract Deploy is Script {
     function run() external {
         vm.startBroadcast();
 
-        Hololocker hololocker = new Hololocker();
+        uint256 lockTime = 1 minutes;
+        Hololocker hololocker = new Hololocker(lockTime);
         console2.log("Hololocker implementation:", address(hololocker));
 
         vm.stopBroadcast();

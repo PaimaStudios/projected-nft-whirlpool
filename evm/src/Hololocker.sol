@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Hololocker is Ownable, IERC721Receiver {
     struct LockInfo {
-        // Specified by blocks, 0 if withdrawal hasn't been requested
+        // Timestamp when NFT will be withdrawable, 0 if withdrawal hasn't been requested
         uint256 unlockTime;
         // Rightful owner of the NFT
         address owner;
@@ -15,9 +15,7 @@ contract Hololocker is Ownable, IERC721Receiver {
         address operator;
     }
 
-    // Denominated in blocks
-    uint256 public constant MINIMUM_LOCK_TIME = 64;
-    // Denominated in blocks
+    uint256 public constant MAXIMUM_LOCK_TIME = 1 days;
     uint256 public lockTime;
 
     // token address => token ID => LockInfo
@@ -40,6 +38,10 @@ contract Hololocker is Ownable, IERC721Receiver {
         _;
     }
 
+    constructor(uint256 lockTime_) {
+        lockTime = lockTime_;
+    }
+
     function lock(address token, uint256 tokenId) external {
         nftLockInfo[token][tokenId].owner = msg.sender;
         nftLockInfo[token][tokenId].operator = msg.sender;
@@ -53,14 +55,14 @@ contract Hololocker is Ownable, IERC721Receiver {
         if (info.unlockTime != 0) {
             revert UnlockAlreadyRequested();
         }
-        uint256 unlockTime = block.number + lockTime;
+        uint256 unlockTime = block.timestamp + lockTime;
         info.unlockTime = unlockTime;
         emit Unlock(token, info.owner, tokenId, info.operator, unlockTime);
     }
 
     function withdraw(address token, uint256 tokenId) external authorized(token, tokenId) {
         LockInfo storage info = nftLockInfo[token][tokenId];
-        if (info.unlockTime == 0 || block.number < info.unlockTime) {
+        if (info.unlockTime == 0 || block.timestamp < info.unlockTime) {
             revert NotUnlockedYet();
         }
         address owner = info.owner;
@@ -82,7 +84,7 @@ contract Hololocker is Ownable, IERC721Receiver {
     }
 
     function setLockTime(uint256 newLockTime) external onlyOwner {
-        if (newLockTime < MINIMUM_LOCK_TIME) {
+        if (newLockTime > MAXIMUM_LOCK_TIME) {
             revert InvalidLockTime();
         }
         lockTime = newLockTime;

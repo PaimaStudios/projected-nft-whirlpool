@@ -26,14 +26,16 @@ contract HololockerTest is Test {
     address token;
     uint256 tokenId;
     address alice = makeAddr("alice");
+    uint256 maxLockTime;
 
     function setUp() public {
-        hololocker = new Hololocker();
+        hololocker = new Hololocker(1 minutes);
         mockNFT = new MockNFT("X", "Y");
         tokenId = 0;
         token = address(mockNFT);
         mockNFT.mint(address(this), tokenId);
         mockNFT.setApprovalForAll(address(hololocker), true);
+        maxLockTime = hololocker.MAXIMUM_LOCK_TIME();
     }
 
     function requestUnlockAndWithdrawAndAssert(address owner_, address operator_) public {
@@ -45,14 +47,14 @@ contract HololockerTest is Test {
 
         vm.roll(block.number + 10);
         vm.expectEmit(true, true, true, true);
-        emit Unlock(token, owner, tokenId, operator, block.number + hololocker.lockTime());
+        emit Unlock(token, owner, tokenId, operator, block.timestamp + hololocker.lockTime());
         hololocker.requestUnlock(token, tokenId);
         (unlockTime, owner, operator) = hololocker.nftLockInfo(token, tokenId);
-        assertEq(unlockTime, block.number + hololocker.lockTime());
+        assertEq(unlockTime, block.timestamp + hololocker.lockTime());
         assertEq(owner, owner_);
         assertEq(operator, operator_);
 
-        vm.roll(block.number + hololocker.lockTime());
+        vm.warp(block.timestamp + hololocker.lockTime());
         vm.expectEmit(true, true, true, true);
         emit Withdraw(token, owner, tokenId, operator);
         hololocker.withdraw(token, tokenId);
@@ -87,7 +89,7 @@ contract HololockerTest is Test {
     }
 
     function test_SetLockTime() public {
-        uint256 newValue = hololocker.MINIMUM_LOCK_TIME() + 10;
+        uint256 newValue = maxLockTime - 10;
         vm.expectEmit(true, true, true, true);
         emit LockTimeUpdate(newValue);
         hololocker.setLockTime(newValue);
@@ -116,7 +118,7 @@ contract HololockerTest is Test {
     function test_CannotWithdrawUnauthorized() public {
         hololocker.lock(token, tokenId);
         hololocker.requestUnlock(token, tokenId);
-        vm.roll(block.number + hololocker.lockTime());
+        vm.warp(block.timestamp + hololocker.lockTime());
         vm.prank(alice);
         vm.expectRevert(Hololocker.Unauthorized.selector);
         hololocker.withdraw(token, tokenId);
@@ -131,19 +133,19 @@ contract HololockerTest is Test {
     function test_CannotWithdrawIfUnlockTimeNotReached() public {
         hololocker.lock(token, tokenId);
         hololocker.requestUnlock(token, tokenId);
-        vm.roll(block.number + hololocker.lockTime() - 1);
+        vm.warp(block.timestamp + hololocker.lockTime() - 1);
         vm.expectRevert(Hololocker.NotUnlockedYet.selector);
         hololocker.withdraw(token, tokenId);
     }
 
     function test_CannotSetLockTimeInvalid() public {
         vm.expectRevert(Hololocker.InvalidLockTime.selector);
-        hololocker.setLockTime(1);
+        hololocker.setLockTime(maxLockTime + 1);
     }
 
     function test_CannotSetLockTimeUnauthorized() public {
         vm.prank(alice);
         vm.expectRevert("Ownable: caller is not the owner");
-        hololocker.setLockTime(100);
+        hololocker.setLockTime(maxLockTime);
     }
 }

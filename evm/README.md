@@ -36,6 +36,8 @@ yarn deploy:localhost
 
 ### Deploying to testnet or mainnet
 
+**Before deploying, adjust the initial lock time variable in `Deploy.s.sol`!**
+
 Deploying will automatically verify the smart contracts on Etherscan. To disable this, remove the verifying arguments from the script.
 
 ```bash
