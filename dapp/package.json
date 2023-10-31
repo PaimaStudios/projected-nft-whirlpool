@@ -1,0 +1,72 @@
+{
+  "name": "projected-nft-whirlpool-evm-dapp",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
+    "@mui/icons-material": "^5.14.9",
+    "@mui/material": "^5.14.8",
+    "@noble/ed25519": "^2.0.0",
+    "@rainbow-me/rainbowkit": "^1.0.0",
+    "@testing-library/jest-dom": "^5.14.1",
+    "@testing-library/react": "^13.0.0",
+    "@testing-library/user-event": "^13.2.1",
+    "@types/jest": "^27.0.1",
+    "@types/node": "^16.7.13",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "alchemy-sdk": "^2.10.1",
+    "axios": "^1.5.1",
+    "curve25519-js": "^0.0.4",
+    "encoding": "^0.1.13",
+    "just-clone": "^6.2.0",
+    "lokijs": "^1.5.12",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.16.0",
+    "react-scripts": "5.0.1",
+    "typescript": "^4.4.2",
+    "usehooks-ts": "^2.9.1",
+    "viem": "^1.18.1",
+    "wagmi": "^1.4.5",
+    "web-vitals": "^2.1.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "format": "prettier . --write",
+    "generate": "wagmi generate && prettier ./src/generated.ts --write",
+    "pages:dev": "wrangler pages dev --compatibility-date=2023-10-03 --port 3000 -- npm start",
+    "pages:deploy": "npm run build && wrangler pages deploy ./build"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not ie <= 99",
+      "not android <= 4.4.4",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@wagmi/cli": "^1.5.0",
+    "eslint": "^8.15.0",
+    "eslint-config-next": "^12.1.6",
+    "prettier": "3.0.3",
+    "wrangler": "^3.10.1"
+  }
+}

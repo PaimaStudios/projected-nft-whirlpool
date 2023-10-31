@@ -1,0 +1,15 @@
+{
+  "short_name": "Projected NFT Whirlpool dApp",
+  "name": "Projected NFT Whirlpool dApp",
+  "icons": [
+    {
+      "src": "icon.png",
+      "type": "image/png",
+      "sizes": "578x578"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#19b17b",
+  "background_color": "#030909"
+}
