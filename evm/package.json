@@ -1,0 +1,29 @@
+{
+  "name": "projected-nft-whirlpool-evm",
+  "description": "Projected NFT Whirlpool EVM",
+  "version": "1.0.0",
+  "license": "ISC",
+  "devDependencies": {
+    "@openzeppelin/contracts": "^4.9.3",
+    "prettier": "^3.0.1",
+    "prettier-plugin-organize-imports": "^3.2.1",
+    "prettier-plugin-solidity": "^1.1.3",
+    "solhint": "^3.6.1",
+    "solhint-plugin-prettier": "^0.0.5"
+  },
+  "scripts": {
+    "analyze": "slither . --filter-paths \"lib|node_modules|test\"",
+    "anvil": "bash -c 'source .env && anvil -m \"$LOCALCHAIN_DEPLOYER_MNEMONIC\"'",
+    "compile": "forge build",
+    "compile:sizes": "forge build --sizes",
+    "deploy:localhost": "bash -c 'source .env && forge script script/Deploy.s.sol:Deploy --broadcast --private-key $LOCALCHAIN_DEPLOYER_PK --fork-url http://localhost:8545'",
+    "deploy:mainnet": "bash -c 'source .env && forge script script/Deploy.s.sol:Deploy --rpc-url $MAINNET_RPC --broadcast --private-key $DEPLOYER_PK --verify'",
+    "deploy:testnet": "bash -c 'source .env && forge script script/Deploy.s.sol:Deploy --rpc-url $TESTNET_RPC --broadcast --private-key $DEPLOYER_PK --verify'",
+    "format": "forge fmt",
+    "lint": "solhint 'src/**/*.sol'",
+    "snapshot": "forge snapshot",
+    "snapshot:diff": "forge snapshot --diff",
+    "test": "forge test -vv",
+    "test:gas": "forge test -vv --gas-report"
+  }
+}
