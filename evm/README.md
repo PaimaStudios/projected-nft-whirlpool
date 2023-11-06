@@ -53,3 +53,17 @@ yarn deploy:mainnet
 ```bash
 yarn analyze
 ```
+
+## Problems and thoughts
+
+### NFT locking UX
+
+Imagine you have a game that supports projected NFTs. You don't want to tell users "go do something on this other site and then come back here" since the user retention on that is probably not going to be very good (especially for mobile)
+Embedding this directly inside the game isn't easy either because people will wonder where their NFT went. "I started playing game, it asked me to sign a tx to set my NFT for the game, and now my NFT is gone!!!" (not realizing they can unlock it)
+
+One of ways to tackle this is to issue a soulbound receipt NFT upon locking, which the user burns when withdrawing the original NFT. However, this roughly doubles the gas cost of `lock` operation (85k gas units -> 161k gas units) and increases the cost of `withdraw` operation by 60% (7564 gas units -> 12125 gas units). Another caveat is that the receipt NFT might not even appear in user's crypto wallet (for example in Metamask you have to specifically enable the detection feature and it is available only on Ethereum).
+
+### Projecting other standards (ERC20, ERC1155...)
+
+Maybe somebody will want a feature in their game related to owning enough of the ERC20 token, or will want to support using ERC1155 tokens in-game.
+We decided to not implement support for other standards right now, but it would be pretty easy to do so in the future, should the need appear.
