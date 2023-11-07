@@ -5,7 +5,7 @@ import { usePrepareErc721SafeTransferFrom } from "../generated";
 import TransactionButton from "./TransactionButton";
 
 type Props = {
-  token: `0x${string}`;
+  token: string;
   tokenId: bigint;
 };
 
@@ -13,7 +13,7 @@ export default function LockNftButtonEVM({ token, tokenId }: Props) {
   const { address } = useAccount();
 
   const { config } = usePrepareErc721SafeTransferFrom({
-    address: token,
+    address: token as `0x${string}`,
     args: [address!, hololockerConfig.address, tokenId],
     enabled: !!address,
   });

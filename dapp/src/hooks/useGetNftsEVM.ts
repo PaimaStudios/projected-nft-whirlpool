@@ -10,7 +10,8 @@ export const useGetNftsEVM = (): Nft[] | undefined => {
 
   useEffect(() => {
     const fetchNfts = async (address: string, alchemy: Alchemy) => {
-      setNfts((await alchemy.nft.getNftsForOwner(address)).ownedNfts);
+      const ownedNfts = (await alchemy.nft.getNftsForOwner(address)).ownedNfts;
+      setNfts(ownedNfts);
     };
     if (address && alchemy) {
       fetchNfts(address, alchemy);

@@ -3,9 +3,9 @@
   "name": "Projected NFT Whirlpool dApp",
   "icons": [
     {
-      "src": "icon.png",
+      "src": "favicon.ico",
       "type": "image/png",
-      "sizes": "578x578"
+      "sizes": "48x48"
     }
   ],
   "start_url": ".",

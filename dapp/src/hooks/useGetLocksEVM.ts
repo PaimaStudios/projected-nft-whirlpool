@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { useAccount, usePublicClient } from "wagmi";
 import { hololockerConfig } from "../contracts";
 import { LockInfo } from "../utils/types";
+import { useGetAlchemy } from "./useGetAlchemy";
+import { NftTokenType } from "alchemy-sdk";
 
 export const useGetLocksEVM = () => {
   const [locks, setLocks] = useState<LockInfo[]>();
@@ -10,6 +12,7 @@ export const useGetLocksEVM = () => {
   const [error, setError] = useState<string>();
   const { address } = useAccount();
   const publicClient = usePublicClient();
+  const alchemy = useGetAlchemy();
 
   const fetchLocks = async (publicClient: any) => {
     try {

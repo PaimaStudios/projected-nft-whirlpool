@@ -331,10 +331,220 @@ export const erc721ABI = [
 ] as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ERC721Enumerable
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export const erc721EnumerableABI = [
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [
+      {
+        name: "owner",
+        internalType: "address",
+        type: "address",
+        indexed: true,
+      },
+      {
+        name: "approved",
+        internalType: "address",
+        type: "address",
+        indexed: true,
+      },
+      {
+        name: "tokenId",
+        internalType: "uint256",
+        type: "uint256",
+        indexed: true,
+      },
+    ],
+    name: "Approval",
+  },
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [
+      {
+        name: "owner",
+        internalType: "address",
+        type: "address",
+        indexed: true,
+      },
+      {
+        name: "operator",
+        internalType: "address",
+        type: "address",
+        indexed: true,
+      },
+      { name: "approved", internalType: "bool", type: "bool", indexed: false },
+    ],
+    name: "ApprovalForAll",
+  },
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [
+      { name: "from", internalType: "address", type: "address", indexed: true },
+      { name: "to", internalType: "address", type: "address", indexed: true },
+      {
+        name: "tokenId",
+        internalType: "uint256",
+        type: "uint256",
+        indexed: true,
+      },
+    ],
+    name: "Transfer",
+  },
+  {
+    stateMutability: "nonpayable",
+    type: "function",
+    inputs: [
+      { name: "to", internalType: "address", type: "address" },
+      { name: "tokenId", internalType: "uint256", type: "uint256" },
+    ],
+    name: "approve",
+    outputs: [],
+  },
+  {
+    stateMutability: "view",
+    type: "function",
+    inputs: [{ name: "owner", internalType: "address", type: "address" }],
+    name: "balanceOf",
+    outputs: [{ name: "", internalType: "uint256", type: "uint256" }],
+  },
+  {
+    stateMutability: "view",
+    type: "function",
+    inputs: [{ name: "tokenId", internalType: "uint256", type: "uint256" }],
+    name: "getApproved",
+    outputs: [{ name: "", internalType: "address", type: "address" }],
+  },
+  {
+    stateMutability: "view",
+    type: "function",
+    inputs: [
+      { name: "owner", internalType: "address", type: "address" },
+      { name: "operator", internalType: "address", type: "address" },
+    ],
+    name: "isApprovedForAll",
+    outputs: [{ name: "", internalType: "bool", type: "bool" }],
+  },
+  {
+    stateMutability: "view",
+    type: "function",
+    inputs: [],
+    name: "name",
+    outputs: [{ name: "", internalType: "string", type: "string" }],
+  },
+  {
+    stateMutability: "view",
+    type: "function",
+    inputs: [{ name: "tokenId", internalType: "uint256", type: "uint256" }],
+    name: "ownerOf",
+    outputs: [{ name: "", internalType: "address", type: "address" }],
+  },
+  {
+    stateMutability: "nonpayable",
+    type: "function",
+    inputs: [
+      { name: "from", internalType: "address", type: "address" },
+      { name: "to", internalType: "address", type: "address" },
+      { name: "tokenId", internalType: "uint256", type: "uint256" },
+    ],
+    name: "safeTransferFrom",
+    outputs: [],
+  },
+  {
+    stateMutability: "nonpayable",
+    type: "function",
+    inputs: [
+      { name: "from", internalType: "address", type: "address" },
+      { name: "to", internalType: "address", type: "address" },
+      { name: "tokenId", internalType: "uint256", type: "uint256" },
+      { name: "data", internalType: "bytes", type: "bytes" },
+    ],
+    name: "safeTransferFrom",
+    outputs: [],
+  },
+  {
+    stateMutability: "nonpayable",
+    type: "function",
+    inputs: [
+      { name: "operator", internalType: "address", type: "address" },
+      { name: "approved", internalType: "bool", type: "bool" },
+    ],
+    name: "setApprovalForAll",
+    outputs: [],
+  },
+  {
+    stateMutability: "view",
+    type: "function",
+    inputs: [{ name: "interfaceId", internalType: "bytes4", type: "bytes4" }],
+    name: "supportsInterface",
+    outputs: [{ name: "", internalType: "bool", type: "bool" }],
+  },
+  {
+    stateMutability: "view",
+    type: "function",
+    inputs: [],
+    name: "symbol",
+    outputs: [{ name: "", internalType: "string", type: "string" }],
+  },
+  {
+    stateMutability: "view",
+    type: "function",
+    inputs: [{ name: "index", internalType: "uint256", type: "uint256" }],
+    name: "tokenByIndex",
+    outputs: [{ name: "", internalType: "uint256", type: "uint256" }],
+  },
+  {
+    stateMutability: "view",
+    type: "function",
+    inputs: [
+      { name: "owner", internalType: "address", type: "address" },
+      { name: "index", internalType: "uint256", type: "uint256" },
+    ],
+    name: "tokenOfOwnerByIndex",
+    outputs: [{ name: "", internalType: "uint256", type: "uint256" }],
+  },
+  {
+    stateMutability: "view",
+    type: "function",
+    inputs: [{ name: "tokenId", internalType: "uint256", type: "uint256" }],
+    name: "tokenURI",
+    outputs: [{ name: "", internalType: "string", type: "string" }],
+  },
+  {
+    stateMutability: "view",
+    type: "function",
+    inputs: [],
+    name: "totalSupply",
+    outputs: [{ name: "", internalType: "uint256", type: "uint256" }],
+  },
+  {
+    stateMutability: "nonpayable",
+    type: "function",
+    inputs: [
+      { name: "from", internalType: "address", type: "address" },
+      { name: "to", internalType: "address", type: "address" },
+      { name: "tokenId", internalType: "uint256", type: "uint256" },
+    ],
+    name: "transferFrom",
+    outputs: [],
+  },
+] as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Hololocker
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export const hololockerABI = [
+  {
+    stateMutability: "nonpayable",
+    type: "constructor",
+    inputs: [{ name: "lockTime_", internalType: "uint256", type: "uint256" }],
+  },
+  { type: "error", inputs: [], name: "InvalidInputArity" },
   { type: "error", inputs: [], name: "InvalidLockTime" },
   { type: "error", inputs: [], name: "NotUnlockedYet" },
   { type: "error", inputs: [], name: "TokenNotLocked" },
@@ -475,15 +685,16 @@ export const hololockerABI = [
     stateMutability: "view",
     type: "function",
     inputs: [],
-    name: "MINIMUM_LOCK_TIME",
+    name: "MAXIMUM_LOCK_TIME",
     outputs: [{ name: "", internalType: "uint256", type: "uint256" }],
   },
   {
     stateMutability: "nonpayable",
     type: "function",
     inputs: [
-      { name: "token", internalType: "address", type: "address" },
-      { name: "tokenId", internalType: "uint256", type: "uint256" },
+      { name: "tokens", internalType: "address[]", type: "address[]" },
+      { name: "tokenIds", internalType: "uint256[]", type: "uint256[]" },
+      { name: "owner", internalType: "address", type: "address" },
     ],
     name: "lock",
     outputs: [],
@@ -539,8 +750,8 @@ export const hololockerABI = [
     stateMutability: "nonpayable",
     type: "function",
     inputs: [
-      { name: "token", internalType: "address", type: "address" },
-      { name: "tokenId", internalType: "uint256", type: "uint256" },
+      { name: "tokens", internalType: "address[]", type: "address[]" },
+      { name: "tokenIds", internalType: "uint256[]", type: "uint256[]" },
     ],
     name: "requestUnlock",
     outputs: [],
@@ -563,8 +774,8 @@ export const hololockerABI = [
     stateMutability: "nonpayable",
     type: "function",
     inputs: [
-      { name: "token", internalType: "address", type: "address" },
-      { name: "tokenId", internalType: "uint256", type: "uint256" },
+      { name: "tokens", internalType: "address[]", type: "address[]" },
+      { name: "tokenIds", internalType: "uint256[]", type: "uint256[]" },
     ],
     name: "withdraw",
     outputs: [],
@@ -810,6 +1021,189 @@ export const ierc721ABI = [
     inputs: [{ name: "interfaceId", internalType: "bytes4", type: "bytes4" }],
     name: "supportsInterface",
     outputs: [{ name: "", internalType: "bool", type: "bool" }],
+  },
+  {
+    stateMutability: "nonpayable",
+    type: "function",
+    inputs: [
+      { name: "from", internalType: "address", type: "address" },
+      { name: "to", internalType: "address", type: "address" },
+      { name: "tokenId", internalType: "uint256", type: "uint256" },
+    ],
+    name: "transferFrom",
+    outputs: [],
+  },
+] as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// IERC721Enumerable
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export const ierc721EnumerableABI = [
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [
+      {
+        name: "owner",
+        internalType: "address",
+        type: "address",
+        indexed: true,
+      },
+      {
+        name: "approved",
+        internalType: "address",
+        type: "address",
+        indexed: true,
+      },
+      {
+        name: "tokenId",
+        internalType: "uint256",
+        type: "uint256",
+        indexed: true,
+      },
+    ],
+    name: "Approval",
+  },
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [
+      {
+        name: "owner",
+        internalType: "address",
+        type: "address",
+        indexed: true,
+      },
+      {
+        name: "operator",
+        internalType: "address",
+        type: "address",
+        indexed: true,
+      },
+      { name: "approved", internalType: "bool", type: "bool", indexed: false },
+    ],
+    name: "ApprovalForAll",
+  },
+  {
+    type: "event",
+    anonymous: false,
+    inputs: [
+      { name: "from", internalType: "address", type: "address", indexed: true },
+      { name: "to", internalType: "address", type: "address", indexed: true },
+      {
+        name: "tokenId",
+        internalType: "uint256",
+        type: "uint256",
+        indexed: true,
+      },
+    ],
+    name: "Transfer",
+  },
+  {
+    stateMutability: "nonpayable",
+    type: "function",
+    inputs: [
+      { name: "to", internalType: "address", type: "address" },
+      { name: "tokenId", internalType: "uint256", type: "uint256" },
+    ],
+    name: "approve",
+    outputs: [],
+  },
+  {
+    stateMutability: "view",
+    type: "function",
+    inputs: [{ name: "owner", internalType: "address", type: "address" }],
+    name: "balanceOf",
+    outputs: [{ name: "balance", internalType: "uint256", type: "uint256" }],
+  },
+  {
+    stateMutability: "view",
+    type: "function",
+    inputs: [{ name: "tokenId", internalType: "uint256", type: "uint256" }],
+    name: "getApproved",
+    outputs: [{ name: "operator", internalType: "address", type: "address" }],
+  },
+  {
+    stateMutability: "view",
+    type: "function",
+    inputs: [
+      { name: "owner", internalType: "address", type: "address" },
+      { name: "operator", internalType: "address", type: "address" },
+    ],
+    name: "isApprovedForAll",
+    outputs: [{ name: "", internalType: "bool", type: "bool" }],
+  },
+  {
+    stateMutability: "view",
+    type: "function",
+    inputs: [{ name: "tokenId", internalType: "uint256", type: "uint256" }],
+    name: "ownerOf",
+    outputs: [{ name: "owner", internalType: "address", type: "address" }],
+  },
+  {
+    stateMutability: "nonpayable",
+    type: "function",
+    inputs: [
+      { name: "from", internalType: "address", type: "address" },
+      { name: "to", internalType: "address", type: "address" },
+      { name: "tokenId", internalType: "uint256", type: "uint256" },
+    ],
+    name: "safeTransferFrom",
+    outputs: [],
+  },
+  {
+    stateMutability: "nonpayable",
+    type: "function",
+    inputs: [
+      { name: "from", internalType: "address", type: "address" },
+      { name: "to", internalType: "address", type: "address" },
+      { name: "tokenId", internalType: "uint256", type: "uint256" },
+      { name: "data", internalType: "bytes", type: "bytes" },
+    ],
+    name: "safeTransferFrom",
+    outputs: [],
+  },
+  {
+    stateMutability: "nonpayable",
+    type: "function",
+    inputs: [
+      { name: "operator", internalType: "address", type: "address" },
+      { name: "approved", internalType: "bool", type: "bool" },
+    ],
+    name: "setApprovalForAll",
+    outputs: [],
+  },
+  {
+    stateMutability: "view",
+    type: "function",
+    inputs: [{ name: "interfaceId", internalType: "bytes4", type: "bytes4" }],
+    name: "supportsInterface",
+    outputs: [{ name: "", internalType: "bool", type: "bool" }],
+  },
+  {
+    stateMutability: "view",
+    type: "function",
+    inputs: [{ name: "index", internalType: "uint256", type: "uint256" }],
+    name: "tokenByIndex",
+    outputs: [{ name: "", internalType: "uint256", type: "uint256" }],
+  },
+  {
+    stateMutability: "view",
+    type: "function",
+    inputs: [
+      { name: "owner", internalType: "address", type: "address" },
+      { name: "index", internalType: "uint256", type: "uint256" },
+    ],
+    name: "tokenOfOwnerByIndex",
+    outputs: [{ name: "", internalType: "uint256", type: "uint256" }],
+  },
+  {
+    stateMutability: "view",
+    type: "function",
+    inputs: [],
+    name: "totalSupply",
+    outputs: [{ name: "", internalType: "uint256", type: "uint256" }],
   },
   {
     stateMutability: "nonpayable",
@@ -1933,6 +2327,647 @@ export function useErc721TransferEvent(
 }
 
 /**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link erc721EnumerableABI}__.
+ */
+export function useErc721EnumerableRead<
+  TFunctionName extends string,
+  TSelectData = ReadContractResult<typeof erc721EnumerableABI, TFunctionName>,
+>(
+  config: Omit<
+    UseContractReadConfig<
+      typeof erc721EnumerableABI,
+      TFunctionName,
+      TSelectData
+    >,
+    "abi"
+  > = {} as any,
+) {
+  return useContractRead({
+    abi: erc721EnumerableABI,
+    ...config,
+  } as UseContractReadConfig<
+    typeof erc721EnumerableABI,
+    TFunctionName,
+    TSelectData
+  >);
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link erc721EnumerableABI}__ and `functionName` set to `"balanceOf"`.
+ */
+export function useErc721EnumerableBalanceOf<
+  TFunctionName extends "balanceOf",
+  TSelectData = ReadContractResult<typeof erc721EnumerableABI, TFunctionName>,
+>(
+  config: Omit<
+    UseContractReadConfig<
+      typeof erc721EnumerableABI,
+      TFunctionName,
+      TSelectData
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return useContractRead({
+    abi: erc721EnumerableABI,
+    functionName: "balanceOf",
+    ...config,
+  } as UseContractReadConfig<
+    typeof erc721EnumerableABI,
+    TFunctionName,
+    TSelectData
+  >);
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link erc721EnumerableABI}__ and `functionName` set to `"getApproved"`.
+ */
+export function useErc721EnumerableGetApproved<
+  TFunctionName extends "getApproved",
+  TSelectData = ReadContractResult<typeof erc721EnumerableABI, TFunctionName>,
+>(
+  config: Omit<
+    UseContractReadConfig<
+      typeof erc721EnumerableABI,
+      TFunctionName,
+      TSelectData
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return useContractRead({
+    abi: erc721EnumerableABI,
+    functionName: "getApproved",
+    ...config,
+  } as UseContractReadConfig<
+    typeof erc721EnumerableABI,
+    TFunctionName,
+    TSelectData
+  >);
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link erc721EnumerableABI}__ and `functionName` set to `"isApprovedForAll"`.
+ */
+export function useErc721EnumerableIsApprovedForAll<
+  TFunctionName extends "isApprovedForAll",
+  TSelectData = ReadContractResult<typeof erc721EnumerableABI, TFunctionName>,
+>(
+  config: Omit<
+    UseContractReadConfig<
+      typeof erc721EnumerableABI,
+      TFunctionName,
+      TSelectData
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return useContractRead({
+    abi: erc721EnumerableABI,
+    functionName: "isApprovedForAll",
+    ...config,
+  } as UseContractReadConfig<
+    typeof erc721EnumerableABI,
+    TFunctionName,
+    TSelectData
+  >);
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link erc721EnumerableABI}__ and `functionName` set to `"name"`.
+ */
+export function useErc721EnumerableName<
+  TFunctionName extends "name",
+  TSelectData = ReadContractResult<typeof erc721EnumerableABI, TFunctionName>,
+>(
+  config: Omit<
+    UseContractReadConfig<
+      typeof erc721EnumerableABI,
+      TFunctionName,
+      TSelectData
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return useContractRead({
+    abi: erc721EnumerableABI,
+    functionName: "name",
+    ...config,
+  } as UseContractReadConfig<
+    typeof erc721EnumerableABI,
+    TFunctionName,
+    TSelectData
+  >);
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link erc721EnumerableABI}__ and `functionName` set to `"ownerOf"`.
+ */
+export function useErc721EnumerableOwnerOf<
+  TFunctionName extends "ownerOf",
+  TSelectData = ReadContractResult<typeof erc721EnumerableABI, TFunctionName>,
+>(
+  config: Omit<
+    UseContractReadConfig<
+      typeof erc721EnumerableABI,
+      TFunctionName,
+      TSelectData
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return useContractRead({
+    abi: erc721EnumerableABI,
+    functionName: "ownerOf",
+    ...config,
+  } as UseContractReadConfig<
+    typeof erc721EnumerableABI,
+    TFunctionName,
+    TSelectData
+  >);
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link erc721EnumerableABI}__ and `functionName` set to `"supportsInterface"`.
+ */
+export function useErc721EnumerableSupportsInterface<
+  TFunctionName extends "supportsInterface",
+  TSelectData = ReadContractResult<typeof erc721EnumerableABI, TFunctionName>,
+>(
+  config: Omit<
+    UseContractReadConfig<
+      typeof erc721EnumerableABI,
+      TFunctionName,
+      TSelectData
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return useContractRead({
+    abi: erc721EnumerableABI,
+    functionName: "supportsInterface",
+    ...config,
+  } as UseContractReadConfig<
+    typeof erc721EnumerableABI,
+    TFunctionName,
+    TSelectData
+  >);
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link erc721EnumerableABI}__ and `functionName` set to `"symbol"`.
+ */
+export function useErc721EnumerableSymbol<
+  TFunctionName extends "symbol",
+  TSelectData = ReadContractResult<typeof erc721EnumerableABI, TFunctionName>,
+>(
+  config: Omit<
+    UseContractReadConfig<
+      typeof erc721EnumerableABI,
+      TFunctionName,
+      TSelectData
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return useContractRead({
+    abi: erc721EnumerableABI,
+    functionName: "symbol",
+    ...config,
+  } as UseContractReadConfig<
+    typeof erc721EnumerableABI,
+    TFunctionName,
+    TSelectData
+  >);
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link erc721EnumerableABI}__ and `functionName` set to `"tokenByIndex"`.
+ */
+export function useErc721EnumerableTokenByIndex<
+  TFunctionName extends "tokenByIndex",
+  TSelectData = ReadContractResult<typeof erc721EnumerableABI, TFunctionName>,
+>(
+  config: Omit<
+    UseContractReadConfig<
+      typeof erc721EnumerableABI,
+      TFunctionName,
+      TSelectData
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return useContractRead({
+    abi: erc721EnumerableABI,
+    functionName: "tokenByIndex",
+    ...config,
+  } as UseContractReadConfig<
+    typeof erc721EnumerableABI,
+    TFunctionName,
+    TSelectData
+  >);
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link erc721EnumerableABI}__ and `functionName` set to `"tokenOfOwnerByIndex"`.
+ */
+export function useErc721EnumerableTokenOfOwnerByIndex<
+  TFunctionName extends "tokenOfOwnerByIndex",
+  TSelectData = ReadContractResult<typeof erc721EnumerableABI, TFunctionName>,
+>(
+  config: Omit<
+    UseContractReadConfig<
+      typeof erc721EnumerableABI,
+      TFunctionName,
+      TSelectData
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return useContractRead({
+    abi: erc721EnumerableABI,
+    functionName: "tokenOfOwnerByIndex",
+    ...config,
+  } as UseContractReadConfig<
+    typeof erc721EnumerableABI,
+    TFunctionName,
+    TSelectData
+  >);
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link erc721EnumerableABI}__ and `functionName` set to `"tokenURI"`.
+ */
+export function useErc721EnumerableTokenUri<
+  TFunctionName extends "tokenURI",
+  TSelectData = ReadContractResult<typeof erc721EnumerableABI, TFunctionName>,
+>(
+  config: Omit<
+    UseContractReadConfig<
+      typeof erc721EnumerableABI,
+      TFunctionName,
+      TSelectData
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return useContractRead({
+    abi: erc721EnumerableABI,
+    functionName: "tokenURI",
+    ...config,
+  } as UseContractReadConfig<
+    typeof erc721EnumerableABI,
+    TFunctionName,
+    TSelectData
+  >);
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link erc721EnumerableABI}__ and `functionName` set to `"totalSupply"`.
+ */
+export function useErc721EnumerableTotalSupply<
+  TFunctionName extends "totalSupply",
+  TSelectData = ReadContractResult<typeof erc721EnumerableABI, TFunctionName>,
+>(
+  config: Omit<
+    UseContractReadConfig<
+      typeof erc721EnumerableABI,
+      TFunctionName,
+      TSelectData
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return useContractRead({
+    abi: erc721EnumerableABI,
+    functionName: "totalSupply",
+    ...config,
+  } as UseContractReadConfig<
+    typeof erc721EnumerableABI,
+    TFunctionName,
+    TSelectData
+  >);
+}
+
+/**
+ * Wraps __{@link useContractWrite}__ with `abi` set to __{@link erc721EnumerableABI}__.
+ */
+export function useErc721EnumerableWrite<
+  TFunctionName extends string,
+  TMode extends WriteContractMode = undefined,
+>(
+  config: TMode extends "prepared"
+    ? UseContractWriteConfig<
+        PrepareWriteContractResult<
+          typeof erc721EnumerableABI,
+          string
+        >["request"]["abi"],
+        TFunctionName,
+        TMode
+      >
+    : UseContractWriteConfig<
+        typeof erc721EnumerableABI,
+        TFunctionName,
+        TMode
+      > & {
+        abi?: never;
+      } = {} as any,
+) {
+  return useContractWrite<typeof erc721EnumerableABI, TFunctionName, TMode>({
+    abi: erc721EnumerableABI,
+    ...config,
+  } as any);
+}
+
+/**
+ * Wraps __{@link useContractWrite}__ with `abi` set to __{@link erc721EnumerableABI}__ and `functionName` set to `"approve"`.
+ */
+export function useErc721EnumerableApprove<
+  TMode extends WriteContractMode = undefined,
+>(
+  config: TMode extends "prepared"
+    ? UseContractWriteConfig<
+        PrepareWriteContractResult<
+          typeof erc721EnumerableABI,
+          "approve"
+        >["request"]["abi"],
+        "approve",
+        TMode
+      > & { functionName?: "approve" }
+    : UseContractWriteConfig<typeof erc721EnumerableABI, "approve", TMode> & {
+        abi?: never;
+        functionName?: "approve";
+      } = {} as any,
+) {
+  return useContractWrite<typeof erc721EnumerableABI, "approve", TMode>({
+    abi: erc721EnumerableABI,
+    functionName: "approve",
+    ...config,
+  } as any);
+}
+
+/**
+ * Wraps __{@link useContractWrite}__ with `abi` set to __{@link erc721EnumerableABI}__ and `functionName` set to `"safeTransferFrom"`.
+ */
+export function useErc721EnumerableSafeTransferFrom<
+  TMode extends WriteContractMode = undefined,
+>(
+  config: TMode extends "prepared"
+    ? UseContractWriteConfig<
+        PrepareWriteContractResult<
+          typeof erc721EnumerableABI,
+          "safeTransferFrom"
+        >["request"]["abi"],
+        "safeTransferFrom",
+        TMode
+      > & { functionName?: "safeTransferFrom" }
+    : UseContractWriteConfig<
+        typeof erc721EnumerableABI,
+        "safeTransferFrom",
+        TMode
+      > & {
+        abi?: never;
+        functionName?: "safeTransferFrom";
+      } = {} as any,
+) {
+  return useContractWrite<
+    typeof erc721EnumerableABI,
+    "safeTransferFrom",
+    TMode
+  >({
+    abi: erc721EnumerableABI,
+    functionName: "safeTransferFrom",
+    ...config,
+  } as any);
+}
+
+/**
+ * Wraps __{@link useContractWrite}__ with `abi` set to __{@link erc721EnumerableABI}__ and `functionName` set to `"setApprovalForAll"`.
+ */
+export function useErc721EnumerableSetApprovalForAll<
+  TMode extends WriteContractMode = undefined,
+>(
+  config: TMode extends "prepared"
+    ? UseContractWriteConfig<
+        PrepareWriteContractResult<
+          typeof erc721EnumerableABI,
+          "setApprovalForAll"
+        >["request"]["abi"],
+        "setApprovalForAll",
+        TMode
+      > & { functionName?: "setApprovalForAll" }
+    : UseContractWriteConfig<
+        typeof erc721EnumerableABI,
+        "setApprovalForAll",
+        TMode
+      > & {
+        abi?: never;
+        functionName?: "setApprovalForAll";
+      } = {} as any,
+) {
+  return useContractWrite<
+    typeof erc721EnumerableABI,
+    "setApprovalForAll",
+    TMode
+  >({
+    abi: erc721EnumerableABI,
+    functionName: "setApprovalForAll",
+    ...config,
+  } as any);
+}
+
+/**
+ * Wraps __{@link useContractWrite}__ with `abi` set to __{@link erc721EnumerableABI}__ and `functionName` set to `"transferFrom"`.
+ */
+export function useErc721EnumerableTransferFrom<
+  TMode extends WriteContractMode = undefined,
+>(
+  config: TMode extends "prepared"
+    ? UseContractWriteConfig<
+        PrepareWriteContractResult<
+          typeof erc721EnumerableABI,
+          "transferFrom"
+        >["request"]["abi"],
+        "transferFrom",
+        TMode
+      > & { functionName?: "transferFrom" }
+    : UseContractWriteConfig<
+        typeof erc721EnumerableABI,
+        "transferFrom",
+        TMode
+      > & {
+        abi?: never;
+        functionName?: "transferFrom";
+      } = {} as any,
+) {
+  return useContractWrite<typeof erc721EnumerableABI, "transferFrom", TMode>({
+    abi: erc721EnumerableABI,
+    functionName: "transferFrom",
+    ...config,
+  } as any);
+}
+
+/**
+ * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link erc721EnumerableABI}__.
+ */
+export function usePrepareErc721EnumerableWrite<TFunctionName extends string>(
+  config: Omit<
+    UsePrepareContractWriteConfig<typeof erc721EnumerableABI, TFunctionName>,
+    "abi"
+  > = {} as any,
+) {
+  return usePrepareContractWrite({
+    abi: erc721EnumerableABI,
+    ...config,
+  } as UsePrepareContractWriteConfig<
+    typeof erc721EnumerableABI,
+    TFunctionName
+  >);
+}
+
+/**
+ * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link erc721EnumerableABI}__ and `functionName` set to `"approve"`.
+ */
+export function usePrepareErc721EnumerableApprove(
+  config: Omit<
+    UsePrepareContractWriteConfig<typeof erc721EnumerableABI, "approve">,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return usePrepareContractWrite({
+    abi: erc721EnumerableABI,
+    functionName: "approve",
+    ...config,
+  } as UsePrepareContractWriteConfig<typeof erc721EnumerableABI, "approve">);
+}
+
+/**
+ * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link erc721EnumerableABI}__ and `functionName` set to `"safeTransferFrom"`.
+ */
+export function usePrepareErc721EnumerableSafeTransferFrom(
+  config: Omit<
+    UsePrepareContractWriteConfig<
+      typeof erc721EnumerableABI,
+      "safeTransferFrom"
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return usePrepareContractWrite({
+    abi: erc721EnumerableABI,
+    functionName: "safeTransferFrom",
+    ...config,
+  } as UsePrepareContractWriteConfig<
+    typeof erc721EnumerableABI,
+    "safeTransferFrom"
+  >);
+}
+
+/**
+ * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link erc721EnumerableABI}__ and `functionName` set to `"setApprovalForAll"`.
+ */
+export function usePrepareErc721EnumerableSetApprovalForAll(
+  config: Omit<
+    UsePrepareContractWriteConfig<
+      typeof erc721EnumerableABI,
+      "setApprovalForAll"
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return usePrepareContractWrite({
+    abi: erc721EnumerableABI,
+    functionName: "setApprovalForAll",
+    ...config,
+  } as UsePrepareContractWriteConfig<
+    typeof erc721EnumerableABI,
+    "setApprovalForAll"
+  >);
+}
+
+/**
+ * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link erc721EnumerableABI}__ and `functionName` set to `"transferFrom"`.
+ */
+export function usePrepareErc721EnumerableTransferFrom(
+  config: Omit<
+    UsePrepareContractWriteConfig<typeof erc721EnumerableABI, "transferFrom">,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return usePrepareContractWrite({
+    abi: erc721EnumerableABI,
+    functionName: "transferFrom",
+    ...config,
+  } as UsePrepareContractWriteConfig<
+    typeof erc721EnumerableABI,
+    "transferFrom"
+  >);
+}
+
+/**
+ * Wraps __{@link useContractEvent}__ with `abi` set to __{@link erc721EnumerableABI}__.
+ */
+export function useErc721EnumerableEvent<TEventName extends string>(
+  config: Omit<
+    UseContractEventConfig<typeof erc721EnumerableABI, TEventName>,
+    "abi"
+  > = {} as any,
+) {
+  return useContractEvent({
+    abi: erc721EnumerableABI,
+    ...config,
+  } as UseContractEventConfig<typeof erc721EnumerableABI, TEventName>);
+}
+
+/**
+ * Wraps __{@link useContractEvent}__ with `abi` set to __{@link erc721EnumerableABI}__ and `eventName` set to `"Approval"`.
+ */
+export function useErc721EnumerableApprovalEvent(
+  config: Omit<
+    UseContractEventConfig<typeof erc721EnumerableABI, "Approval">,
+    "abi" | "eventName"
+  > = {} as any,
+) {
+  return useContractEvent({
+    abi: erc721EnumerableABI,
+    eventName: "Approval",
+    ...config,
+  } as UseContractEventConfig<typeof erc721EnumerableABI, "Approval">);
+}
+
+/**
+ * Wraps __{@link useContractEvent}__ with `abi` set to __{@link erc721EnumerableABI}__ and `eventName` set to `"ApprovalForAll"`.
+ */
+export function useErc721EnumerableApprovalForAllEvent(
+  config: Omit<
+    UseContractEventConfig<typeof erc721EnumerableABI, "ApprovalForAll">,
+    "abi" | "eventName"
+  > = {} as any,
+) {
+  return useContractEvent({
+    abi: erc721EnumerableABI,
+    eventName: "ApprovalForAll",
+    ...config,
+  } as UseContractEventConfig<typeof erc721EnumerableABI, "ApprovalForAll">);
+}
+
+/**
+ * Wraps __{@link useContractEvent}__ with `abi` set to __{@link erc721EnumerableABI}__ and `eventName` set to `"Transfer"`.
+ */
+export function useErc721EnumerableTransferEvent(
+  config: Omit<
+    UseContractEventConfig<typeof erc721EnumerableABI, "Transfer">,
+    "abi" | "eventName"
+  > = {} as any,
+) {
+  return useContractEvent({
+    abi: erc721EnumerableABI,
+    eventName: "Transfer",
+    ...config,
+  } as UseContractEventConfig<typeof erc721EnumerableABI, "Transfer">);
+}
+
+/**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link hololockerABI}__.
  */
 export function useHololockerRead<
@@ -1951,10 +2986,10 @@ export function useHololockerRead<
 }
 
 /**
- * Wraps __{@link useContractRead}__ with `abi` set to __{@link hololockerABI}__ and `functionName` set to `"MINIMUM_LOCK_TIME"`.
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link hololockerABI}__ and `functionName` set to `"MAXIMUM_LOCK_TIME"`.
  */
-export function useHololockerMinimumLockTime<
-  TFunctionName extends "MINIMUM_LOCK_TIME",
+export function useHololockerMaximumLockTime<
+  TFunctionName extends "MAXIMUM_LOCK_TIME",
   TSelectData = ReadContractResult<typeof hololockerABI, TFunctionName>,
 >(
   config: Omit<
@@ -1964,7 +2999,7 @@ export function useHololockerMinimumLockTime<
 ) {
   return useContractRead({
     abi: hololockerABI,
-    functionName: "MINIMUM_LOCK_TIME",
+    functionName: "MAXIMUM_LOCK_TIME",
     ...config,
   } as UseContractReadConfig<typeof hololockerABI, TFunctionName, TSelectData>);
 }
@@ -3051,6 +4086,566 @@ export function useIerc721TransferEvent(
     eventName: "Transfer",
     ...config,
   } as UseContractEventConfig<typeof ierc721ABI, "Transfer">);
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link ierc721EnumerableABI}__.
+ */
+export function useIerc721EnumerableRead<
+  TFunctionName extends string,
+  TSelectData = ReadContractResult<typeof ierc721EnumerableABI, TFunctionName>,
+>(
+  config: Omit<
+    UseContractReadConfig<
+      typeof ierc721EnumerableABI,
+      TFunctionName,
+      TSelectData
+    >,
+    "abi"
+  > = {} as any,
+) {
+  return useContractRead({
+    abi: ierc721EnumerableABI,
+    ...config,
+  } as UseContractReadConfig<
+    typeof ierc721EnumerableABI,
+    TFunctionName,
+    TSelectData
+  >);
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link ierc721EnumerableABI}__ and `functionName` set to `"balanceOf"`.
+ */
+export function useIerc721EnumerableBalanceOf<
+  TFunctionName extends "balanceOf",
+  TSelectData = ReadContractResult<typeof ierc721EnumerableABI, TFunctionName>,
+>(
+  config: Omit<
+    UseContractReadConfig<
+      typeof ierc721EnumerableABI,
+      TFunctionName,
+      TSelectData
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return useContractRead({
+    abi: ierc721EnumerableABI,
+    functionName: "balanceOf",
+    ...config,
+  } as UseContractReadConfig<
+    typeof ierc721EnumerableABI,
+    TFunctionName,
+    TSelectData
+  >);
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link ierc721EnumerableABI}__ and `functionName` set to `"getApproved"`.
+ */
+export function useIerc721EnumerableGetApproved<
+  TFunctionName extends "getApproved",
+  TSelectData = ReadContractResult<typeof ierc721EnumerableABI, TFunctionName>,
+>(
+  config: Omit<
+    UseContractReadConfig<
+      typeof ierc721EnumerableABI,
+      TFunctionName,
+      TSelectData
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return useContractRead({
+    abi: ierc721EnumerableABI,
+    functionName: "getApproved",
+    ...config,
+  } as UseContractReadConfig<
+    typeof ierc721EnumerableABI,
+    TFunctionName,
+    TSelectData
+  >);
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link ierc721EnumerableABI}__ and `functionName` set to `"isApprovedForAll"`.
+ */
+export function useIerc721EnumerableIsApprovedForAll<
+  TFunctionName extends "isApprovedForAll",
+  TSelectData = ReadContractResult<typeof ierc721EnumerableABI, TFunctionName>,
+>(
+  config: Omit<
+    UseContractReadConfig<
+      typeof ierc721EnumerableABI,
+      TFunctionName,
+      TSelectData
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return useContractRead({
+    abi: ierc721EnumerableABI,
+    functionName: "isApprovedForAll",
+    ...config,
+  } as UseContractReadConfig<
+    typeof ierc721EnumerableABI,
+    TFunctionName,
+    TSelectData
+  >);
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link ierc721EnumerableABI}__ and `functionName` set to `"ownerOf"`.
+ */
+export function useIerc721EnumerableOwnerOf<
+  TFunctionName extends "ownerOf",
+  TSelectData = ReadContractResult<typeof ierc721EnumerableABI, TFunctionName>,
+>(
+  config: Omit<
+    UseContractReadConfig<
+      typeof ierc721EnumerableABI,
+      TFunctionName,
+      TSelectData
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return useContractRead({
+    abi: ierc721EnumerableABI,
+    functionName: "ownerOf",
+    ...config,
+  } as UseContractReadConfig<
+    typeof ierc721EnumerableABI,
+    TFunctionName,
+    TSelectData
+  >);
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link ierc721EnumerableABI}__ and `functionName` set to `"supportsInterface"`.
+ */
+export function useIerc721EnumerableSupportsInterface<
+  TFunctionName extends "supportsInterface",
+  TSelectData = ReadContractResult<typeof ierc721EnumerableABI, TFunctionName>,
+>(
+  config: Omit<
+    UseContractReadConfig<
+      typeof ierc721EnumerableABI,
+      TFunctionName,
+      TSelectData
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return useContractRead({
+    abi: ierc721EnumerableABI,
+    functionName: "supportsInterface",
+    ...config,
+  } as UseContractReadConfig<
+    typeof ierc721EnumerableABI,
+    TFunctionName,
+    TSelectData
+  >);
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link ierc721EnumerableABI}__ and `functionName` set to `"tokenByIndex"`.
+ */
+export function useIerc721EnumerableTokenByIndex<
+  TFunctionName extends "tokenByIndex",
+  TSelectData = ReadContractResult<typeof ierc721EnumerableABI, TFunctionName>,
+>(
+  config: Omit<
+    UseContractReadConfig<
+      typeof ierc721EnumerableABI,
+      TFunctionName,
+      TSelectData
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return useContractRead({
+    abi: ierc721EnumerableABI,
+    functionName: "tokenByIndex",
+    ...config,
+  } as UseContractReadConfig<
+    typeof ierc721EnumerableABI,
+    TFunctionName,
+    TSelectData
+  >);
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link ierc721EnumerableABI}__ and `functionName` set to `"tokenOfOwnerByIndex"`.
+ */
+export function useIerc721EnumerableTokenOfOwnerByIndex<
+  TFunctionName extends "tokenOfOwnerByIndex",
+  TSelectData = ReadContractResult<typeof ierc721EnumerableABI, TFunctionName>,
+>(
+  config: Omit<
+    UseContractReadConfig<
+      typeof ierc721EnumerableABI,
+      TFunctionName,
+      TSelectData
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return useContractRead({
+    abi: ierc721EnumerableABI,
+    functionName: "tokenOfOwnerByIndex",
+    ...config,
+  } as UseContractReadConfig<
+    typeof ierc721EnumerableABI,
+    TFunctionName,
+    TSelectData
+  >);
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link ierc721EnumerableABI}__ and `functionName` set to `"totalSupply"`.
+ */
+export function useIerc721EnumerableTotalSupply<
+  TFunctionName extends "totalSupply",
+  TSelectData = ReadContractResult<typeof ierc721EnumerableABI, TFunctionName>,
+>(
+  config: Omit<
+    UseContractReadConfig<
+      typeof ierc721EnumerableABI,
+      TFunctionName,
+      TSelectData
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return useContractRead({
+    abi: ierc721EnumerableABI,
+    functionName: "totalSupply",
+    ...config,
+  } as UseContractReadConfig<
+    typeof ierc721EnumerableABI,
+    TFunctionName,
+    TSelectData
+  >);
+}
+
+/**
+ * Wraps __{@link useContractWrite}__ with `abi` set to __{@link ierc721EnumerableABI}__.
+ */
+export function useIerc721EnumerableWrite<
+  TFunctionName extends string,
+  TMode extends WriteContractMode = undefined,
+>(
+  config: TMode extends "prepared"
+    ? UseContractWriteConfig<
+        PrepareWriteContractResult<
+          typeof ierc721EnumerableABI,
+          string
+        >["request"]["abi"],
+        TFunctionName,
+        TMode
+      >
+    : UseContractWriteConfig<
+        typeof ierc721EnumerableABI,
+        TFunctionName,
+        TMode
+      > & {
+        abi?: never;
+      } = {} as any,
+) {
+  return useContractWrite<typeof ierc721EnumerableABI, TFunctionName, TMode>({
+    abi: ierc721EnumerableABI,
+    ...config,
+  } as any);
+}
+
+/**
+ * Wraps __{@link useContractWrite}__ with `abi` set to __{@link ierc721EnumerableABI}__ and `functionName` set to `"approve"`.
+ */
+export function useIerc721EnumerableApprove<
+  TMode extends WriteContractMode = undefined,
+>(
+  config: TMode extends "prepared"
+    ? UseContractWriteConfig<
+        PrepareWriteContractResult<
+          typeof ierc721EnumerableABI,
+          "approve"
+        >["request"]["abi"],
+        "approve",
+        TMode
+      > & { functionName?: "approve" }
+    : UseContractWriteConfig<typeof ierc721EnumerableABI, "approve", TMode> & {
+        abi?: never;
+        functionName?: "approve";
+      } = {} as any,
+) {
+  return useContractWrite<typeof ierc721EnumerableABI, "approve", TMode>({
+    abi: ierc721EnumerableABI,
+    functionName: "approve",
+    ...config,
+  } as any);
+}
+
+/**
+ * Wraps __{@link useContractWrite}__ with `abi` set to __{@link ierc721EnumerableABI}__ and `functionName` set to `"safeTransferFrom"`.
+ */
+export function useIerc721EnumerableSafeTransferFrom<
+  TMode extends WriteContractMode = undefined,
+>(
+  config: TMode extends "prepared"
+    ? UseContractWriteConfig<
+        PrepareWriteContractResult<
+          typeof ierc721EnumerableABI,
+          "safeTransferFrom"
+        >["request"]["abi"],
+        "safeTransferFrom",
+        TMode
+      > & { functionName?: "safeTransferFrom" }
+    : UseContractWriteConfig<
+        typeof ierc721EnumerableABI,
+        "safeTransferFrom",
+        TMode
+      > & {
+        abi?: never;
+        functionName?: "safeTransferFrom";
+      } = {} as any,
+) {
+  return useContractWrite<
+    typeof ierc721EnumerableABI,
+    "safeTransferFrom",
+    TMode
+  >({
+    abi: ierc721EnumerableABI,
+    functionName: "safeTransferFrom",
+    ...config,
+  } as any);
+}
+
+/**
+ * Wraps __{@link useContractWrite}__ with `abi` set to __{@link ierc721EnumerableABI}__ and `functionName` set to `"setApprovalForAll"`.
+ */
+export function useIerc721EnumerableSetApprovalForAll<
+  TMode extends WriteContractMode = undefined,
+>(
+  config: TMode extends "prepared"
+    ? UseContractWriteConfig<
+        PrepareWriteContractResult<
+          typeof ierc721EnumerableABI,
+          "setApprovalForAll"
+        >["request"]["abi"],
+        "setApprovalForAll",
+        TMode
+      > & { functionName?: "setApprovalForAll" }
+    : UseContractWriteConfig<
+        typeof ierc721EnumerableABI,
+        "setApprovalForAll",
+        TMode
+      > & {
+        abi?: never;
+        functionName?: "setApprovalForAll";
+      } = {} as any,
+) {
+  return useContractWrite<
+    typeof ierc721EnumerableABI,
+    "setApprovalForAll",
+    TMode
+  >({
+    abi: ierc721EnumerableABI,
+    functionName: "setApprovalForAll",
+    ...config,
+  } as any);
+}
+
+/**
+ * Wraps __{@link useContractWrite}__ with `abi` set to __{@link ierc721EnumerableABI}__ and `functionName` set to `"transferFrom"`.
+ */
+export function useIerc721EnumerableTransferFrom<
+  TMode extends WriteContractMode = undefined,
+>(
+  config: TMode extends "prepared"
+    ? UseContractWriteConfig<
+        PrepareWriteContractResult<
+          typeof ierc721EnumerableABI,
+          "transferFrom"
+        >["request"]["abi"],
+        "transferFrom",
+        TMode
+      > & { functionName?: "transferFrom" }
+    : UseContractWriteConfig<
+        typeof ierc721EnumerableABI,
+        "transferFrom",
+        TMode
+      > & {
+        abi?: never;
+        functionName?: "transferFrom";
+      } = {} as any,
+) {
+  return useContractWrite<typeof ierc721EnumerableABI, "transferFrom", TMode>({
+    abi: ierc721EnumerableABI,
+    functionName: "transferFrom",
+    ...config,
+  } as any);
+}
+
+/**
+ * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link ierc721EnumerableABI}__.
+ */
+export function usePrepareIerc721EnumerableWrite<TFunctionName extends string>(
+  config: Omit<
+    UsePrepareContractWriteConfig<typeof ierc721EnumerableABI, TFunctionName>,
+    "abi"
+  > = {} as any,
+) {
+  return usePrepareContractWrite({
+    abi: ierc721EnumerableABI,
+    ...config,
+  } as UsePrepareContractWriteConfig<
+    typeof ierc721EnumerableABI,
+    TFunctionName
+  >);
+}
+
+/**
+ * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link ierc721EnumerableABI}__ and `functionName` set to `"approve"`.
+ */
+export function usePrepareIerc721EnumerableApprove(
+  config: Omit<
+    UsePrepareContractWriteConfig<typeof ierc721EnumerableABI, "approve">,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return usePrepareContractWrite({
+    abi: ierc721EnumerableABI,
+    functionName: "approve",
+    ...config,
+  } as UsePrepareContractWriteConfig<typeof ierc721EnumerableABI, "approve">);
+}
+
+/**
+ * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link ierc721EnumerableABI}__ and `functionName` set to `"safeTransferFrom"`.
+ */
+export function usePrepareIerc721EnumerableSafeTransferFrom(
+  config: Omit<
+    UsePrepareContractWriteConfig<
+      typeof ierc721EnumerableABI,
+      "safeTransferFrom"
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return usePrepareContractWrite({
+    abi: ierc721EnumerableABI,
+    functionName: "safeTransferFrom",
+    ...config,
+  } as UsePrepareContractWriteConfig<
+    typeof ierc721EnumerableABI,
+    "safeTransferFrom"
+  >);
+}
+
+/**
+ * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link ierc721EnumerableABI}__ and `functionName` set to `"setApprovalForAll"`.
+ */
+export function usePrepareIerc721EnumerableSetApprovalForAll(
+  config: Omit<
+    UsePrepareContractWriteConfig<
+      typeof ierc721EnumerableABI,
+      "setApprovalForAll"
+    >,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return usePrepareContractWrite({
+    abi: ierc721EnumerableABI,
+    functionName: "setApprovalForAll",
+    ...config,
+  } as UsePrepareContractWriteConfig<
+    typeof ierc721EnumerableABI,
+    "setApprovalForAll"
+  >);
+}
+
+/**
+ * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link ierc721EnumerableABI}__ and `functionName` set to `"transferFrom"`.
+ */
+export function usePrepareIerc721EnumerableTransferFrom(
+  config: Omit<
+    UsePrepareContractWriteConfig<typeof ierc721EnumerableABI, "transferFrom">,
+    "abi" | "functionName"
+  > = {} as any,
+) {
+  return usePrepareContractWrite({
+    abi: ierc721EnumerableABI,
+    functionName: "transferFrom",
+    ...config,
+  } as UsePrepareContractWriteConfig<
+    typeof ierc721EnumerableABI,
+    "transferFrom"
+  >);
+}
+
+/**
+ * Wraps __{@link useContractEvent}__ with `abi` set to __{@link ierc721EnumerableABI}__.
+ */
+export function useIerc721EnumerableEvent<TEventName extends string>(
+  config: Omit<
+    UseContractEventConfig<typeof ierc721EnumerableABI, TEventName>,
+    "abi"
+  > = {} as any,
+) {
+  return useContractEvent({
+    abi: ierc721EnumerableABI,
+    ...config,
+  } as UseContractEventConfig<typeof ierc721EnumerableABI, TEventName>);
+}
+
+/**
+ * Wraps __{@link useContractEvent}__ with `abi` set to __{@link ierc721EnumerableABI}__ and `eventName` set to `"Approval"`.
+ */
+export function useIerc721EnumerableApprovalEvent(
+  config: Omit<
+    UseContractEventConfig<typeof ierc721EnumerableABI, "Approval">,
+    "abi" | "eventName"
+  > = {} as any,
+) {
+  return useContractEvent({
+    abi: ierc721EnumerableABI,
+    eventName: "Approval",
+    ...config,
+  } as UseContractEventConfig<typeof ierc721EnumerableABI, "Approval">);
+}
+
+/**
+ * Wraps __{@link useContractEvent}__ with `abi` set to __{@link ierc721EnumerableABI}__ and `eventName` set to `"ApprovalForAll"`.
+ */
+export function useIerc721EnumerableApprovalForAllEvent(
+  config: Omit<
+    UseContractEventConfig<typeof ierc721EnumerableABI, "ApprovalForAll">,
+    "abi" | "eventName"
+  > = {} as any,
+) {
+  return useContractEvent({
+    abi: ierc721EnumerableABI,
+    eventName: "ApprovalForAll",
+    ...config,
+  } as UseContractEventConfig<typeof ierc721EnumerableABI, "ApprovalForAll">);
+}
+
+/**
+ * Wraps __{@link useContractEvent}__ with `abi` set to __{@link ierc721EnumerableABI}__ and `eventName` set to `"Transfer"`.
+ */
+export function useIerc721EnumerableTransferEvent(
+  config: Omit<
+    UseContractEventConfig<typeof ierc721EnumerableABI, "Transfer">,
+    "abi" | "eventName"
+  > = {} as any,
+) {
+  return useContractEvent({
+    abi: ierc721EnumerableABI,
+    eventName: "Transfer",
+    ...config,
+  } as UseContractEventConfig<typeof ierc721EnumerableABI, "Transfer">);
 }
 
 /**
