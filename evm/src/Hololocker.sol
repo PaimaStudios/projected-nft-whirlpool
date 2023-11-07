@@ -31,44 +31,68 @@ contract Hololocker is Ownable, IERC721Receiver {
     error TokenNotLocked();
     error Unauthorized();
     error UnlockAlreadyRequested();
-
-    // Permits modifications only by the owner of the specified identity.
-    modifier authorized(address token, uint256 tokenId) {
-        _authorized(token, tokenId);
-        _;
-    }
+    error InvalidInputArity();
 
     constructor(uint256 lockTime_) {
         lockTime = lockTime_;
     }
 
-    function lock(address token, uint256 tokenId) external {
-        nftLockInfo[token][tokenId].owner = msg.sender;
-        nftLockInfo[token][tokenId].operator = msg.sender;
-        emit Lock(token, msg.sender, tokenId, msg.sender);
-        IERC721(token).transferFrom(msg.sender, address(this), tokenId);
+    /// @dev Can lock multiple NFTs in one batch
+    function lock(address[] memory tokens, uint256[] memory tokenIds, address owner) external {
+        if (tokens.length != tokenIds.length) {
+            revert InvalidInputArity();
+        }
+        for (uint256 i = 0; i < tokens.length; i++) {
+            address token = tokens[i];
+            uint256 tokenId = tokenIds[i];
+            nftLockInfo[token][tokenId].owner = owner;
+            nftLockInfo[token][tokenId].operator = msg.sender;
+            emit Lock(token, owner, tokenId, msg.sender);
+            IERC721(token).transferFrom(owner, address(this), tokenId);
+        }
     }
 
-    /// @dev Since only authorized user can use this function, it cannot be used without locking NFT beforehand
-    function requestUnlock(address token, uint256 tokenId) external authorized(token, tokenId) {
-        LockInfo storage info = nftLockInfo[token][tokenId];
-        if (info.unlockTime != 0) {
-            revert UnlockAlreadyRequested();
+    /// @dev Since only authorized user can use this function, it cannot be used without locking NFT beforehand,
+    /// because both info.owner and info.operator would be address(0)
+    function requestUnlock(address[] memory tokens, uint256[] memory tokenIds) external {
+        if (tokens.length != tokenIds.length) {
+            revert InvalidInputArity();
         }
-        uint256 unlockTime = block.timestamp + lockTime;
-        info.unlockTime = unlockTime;
-        emit Unlock(token, info.owner, tokenId, info.operator, unlockTime);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            address token = tokens[i];
+            uint256 tokenId = tokenIds[i];
+            LockInfo storage info = nftLockInfo[token][tokenId];
+            if (msg.sender != info.owner && msg.sender != info.operator) {
+                revert Unauthorized();
+            }
+            if (info.unlockTime != 0) {
+                revert UnlockAlreadyRequested();
+            }
+            uint256 unlockTime = block.timestamp + lockTime;
+            info.unlockTime = unlockTime;
+            emit Unlock(token, info.owner, tokenId, info.operator, unlockTime);
+        }
     }
 
-    function withdraw(address token, uint256 tokenId) external authorized(token, tokenId) {
-        LockInfo storage info = nftLockInfo[token][tokenId];
-        if (info.unlockTime == 0 || block.timestamp < info.unlockTime) {
-            revert NotUnlockedYet();
+    function withdraw(address[] memory tokens, uint256[] memory tokenIds) external {
+        if (tokens.length != tokenIds.length) {
+            revert InvalidInputArity();
         }
-        address owner = info.owner;
-        emit Withdraw(token, info.owner, tokenId, info.operator);
-        delete nftLockInfo[token][tokenId];
-        IERC721(token).transferFrom(address(this), owner, tokenId);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            address token = tokens[i];
+            uint256 tokenId = tokenIds[i];
+            LockInfo storage info = nftLockInfo[token][tokenId];
+            if (msg.sender != info.owner && msg.sender != info.operator) {
+                revert Unauthorized();
+            }
+            if (info.unlockTime == 0 || block.timestamp < info.unlockTime) {
+                revert NotUnlockedYet();
+            }
+            address owner = info.owner;
+            emit Withdraw(token, info.owner, tokenId, info.operator);
+            delete nftLockInfo[token][tokenId];
+            IERC721(token).transferFrom(address(this), owner, tokenId);
+        }
     }
 
     /// @dev Handles initiating a lock upon direct NFT safeTransferFrom function call
@@ -89,12 +113,5 @@ contract Hololocker is Ownable, IERC721Receiver {
         }
         lockTime = newLockTime;
         emit LockTimeUpdate(newLockTime);
-    }
-
-    function _authorized(address token, uint256 tokenId) internal view {
-        LockInfo storage info = nftLockInfo[token][tokenId];
-        if (msg.sender != info.owner && msg.sender != info.operator) {
-            revert Unauthorized();
-        }
     }
 }
