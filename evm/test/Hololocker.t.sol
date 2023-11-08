@@ -39,29 +39,30 @@ contract HololockerTest is Test {
     }
 
     function requestUnlockAndWithdrawAndAssert(address owner_, address operator_) public {
-        (uint256 unlockTime, address owner, address operator) = hololocker.nftLockInfo(tokens[0], tokenIds[0]);
-        assertEq(unlockTime, 0);
-        assertEq(owner, owner_);
-        assertEq(operator, operator_);
+        Hololocker.LockInfo memory info;
+        info = hololocker.getLockInfo(tokens[0], tokenIds[0]);
+        assertEq(info.unlockTime, 0);
+        assertEq(info.owner, owner_);
+        assertEq(info.operator, operator_);
         assertEq(mockNFT.ownerOf(tokenIds[0]), address(hololocker));
 
         vm.roll(block.number + 10);
         vm.expectEmit(true, true, true, true);
-        emit Unlock(tokens[0], owner, tokenIds[0], operator, block.timestamp + hololocker.lockTime());
+        emit Unlock(tokens[0], info.owner, tokenIds[0], info.operator, block.timestamp + hololocker.lockTime());
         hololocker.requestUnlock(tokens, tokenIds);
-        (unlockTime, owner, operator) = hololocker.nftLockInfo(tokens[0], tokenIds[0]);
-        assertEq(unlockTime, block.timestamp + hololocker.lockTime());
-        assertEq(owner, owner_);
-        assertEq(operator, operator_);
+        info = hololocker.getLockInfo(tokens[0], tokenIds[0]);
+        assertEq(info.unlockTime, block.timestamp + hololocker.lockTime());
+        assertEq(info.owner, owner_);
+        assertEq(info.operator, operator_);
 
         vm.warp(block.timestamp + hololocker.lockTime());
         vm.expectEmit(true, true, true, true);
-        emit Withdraw(tokens[0], owner, tokenIds[0], operator);
+        emit Withdraw(tokens[0], info.owner, tokenIds[0], info.operator);
         hololocker.withdraw(tokens, tokenIds);
-        (unlockTime, owner, operator) = hololocker.nftLockInfo(tokens[0], tokenIds[0]);
-        assertEq(unlockTime, 0);
-        assertEq(owner, address(0));
-        assertEq(operator, address(0));
+        info = hololocker.getLockInfo(tokens[0], tokenIds[0]);
+        assertEq(info.unlockTime, 0);
+        assertEq(info.owner, address(0));
+        assertEq(info.operator, address(0));
         assertEq(mockNFT.ownerOf(tokenIds[0]), owner_);
     }
 
