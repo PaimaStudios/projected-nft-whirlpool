@@ -21,8 +21,9 @@ contract Hololocker is HololockerInterface, Ownable {
     error UnlockAlreadyRequested();
     error InvalidInputArity();
 
-    constructor(uint256 lockTime_) {
+    constructor(uint256 lockTime_, address owner_) {
         lockTime = lockTime_;
+        _transferOwnership(owner_);
     }
 
     /// @notice Returns `LockInfo` for specified `token => tokenId`

@@ -29,7 +29,7 @@ contract HololockerTest is Test {
     uint256 maxLockTime;
 
     function setUp() public {
-        hololocker = new Hololocker(1 minutes);
+        hololocker = new Hololocker(1 minutes, address(this));
         mockNFT = new MockNFT("X", "Y");
         tokenIds.push(0);
         tokens.push(address(mockNFT));

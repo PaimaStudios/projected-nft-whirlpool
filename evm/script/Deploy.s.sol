@@ -14,8 +14,8 @@ contract Deploy is Script {
         vm.startBroadcast();
 
         uint256 lockTime = 1 minutes;
-        bytes32 dummySalt = bytes32(uint256(123));
-        Hololocker hololocker = new Hololocker{salt: dummySalt}(lockTime);
+        bytes32 dummySalt = bytes32(uint256(1));
+        Hololocker hololocker = new Hololocker{salt: dummySalt}(lockTime, msg.sender);
         console2.log("Hololocker implementation:", address(hololocker));
 
         vm.stopBroadcast();
