@@ -3,6 +3,8 @@ import { useAccount, useContractWrite, useWaitForTransaction } from "wagmi";
 import { hololockerConfig } from "../contracts";
 import { usePrepareHololockerWithdraw } from "../generated";
 import TransactionButton from "./TransactionButton";
+import { useQueryClient } from "@tanstack/react-query";
+import FunctionKey from "../utils/functionKey";
 
 type Props = {
   token: string;
@@ -11,6 +13,7 @@ type Props = {
 
 export default function MultiwithdrawButtonEVM({ token, tokenIds }: Props) {
   const { address } = useAccount();
+  const queryClient = useQueryClient();
 
   const { config: configHololockerWithdraw } = usePrepareHololockerWithdraw({
     address: hololockerConfig.address,
@@ -26,6 +29,14 @@ export default function MultiwithdrawButtonEVM({ token, tokenIds }: Props) {
 
   const { isLoading: isPendingHololockerWithdraw } = useWaitForTransaction({
     hash: dataHololockerWithdraw?.hash,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [FunctionKey.LOCKS],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [FunctionKey.NFTS],
+      });
+    },
   });
 
   async function withdraw() {

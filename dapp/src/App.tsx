@@ -4,6 +4,9 @@ import { Providers } from "./providers";
 import { Link, Outlet, Route, Routes } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import { Container, Stack } from "@mui/material";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
 
 export default function App() {
   return (
@@ -26,8 +29,10 @@ function Layout() {
   return (
     <MuiSetup>
       <Providers>
-        <Navbar />
-        <Outlet />
+        <QueryClientProvider client={queryClient}>
+          <Navbar />
+          <Outlet />
+        </QueryClientProvider>
       </Providers>
     </MuiSetup>
   );

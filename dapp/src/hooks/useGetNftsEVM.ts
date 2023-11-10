@@ -1,22 +1,25 @@
-import { Alchemy, Nft } from "alchemy-sdk";
-import { useEffect, useState } from "react";
+import { Alchemy } from "alchemy-sdk";
 import { useGetAlchemy } from "./useGetAlchemy";
 import { useAccount } from "wagmi";
+import { useQuery } from "@tanstack/react-query";
+import FunctionKey from "../utils/functionKey";
 
-export const useGetNftsEVM = (): Nft[] | undefined => {
-  const [nfts, setNfts] = useState<Nft[]>();
-  const alchemy = useGetAlchemy();
+const fetchNfts = async (
+  address: string | undefined,
+  alchemy: Alchemy | undefined,
+) => {
+  if (address === undefined || alchemy === undefined) {
+    return null;
+  }
+  const ownedNfts = (await alchemy.nft.getNftsForOwner(address)).ownedNfts;
+  return ownedNfts;
+};
+
+export const useGetNftsEVM = () => {
+  const { data: alchemy } = useGetAlchemy();
   const { address } = useAccount();
-
-  useEffect(() => {
-    const fetchNfts = async (address: string, alchemy: Alchemy) => {
-      const ownedNfts = (await alchemy.nft.getNftsForOwner(address)).ownedNfts;
-      setNfts(ownedNfts);
-    };
-    if (address && alchemy) {
-      fetchNfts(address, alchemy);
-    }
-  }, [address, alchemy]);
-
-  return nfts;
+  return useQuery({
+    queryKey: [FunctionKey.NFTS, { address, alchemy }],
+    queryFn: () => fetchNfts(address, alchemy),
+  });
 };

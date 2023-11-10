@@ -3,6 +3,8 @@ import { useAccount, useContractWrite, useWaitForTransaction } from "wagmi";
 import { hololockerConfig } from "../contracts";
 import { usePrepareHololockerRequestUnlock } from "../generated";
 import TransactionButton from "./TransactionButton";
+import FunctionKey from "../utils/functionKey";
+import { useQueryClient } from "@tanstack/react-query";
 
 type Props = {
   token: string;
@@ -14,6 +16,7 @@ export default function MultirequestunlockButtonEVM({
   tokenIds,
 }: Props) {
   const { address } = useAccount();
+  const queryClient = useQueryClient();
 
   const { config: configHololockerUnlock } = usePrepareHololockerRequestUnlock({
     address: hololockerConfig.address,
@@ -29,6 +32,11 @@ export default function MultirequestunlockButtonEVM({
 
   const { isLoading: isPendingHololockerUnlock } = useWaitForTransaction({
     hash: dataHololockerUnlock?.hash,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [FunctionKey.LOCKS],
+      });
+    },
   });
 
   async function requestUnlock() {

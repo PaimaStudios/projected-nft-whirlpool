@@ -1,22 +1,23 @@
-import { Alchemy, Nft, NftMetadataBatchToken } from "alchemy-sdk";
-import { useEffect, useState } from "react";
+import { Alchemy, NftMetadataBatchToken } from "alchemy-sdk";
 import { useGetAlchemy } from "./useGetAlchemy";
+import { useQuery } from "@tanstack/react-query";
+import FunctionKey from "../utils/functionKey";
 
-export const useGetNftsMetadataEVM = (
+const fetchNftsMetadata = async (
+  alchemy: Alchemy | undefined,
   nfts: NftMetadataBatchToken[],
-): Nft[] | undefined => {
-  const [nftsMetadata, setNftsMetadata] = useState<Nft[]>();
-  const alchemy = useGetAlchemy();
+) => {
+  if (alchemy === undefined || nfts.length === 0) {
+    return null;
+  }
+  return await alchemy?.nft.getNftMetadataBatch(nfts);
+};
 
-  useEffect(() => {
-    const fetchNftsMetadata = async (alchemy: Alchemy) => {
-      const response = await alchemy?.nft.getNftMetadataBatch(nfts);
-      setNftsMetadata(response);
-    };
-    if (nfts.length > 0 && alchemy) {
-      fetchNftsMetadata(alchemy);
-    }
-  }, [nfts.length, alchemy]);
+export const useGetNftsMetadataEVM = (nfts: NftMetadataBatchToken[]) => {
+  const { data: alchemy } = useGetAlchemy();
 
-  return nftsMetadata;
+  return useQuery({
+    queryKey: [FunctionKey.NFTS_METADATA, { nfts, alchemy }],
+    queryFn: () => fetchNftsMetadata(alchemy, nfts),
+  });
 };

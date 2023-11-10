@@ -29,16 +29,22 @@ import { useGetNftsMetadataEVM } from "../hooks/useGetNftsMetadataEVM";
 import { NftTokenType } from "alchemy-sdk";
 import MultirequestunlockButtonEVM from "./MultirequestunlockButtonEVM";
 import MultiwithdrawButtonEVM from "./MultiwithdrawButtonEVM";
+import { useQueryClient } from "@tanstack/react-query";
+import FunctionKey from "../utils/functionKey";
 
-const blockTimeSeconds = 12n + 1n;
+// average block time on ETH
+const blockTime = 12n;
+// we shall wait 1.5x the average block time until we try to simulate withdraw txn
+const reserveWaitingTime = (blockTime * 3n) / 2n;
 
 function UnlockNftCardEVM({ lockInfo }: { lockInfo: LockInfo }) {
   const { token, tokenId, nftData } = lockInfo;
   let { unlockTime } = lockInfo;
   if (unlockTime > 0n) {
-    unlockTime += blockTimeSeconds;
+    unlockTime += reserveWaitingTime;
   }
   const [now, setNow] = useState<number>(new Date().getTime() / 1000);
+  const queryClient = useQueryClient();
 
   useInterval(() => {
     setNow(new Date().getTime() / 1000);
@@ -56,6 +62,11 @@ function UnlockNftCardEVM({ lockInfo }: { lockInfo: LockInfo }) {
   } = useContractWrite(configUnlock);
   const { isLoading: isPendingUnlock } = useWaitForTransaction({
     hash: dataUnlock?.hash,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [FunctionKey.LOCKS],
+      });
+    },
   });
 
   const { config: configWithdraw } = usePrepareHololockerWithdraw({
@@ -70,6 +81,14 @@ function UnlockNftCardEVM({ lockInfo }: { lockInfo: LockInfo }) {
   } = useContractWrite(configWithdraw);
   const { isLoading: isPendingWithdraw } = useWaitForTransaction({
     hash: dataWithdraw?.hash,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [FunctionKey.NFTS],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [FunctionKey.LOCKS],
+      });
+    },
   });
 
   async function unlockOrWithdrawNft() {
@@ -132,7 +151,7 @@ function UnlockNftListItemEVM({
   const tokenIdsToWithdraw = locks
     .filter(
       (lock) =>
-        lock.unlockTime !== 0n && now > lock.unlockTime + blockTimeSeconds,
+        lock.unlockTime !== 0n && now > lock.unlockTime + reserveWaitingTime,
     )
     .map((lock) => lock.tokenId);
 
@@ -175,8 +194,8 @@ function UnlockNftListItemEVM({
 }
 
 export default function UnlockNftListEVM() {
-  const { locks } = useGetLocksEVM();
-  const nftsMetadata = useGetNftsMetadataEVM(
+  const { data: locks } = useGetLocksEVM();
+  const { data: nftsMetadata } = useGetNftsMetadataEVM(
     locks?.map((lock) => {
       return {
         contractAddress: lock.token,

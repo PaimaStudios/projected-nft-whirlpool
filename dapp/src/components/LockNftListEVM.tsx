@@ -43,7 +43,7 @@ function LockNftListItemEVM({ nft }: { nft: Nft }) {
 }
 
 export default function LockNftListEVM() {
-  const nfts = useGetNftsEVM();
+  const { data: nfts } = useGetNftsEVM();
   const nftGroups: Record<string, Nft[]> = {};
   nfts?.forEach((nft) => {
     if (!nftGroups[nft.contract.address]) {

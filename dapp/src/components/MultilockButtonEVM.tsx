@@ -7,6 +7,8 @@ import {
   usePrepareHololockerLock,
 } from "../generated";
 import TransactionButton from "./TransactionButton";
+import FunctionKey from "../utils/functionKey";
+import { useQueryClient } from "@tanstack/react-query";
 
 type Props = {
   token: string;
@@ -15,6 +17,7 @@ type Props = {
 
 export default function MultilockButtonEVM({ token, tokenIds }: Props) {
   const { address } = useAccount();
+  const queryClient = useQueryClient();
 
   const { data: isApproved } = useErc721IsApprovedForAll({
     address: token as `0x${string}`,
@@ -52,6 +55,14 @@ export default function MultilockButtonEVM({ token, tokenIds }: Props) {
 
   const { isLoading: isPendingHololockerLock } = useWaitForTransaction({
     hash: dataHololockerLock?.hash,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [FunctionKey.NFTS],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [FunctionKey.LOCKS],
+      });
+    },
   });
 
   async function setApprovalForAll() {
