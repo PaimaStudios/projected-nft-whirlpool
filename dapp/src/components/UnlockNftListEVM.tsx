@@ -123,7 +123,9 @@ function UnlockNftCardEVM({ lockInfo }: { lockInfo: LockInfo }) {
             ) : now > unlockTime ? (
               "Withdraw NFT"
             ) : (
-              <Countdown deadline={new Date(Number(unlockTime) * 1000)} />
+              <Stack sx={{ textTransform: "none" }}>
+                <Countdown deadline={new Date(Number(unlockTime) * 1000)} />
+              </Stack>
             )
           }
         />
