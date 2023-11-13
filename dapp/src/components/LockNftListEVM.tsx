@@ -3,6 +3,7 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Button,
   Card,
   CardActions,
   CardContent,
@@ -43,17 +44,23 @@ function LockNftListItemEVM({ nft }: { nft: Nft }) {
 }
 
 export default function LockNftListEVM() {
-  const { data: nfts } = useGetNftsEVM();
+  const { data: nftsData, fetchNextPage, isFetching } = useGetNftsEVM();
   const nftGroups: Record<string, Nft[]> = {};
-  nfts?.forEach((nft) => {
-    if (!nftGroups[nft.contract.address]) {
-      nftGroups[nft.contract.address] = [];
-    }
-    nftGroups[nft.contract.address].push(nft);
+  nftsData?.pages.forEach((nftPage) => {
+    if (!nftPage) return;
+    nftPage.ownedNfts.forEach((nft) => {
+      if (!nftGroups[nft.contract.address]) {
+        nftGroups[nft.contract.address] = [];
+      }
+      nftGroups[nft.contract.address].push(nft);
+    });
   });
-  return nfts ? (
+  // When pageKey of last page is undefined, it means there is no next page.
+  const allNftsLoaded =
+    nftsData?.pages[nftsData.pages.length - 1]?.pageKey === undefined;
+  return nftsData ? (
     Object.keys(nftGroups).length > 0 ? (
-      <>
+      <Stack sx={{ gap: 2, width: "100%", alignItems: "center" }}>
         {Object.keys(nftGroups).map((nftContractAddress) => (
           <Accordion
             TransitionProps={{ unmountOnExit: true }}
@@ -95,7 +102,14 @@ export default function LockNftListEVM() {
             </AccordionDetails>
           </Accordion>
         ))}
-      </>
+        {isFetching ? (
+          <CircularProgress />
+        ) : (
+          !allNftsLoaded && (
+            <Button onClick={() => fetchNextPage()}>Load more</Button>
+          )
+        )}
+      </Stack>
     ) : (
       <Typography>None.</Typography>
     )

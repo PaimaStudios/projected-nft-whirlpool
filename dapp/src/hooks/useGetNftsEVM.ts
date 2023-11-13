@@ -1,25 +1,34 @@
 import { Alchemy } from "alchemy-sdk";
 import { useGetAlchemy } from "./useGetAlchemy";
 import { useAccount } from "wagmi";
-import { useQuery } from "@tanstack/react-query";
+import { QueryFunctionContext, useInfiniteQuery } from "@tanstack/react-query";
 import FunctionKey from "../utils/functionKey";
 
-const fetchNfts = async (
-  address: string | undefined,
-  alchemy: Alchemy | undefined,
-) => {
+const fetchNfts = async ({
+  address,
+  alchemy,
+  queryParams,
+}: {
+  address: string | undefined;
+  alchemy: Alchemy | undefined;
+  queryParams: QueryFunctionContext<any, string>;
+}) => {
+  const { pageParam } = queryParams;
   if (address === undefined || alchemy === undefined) {
     return null;
   }
-  const ownedNfts = (await alchemy.nft.getNftsForOwner(address)).ownedNfts;
-  return ownedNfts;
+  return await alchemy.nft.getNftsForOwner(address, {
+    pageKey: pageParam,
+  });
 };
 
 export const useGetNftsEVM = () => {
   const { data: alchemy } = useGetAlchemy();
   const { address } = useAccount();
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: [FunctionKey.NFTS, { address, alchemy }],
-    queryFn: () => fetchNfts(address, alchemy),
+    queryFn: (queryParams) => fetchNfts({ address, alchemy, queryParams }),
+    initialPageParam: "",
+    getNextPageParam: (lastPage) => lastPage?.pageKey,
   });
 };
