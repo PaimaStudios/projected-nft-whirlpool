@@ -29,7 +29,7 @@ contract HololockerTest is Test {
     uint256 maxLockTime;
 
     function setUp() public {
-        hololocker = new Hololocker(1 minutes);
+        hololocker = new Hololocker(1 minutes, address(this));
         mockNFT = new MockNFT("X", "Y");
         tokenIds.push(0);
         tokens.push(address(mockNFT));
@@ -39,29 +39,30 @@ contract HololockerTest is Test {
     }
 
     function requestUnlockAndWithdrawAndAssert(address owner_, address operator_) public {
-        (uint256 unlockTime, address owner, address operator) = hololocker.nftLockInfo(tokens[0], tokenIds[0]);
-        assertEq(unlockTime, 0);
-        assertEq(owner, owner_);
-        assertEq(operator, operator_);
+        Hololocker.LockInfo memory info;
+        info = hololocker.getLockInfo(tokens[0], tokenIds[0]);
+        assertEq(info.unlockTime, 0);
+        assertEq(info.owner, owner_);
+        assertEq(info.operator, operator_);
         assertEq(mockNFT.ownerOf(tokenIds[0]), address(hololocker));
 
         vm.roll(block.number + 10);
         vm.expectEmit(true, true, true, true);
-        emit Unlock(tokens[0], owner, tokenIds[0], operator, block.timestamp + hololocker.lockTime());
+        emit Unlock(tokens[0], info.owner, tokenIds[0], info.operator, block.timestamp + hololocker.getLockTime());
         hololocker.requestUnlock(tokens, tokenIds);
-        (unlockTime, owner, operator) = hololocker.nftLockInfo(tokens[0], tokenIds[0]);
-        assertEq(unlockTime, block.timestamp + hololocker.lockTime());
-        assertEq(owner, owner_);
-        assertEq(operator, operator_);
+        info = hololocker.getLockInfo(tokens[0], tokenIds[0]);
+        assertEq(info.unlockTime, block.timestamp + hololocker.getLockTime());
+        assertEq(info.owner, owner_);
+        assertEq(info.operator, operator_);
 
-        vm.warp(block.timestamp + hololocker.lockTime());
+        vm.warp(block.timestamp + hololocker.getLockTime());
         vm.expectEmit(true, true, true, true);
-        emit Withdraw(tokens[0], owner, tokenIds[0], operator);
+        emit Withdraw(tokens[0], info.owner, tokenIds[0], info.operator);
         hololocker.withdraw(tokens, tokenIds);
-        (unlockTime, owner, operator) = hololocker.nftLockInfo(tokens[0], tokenIds[0]);
-        assertEq(unlockTime, 0);
-        assertEq(owner, address(0));
-        assertEq(operator, address(0));
+        info = hololocker.getLockInfo(tokens[0], tokenIds[0]);
+        assertEq(info.unlockTime, 0);
+        assertEq(info.owner, address(0));
+        assertEq(info.operator, address(0));
         assertEq(mockNFT.ownerOf(tokenIds[0]), owner_);
     }
 
@@ -103,7 +104,7 @@ contract HololockerTest is Test {
         vm.expectEmit(true, true, true, true);
         emit LockTimeUpdate(newValue);
         hololocker.setLockTime(newValue);
-        assertEq(hololocker.lockTime(), newValue);
+        assertEq(hololocker.getLockTime(), newValue);
     }
 
     function test_CannotLockInvalidInputArity() public {
@@ -155,7 +156,7 @@ contract HololockerTest is Test {
     function test_CannotWithdrawUnauthorized() public {
         hololocker.lock(tokens, tokenIds, address(this));
         hololocker.requestUnlock(tokens, tokenIds);
-        vm.warp(block.timestamp + hololocker.lockTime());
+        vm.warp(block.timestamp + hololocker.getLockTime());
         vm.prank(alice);
         vm.expectRevert(Hololocker.Unauthorized.selector);
         hololocker.withdraw(tokens, tokenIds);
@@ -170,7 +171,7 @@ contract HololockerTest is Test {
     function test_CannotWithdrawIfUnlockTimeNotReached() public {
         hololocker.lock(tokens, tokenIds, address(this));
         hololocker.requestUnlock(tokens, tokenIds);
-        vm.warp(block.timestamp + hololocker.lockTime() - 1);
+        vm.warp(block.timestamp + hololocker.getLockTime() - 1);
         vm.expectRevert(Hololocker.NotUnlockedYet.selector);
         hololocker.withdraw(tokens, tokenIds);
     }
