@@ -118,6 +118,13 @@ contract Hololocker is HololockerInterface, Ownable {
         }
     }
 
+    /// @notice Returns `lockTime`, which is the value that gets added to block.timestamp and saved as unlockTime
+    /// in the requestUnlock function.
+    /// @return The `lockTime` variable
+    function getLockTime() external view returns (uint256) {
+        return lockTime;
+    }
+
     /// @notice Changes `lockTime` variable that is used in `requestUnlock`.
     /// @dev Reverts if new value is greater than `MAXIMUM_LOCK_TIME`.
     /// Emits `LockTimeUpdate` event.

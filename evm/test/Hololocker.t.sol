@@ -48,14 +48,14 @@ contract HololockerTest is Test {
 
         vm.roll(block.number + 10);
         vm.expectEmit(true, true, true, true);
-        emit Unlock(tokens[0], info.owner, tokenIds[0], info.operator, block.timestamp + hololocker.lockTime());
+        emit Unlock(tokens[0], info.owner, tokenIds[0], info.operator, block.timestamp + hololocker.getLockTime());
         hololocker.requestUnlock(tokens, tokenIds);
         info = hololocker.getLockInfo(tokens[0], tokenIds[0]);
-        assertEq(info.unlockTime, block.timestamp + hololocker.lockTime());
+        assertEq(info.unlockTime, block.timestamp + hololocker.getLockTime());
         assertEq(info.owner, owner_);
         assertEq(info.operator, operator_);
 
-        vm.warp(block.timestamp + hololocker.lockTime());
+        vm.warp(block.timestamp + hololocker.getLockTime());
         vm.expectEmit(true, true, true, true);
         emit Withdraw(tokens[0], info.owner, tokenIds[0], info.operator);
         hololocker.withdraw(tokens, tokenIds);
@@ -104,7 +104,7 @@ contract HololockerTest is Test {
         vm.expectEmit(true, true, true, true);
         emit LockTimeUpdate(newValue);
         hololocker.setLockTime(newValue);
-        assertEq(hololocker.lockTime(), newValue);
+        assertEq(hololocker.getLockTime(), newValue);
     }
 
     function test_CannotLockInvalidInputArity() public {
@@ -156,7 +156,7 @@ contract HololockerTest is Test {
     function test_CannotWithdrawUnauthorized() public {
         hololocker.lock(tokens, tokenIds, address(this));
         hololocker.requestUnlock(tokens, tokenIds);
-        vm.warp(block.timestamp + hololocker.lockTime());
+        vm.warp(block.timestamp + hololocker.getLockTime());
         vm.prank(alice);
         vm.expectRevert(Hololocker.Unauthorized.selector);
         hololocker.withdraw(tokens, tokenIds);
@@ -171,7 +171,7 @@ contract HololockerTest is Test {
     function test_CannotWithdrawIfUnlockTimeNotReached() public {
         hololocker.lock(tokens, tokenIds, address(this));
         hololocker.requestUnlock(tokens, tokenIds);
-        vm.warp(block.timestamp + hololocker.lockTime() - 1);
+        vm.warp(block.timestamp + hololocker.getLockTime() - 1);
         vm.expectRevert(Hololocker.NotUnlockedYet.selector);
         hololocker.withdraw(tokens, tokenIds);
     }

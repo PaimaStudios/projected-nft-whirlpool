@@ -79,6 +79,11 @@ interface HololockerInterface is IERC721Receiver {
     /// @param tokenIds NFT tokens identifiers
     function withdraw(address[] memory tokens, uint256[] memory tokenIds) external;
 
+    /// @notice Returns `lockTime`, which is the value that gets added to block.timestamp and saved as unlockTime
+    /// in the requestUnlock function.
+    /// @return The `lockTime` variable
+    function getLockTime() external view returns (uint256);
+
     /// @notice Changes `lockTime` variable that is used in `requestUnlock`.
     /// @dev This function should be protected with appropriate access control mechanisms.
     /// The new value should be checked against a sane upper limit constant, which if exceeded,
