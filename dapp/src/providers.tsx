@@ -4,10 +4,18 @@ import "@rainbow-me/rainbowkit/styles.css";
 import { WagmiConfig } from "wagmi";
 
 import { chains, config } from "./utils/configs/wagmi";
+import ModalProvider from "mui-modal-provider";
+import { useLucid } from "./hooks/useLucid";
+import { useDappStore } from "./store";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = React.useState(false);
+  const { lucid } = useLucid();
+  const setLucid = useDappStore((state) => state.setLucid);
   React.useEffect(() => setMounted(true), []);
+  React.useEffect(() => {
+    setLucid(lucid);
+  }, [lucid]);
   return (
     <WagmiConfig config={config}>
       <RainbowKitProvider
@@ -17,7 +25,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           accentColorForeground: "EC6B67",
         })}
       >
-        {mounted && children}
+        <ModalProvider>{mounted && children}</ModalProvider>
       </RainbowKitProvider>
     </WagmiConfig>
   );
