@@ -1,7 +1,7 @@
-import { WalletApi } from 'lucid-cardano';
-import { useEffect, useState } from 'react';
+import { WalletApi } from "lucid-cardano";
+import { useEffect, useState } from "react";
 
-const useWalletApi = (walletKey?: string) => {
+const useCardanoWalletApi = (walletKey?: string) => {
   const [walletApi, setWalletApi] = useState<WalletApi>();
 
   useEffect(() => {
@@ -13,4 +13,4 @@ const useWalletApi = (walletKey?: string) => {
   return walletApi;
 };
 
-export { useWalletApi };
+export { useCardanoWalletApi };

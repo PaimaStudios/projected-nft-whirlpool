@@ -1,7 +1,7 @@
-import { WalletApi } from 'lucid-cardano';
-import { useEffect, useState } from 'react';
+import { WalletApi } from "lucid-cardano";
+import { useEffect, useState } from "react";
 
-const useNetworkId = (walletApi?: WalletApi) => {
+const useCardanoNetworkId = (walletApi?: WalletApi) => {
   const [networkId, setNetworkId] = useState<number>();
 
   const onNetworkChange = (newNetworkId: unknown) => {
@@ -16,10 +16,10 @@ const useNetworkId = (walletApi?: WalletApi) => {
         walletApi.experimental.on &&
         walletApi.experimental.off
       ) {
-        walletApi.experimental.on('networkChange', onNetworkChange);
+        walletApi.experimental.on("networkChange", onNetworkChange);
 
         return () => {
-          walletApi.experimental.off('networkChange', onNetworkChange);
+          walletApi.experimental.off("networkChange", onNetworkChange);
         };
       }
     }
@@ -28,4 +28,4 @@ const useNetworkId = (walletApi?: WalletApi) => {
   return networkId;
 };
 
-export { useNetworkId };
+export { useCardanoNetworkId };

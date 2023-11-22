@@ -1,15 +1,15 @@
 import { Blockfrost, Lucid } from "lucid-cardano";
 import { useCallback, useEffect, useState } from "react";
 
-import { useNetworkId } from "./use-network-id";
-import { useWalletApi } from "./use-wallet-api";
+import { useCardanoNetworkId } from "./useCardanoNetworkId";
+import { useCardanoWalletApi } from "./useCardanoWalletApi";
 import { useDappStore } from "../store";
 
 const useLucid = () => {
   const selectedWallet = useDappStore((state) => state.selectedWallet);
 
-  const walletApi = useWalletApi(selectedWallet);
-  const networkId = useNetworkId(walletApi);
+  const walletApi = useCardanoWalletApi(selectedWallet);
+  const networkId = useCardanoNetworkId(walletApi);
 
   const [lucid, setLucid] = useState<Lucid>();
 
@@ -24,7 +24,6 @@ const useLucid = () => {
         : "https://cardano-mainnet.blockfrost.io/api/v0",
       process.env.REACT_APP_BLOCKFROST_PROJECT_ID_PREPROD,
     );
-    console.log("creating lucid");
     const newLucidInstance = await Lucid.new(provider, blockfrostNetwork);
 
     newLucidInstance.selectWallet(walletApi);

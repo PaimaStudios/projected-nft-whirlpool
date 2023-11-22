@@ -2,6 +2,7 @@
 import { Stack, Typography } from "@mui/material";
 import { useGetChainType } from "../hooks/useGetChainType";
 import LockNftListEVM from "./LockNftListEVM";
+import LockNftListCardano from "./LockNftListCardano";
 
 export default function LockNftSection() {
   const chainType = useGetChainType();
@@ -9,7 +10,7 @@ export default function LockNftSection() {
   return (
     <Stack sx={{ gap: 2, mt: 4, alignItems: "center", width: "100%" }}>
       <Typography variant="h3">Lock an NFT</Typography>
-      {chainType === "EVM" ? <LockNftListEVM /> : <></>}
+      {chainType === "EVM" ? <LockNftListEVM /> : <LockNftListCardano />}
     </Stack>
   );
 }
