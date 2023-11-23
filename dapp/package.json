@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@assemblyscript/loader": "^0.27.13",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
     "@mui/icons-material": "^5.14.9",
@@ -19,12 +20,15 @@
     "@types/react-dom": "^18.0.0",
     "alchemy-sdk": "^2.10.1",
     "axios": "^1.5.1",
+    "cbor": "^9.0.1",
     "curve25519-js": "^0.0.4",
+    "deno": "^0.1.1",
     "encoding": "^0.1.13",
     "just-clone": "^6.2.0",
     "lokijs": "^1.5.12",
     "lucid-cardano": "^0.10.7",
     "mui-modal-provider": "^2.3.1",
+    "projected-nft-sdk": "file:../sdk/wasm/pkg",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.16.0",
@@ -37,9 +41,9 @@
     "zustand": "^4.4.6"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
+    "start": "react-app-rewired start",
+    "build": "react-app-rewired build",
+    "test": "react-app-rewired test",
     "eject": "react-scripts eject",
     "format": "prettier . --write",
     "generate": "wagmi generate && prettier ./src/generated.ts --write",
@@ -71,6 +75,7 @@
     "eslint": "^8.15.0",
     "eslint-config-next": "^12.1.6",
     "prettier": "3.0.3",
+    "react-app-rewired": "^2.2.1",
     "wrangler": "^3.10.1"
   }
 }

@@ -12,8 +12,8 @@ import { useGetChainType } from "../hooks/useGetChainType";
 import { useModal } from "mui-modal-provider";
 import CardanoWalletsDialog from "../dialogs/CardanoWalletsDialog";
 import { useDappStore } from "../store";
-import { formatCardanoAddress } from "../utils/utils";
 import WalletInfoDialog from "../dialogs/WalletInfoDialog";
+import { formatCardanoAddress } from "../utils/cardano/utils";
 
 type Props = {
   popoverAnchorOrigin?: PopoverOrigin;

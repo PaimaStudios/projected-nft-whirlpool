@@ -12,7 +12,7 @@ export class Asset {
       this.name = name;
     } else {
       this.policyId = policyId.slice(0, 56);
-      this.name = policyId.slice(56);
+      this.name = policyId.slice(57);
     }
   }
 

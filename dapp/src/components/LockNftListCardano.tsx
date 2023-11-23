@@ -13,6 +13,7 @@ import { useCardanoBalance } from "../hooks/useCardanoBalance";
 import { Token } from "../utils/cardano/token";
 import { useState } from "react";
 import { useEffectOnce } from "usehooks-ts";
+import LockNftButtonCardano from "./LockNftButtonCardano";
 
 function LockNftListItemCardano({ nft }: { nft: Token }) {
   const [imageUrl, setImageUrl] = useState<string>();
@@ -30,17 +31,18 @@ function LockNftListItemCardano({ nft }: { nft: Token }) {
         title={nft.getNameUtf8()}
       />
       <CardContent>
-        <Stack sx={{ justifyContent: "space-between" }}>
-          <Typography variant="body2">{nft.getNameUtf8()}</Typography>
+        <Stack>
+          <Stack sx={{ flexDirection: "row", justifyContent: "space-between" }}>
+            <Typography variant="body2">{nft.getNameUtf8()}</Typography>
+            <Typography variant="body2">{nft.amount.toString()}</Typography>
+          </Stack>
           <Typography variant="caption" sx={{ overflowWrap: "anywhere" }}>
             {nft.getUnit()}
           </Typography>
         </Stack>
       </CardContent>
       <CardActions>
-        {/* <LockNftButtonCardano
-          token={nft}
-        /> */}
+        <LockNftButtonCardano token={nft} />
       </CardActions>
     </Card>
   );
