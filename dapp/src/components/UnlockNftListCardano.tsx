@@ -1,8 +1,5 @@
 "use client";
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
   Card,
   CardActions,
   CardContent,
@@ -12,31 +9,16 @@ import {
   Typography,
 } from "@mui/material";
 import TransactionButton from "./TransactionButton";
-import {
-  usePrepareHololockerRequestUnlock,
-  usePrepareHololockerWithdraw,
-} from "../generated";
-import { useContractWrite, useWaitForTransaction } from "wagmi";
-import { useGetLocksEVM } from "../hooks/useGetLocksEVM";
-import { LockInfo, LockInfoCardano } from "../utils/types";
+import { LockInfoCardano } from "../utils/types";
 import Grid from "@mui/material/Unstable_Grid2";
-import { hololockerConfig } from "../contracts";
 import { Countdown } from "./Countdown";
 import { useInterval } from "usehooks-ts";
 import { useState } from "react";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { useGetNftsMetadataEVM } from "../hooks/useGetNftsMetadataEVM";
-import { NftTokenType } from "alchemy-sdk";
-import MultirequestunlockButtonEVM from "./MultirequestunlockButtonEVM";
-import MultiwithdrawButtonEVM from "./MultiwithdrawButtonEVM";
-import { useQueryClient } from "@tanstack/react-query";
-import FunctionKey from "../utils/functionKey";
 import { useGetLocksCardano } from "../hooks/useGetLocksCardano";
 import { useDappStore } from "../store";
 import * as projected_nft from "projected-nft-sdk";
 import { validator } from "../utils/cardano/validator";
-import { Value } from "../utils/cardano/value";
-import { Constr, Data, UTxO } from "lucid-cardano";
+import { Data, UTxO } from "lucid-cardano";
 import { EmptyRedeemer, getRedeemer } from "../utils/cardano/redeemer";
 import { getLastBlockTime } from "../utils/cardano/utils";
 
@@ -48,13 +30,78 @@ function UnlockNftCardCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
   const address = useDappStore((state) => state.address);
   const paymentKeyHash = useDappStore((state) => state.paymentKeyHash);
   const { token, unlockTime } = lockInfo;
-  const [now, setNow] = useState<number>(new Date().getTime() / 1000);
+  const [now, setNow] = useState<number>(new Date().getTime());
 
   useInterval(() => {
-    setNow(new Date().getTime() / 1000);
+    setNow(new Date().getTime());
   }, 1000);
 
   async function unlockNft() {
+    console.log("lockinfo", lockInfo);
+    console.log("lucid", lucid);
+    console.log("paymentKeyHash", paymentKeyHash);
+    if (!lucid || !paymentKeyHash || !address) {
+      throw new Error("Prerequisites missing!");
+    }
+
+    const validatorAddress = lucid.utils.validatorToAddress(validator);
+    const utxos = await lucid.utxosAt(validatorAddress);
+    const inputUtxo = utxos.filter((utxo) => utxo.txHash === lockInfo.txId)[0];
+    console.log("utxos", utxos);
+    console.log("inputUtxo", inputUtxo);
+    const inputUtxo2: UTxO = {
+      address: validatorAddress,
+      assets: {
+        [lockInfo.token.getUnit()]: lockInfo.token.amount,
+      },
+      outputIndex: lockInfo.outputIndex,
+      txHash: lockInfo.txId,
+      datum: lockInfo.plutusDatum,
+    };
+    console.log("inputUtxo2", inputUtxo2);
+
+    if (!inputUtxo) {
+      throw new Error("Input UTxO not found!");
+    }
+
+    const lastBlockTime = await getLastBlockTime();
+    console.log("lastBlockTime", lastBlockTime);
+
+    let state = projected_nft.State.new(
+      projected_nft.Owner.new_keyhash(
+        projected_nft.Ed25519KeyHash.from_hex(paymentKeyHash),
+      ),
+      projected_nft.Status.new_unlocking(
+        projected_nft.UnlockingStatus.new(
+          projected_nft.OutRef.new(
+            projected_nft.TransactionHash.from_hex(lockInfo.txId),
+            BigInt(lockInfo.outputIndex),
+          ),
+          BigInt(lastBlockTime + ttl) + minimumLockTime,
+        ),
+      ),
+    );
+    let plutus_data_state = state.to_plutus_data();
+
+    const datum = Buffer.from(plutus_data_state.to_cbor_bytes()).toString(
+      "hex",
+    );
+    console.log("datum", datum);
+    const tx = await lucid
+      .newTx()
+      .collectFrom([inputUtxo], getRedeemer({ partial_withdraw: false }))
+      .attachSpendingValidator(validator)
+      .payToContract(validatorAddress, { inline: datum }, inputUtxo.assets)
+      .addSigner(address)
+      .validTo(lastBlockTime + ttl)
+      .complete();
+    const signedTx = await tx.sign().complete();
+    const txHash = await signedTx.submit();
+    console.log("txhash", txHash);
+    return txHash;
+  }
+
+  async function withdrawNft() {
     console.log("lockinfo", lockInfo);
     console.log("lucid", lucid);
     console.log("paymentKeyHash", paymentKeyHash);
@@ -105,24 +152,17 @@ function UnlockNftCardCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
       "hex",
     );
     console.log("datum", datum);
-    console.log("empty redeemer", EmptyRedeemer);
-    console.log("redeemer", getRedeemer({ partial_withdraw: false }));
-    console.log("test", Data.from("d87a81d87983d87980d87a80d87a80"));
     const tx = await lucid
       .newTx()
       .collectFrom([inputUtxo], getRedeemer({ partial_withdraw: false }))
       .attachSpendingValidator(validator)
-      .payToContract(validatorAddress, { inline: datum }, inputUtxo.assets)
       .addSigner(address)
-      .validTo(lastBlockTime + ttl)
       .complete();
     const signedTx = await tx.sign().complete();
     const txHash = await signedTx.submit();
     console.log("txhash", txHash);
     return txHash;
   }
-
-  async function withdrawNft() {}
 
   async function unlockOrWithdrawNft() {
     if (unlockTime == null) {
@@ -162,7 +202,7 @@ function UnlockNftCardCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
               "Withdraw NFT"
             ) : (
               <Stack sx={{ textTransform: "none" }}>
-                <Countdown deadline={new Date(Number(unlockTime) * 1000)} />
+                <Countdown deadline={new Date(Number(unlockTime))} />
               </Stack>
             )
           }
@@ -184,7 +224,7 @@ export default function UnlockNftListCardano() {
   return unclaimedLocks.length > 0 ? (
     <Grid container spacing={2} sx={{ width: "100%" }}>
       {unclaimedLocks.map((lock) => (
-        <Grid xs={4} key={lock.token.getUnit()}>
+        <Grid xs={4} key={lock.txId}>
           <UnlockNftCardCardano lockInfo={lock} />
         </Grid>
       ))}
