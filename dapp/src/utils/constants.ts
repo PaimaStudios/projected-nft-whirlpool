@@ -1,5 +1,8 @@
 import { CardanoWalletInfo } from "./types";
 
+export const cardanoApiMinSlot = 45080226;
+export const cardanoApiMaxSlot = 2147483647;
+
 export const cardanoWallets: CardanoWalletInfo[] = [
   {
     name: "Eternl",

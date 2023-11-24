@@ -49,7 +49,7 @@ function LockNftListItemCardano({ nft }: { nft: Token }) {
 }
 
 export default function LockNftListCardano() {
-  const { balance } = useCardanoBalance();
+  const { data: balance } = useCardanoBalance();
   console.log("balance", balance);
   return balance ? (
     <Grid container spacing={2} sx={{ width: "100%" }}>

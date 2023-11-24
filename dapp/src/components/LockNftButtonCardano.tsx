@@ -7,6 +7,9 @@ import { useDappStore } from "../store";
 import { Value } from "../utils/cardano/value";
 import { validator } from "../utils/cardano/validator";
 import { Data } from "lucid-cardano";
+import { useQueryClient } from "@tanstack/react-query";
+import FunctionKey from "../utils/functionKey";
+import { useState } from "react";
 
 type Props = {
   token: Token;
@@ -15,6 +18,9 @@ type Props = {
 export default function LockNftButtonCardano({ token }: Props) {
   const paymentKeyHash = useDappStore((state) => state.paymentKeyHash);
   const lucid = useDappStore((state) => state.lucid);
+  const queryClient = useQueryClient();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, setIsPending] = useState(false);
 
   async function lockNft() {
     console.log("lucid", lucid);
@@ -43,17 +49,25 @@ export default function LockNftButtonCardano({ token }: Props) {
         new Value(0n, [token]).toAssetsMap(),
       )
       .complete();
+    setIsLoading(true);
     const signedTx = await tx.sign().complete();
     const txHash = await signedTx.submit();
     console.log("txhash", txHash);
+    setIsLoading(false);
+    setIsPending(true);
+    await lucid.awaitTx(txHash);
+    queryClient.invalidateQueries({
+      queryKey: [FunctionKey.NFTS],
+    });
+    setIsPending(false);
     return txHash;
   }
 
   return (
     <TransactionButton
       onClick={lockNft}
-      isLoading={false}
-      isPending={false}
+      isLoading={isLoading}
+      isPending={isPending}
       actionText={"Lock NFT"}
     />
   );

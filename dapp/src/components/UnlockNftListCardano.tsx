@@ -18,12 +18,14 @@ import { useGetLocksCardano } from "../hooks/useGetLocksCardano";
 import { useDappStore } from "../store";
 import * as projected_nft from "projected-nft-sdk";
 import { validator } from "../utils/cardano/validator";
-import { Data, UTxO } from "lucid-cardano";
-import { EmptyRedeemer, getRedeemer } from "../utils/cardano/redeemer";
+import { UTxO } from "lucid-cardano";
+import { getRedeemer } from "../utils/cardano/redeemer";
 import { getLastBlockTime } from "../utils/cardano/utils";
+import { useQueryClient } from "@tanstack/react-query";
+import FunctionKey from "../utils/functionKey";
 
 const minimumLockTime = BigInt(300000);
-const ttl = 300000;
+const ttl = 60 * 1000;
 
 function UnlockNftCardCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
   const lucid = useDappStore((state) => state.lucid);
@@ -31,12 +33,16 @@ function UnlockNftCardCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
   const paymentKeyHash = useDappStore((state) => state.paymentKeyHash);
   const { token, unlockTime } = lockInfo;
   const [now, setNow] = useState<number>(new Date().getTime());
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const queryClient = useQueryClient();
 
   useInterval(() => {
     setNow(new Date().getTime());
   }, 1000);
 
   async function unlockNft() {
+    setIsLoading(true);
     console.log("lockinfo", lockInfo);
     console.log("lucid", lucid);
     console.log("paymentKeyHash", paymentKeyHash);
@@ -45,20 +51,12 @@ function UnlockNftCardCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
     }
 
     const validatorAddress = lucid.utils.validatorToAddress(validator);
-    const utxos = await lucid.utxosAt(validatorAddress);
-    const inputUtxo = utxos.filter((utxo) => utxo.txHash === lockInfo.txId)[0];
+    const utxos = await lucid.utxosByOutRef([
+      { txHash: lockInfo.txId, outputIndex: lockInfo.outputIndex },
+    ]);
+    const inputUtxo = utxos[0];
     console.log("utxos", utxos);
     console.log("inputUtxo", inputUtxo);
-    const inputUtxo2: UTxO = {
-      address: validatorAddress,
-      assets: {
-        [lockInfo.token.getUnit()]: lockInfo.token.amount,
-      },
-      outputIndex: lockInfo.outputIndex,
-      txHash: lockInfo.txId,
-      datum: lockInfo.plutusDatum,
-    };
-    console.log("inputUtxo2", inputUtxo2);
 
     if (!inputUtxo) {
       throw new Error("Input UTxO not found!");
@@ -98,10 +96,17 @@ function UnlockNftCardCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
     const signedTx = await tx.sign().complete();
     const txHash = await signedTx.submit();
     console.log("txhash", txHash);
-    return txHash;
+    setIsLoading(false);
+    setIsPending(true);
+    await lucid.awaitTx(txHash);
+    queryClient.invalidateQueries({
+      queryKey: [FunctionKey.LOCKS],
+    });
+    setIsPending(false);
   }
 
   async function withdrawNft() {
+    setIsLoading(true);
     console.log("lockinfo", lockInfo);
     console.log("lucid", lucid);
     console.log("paymentKeyHash", paymentKeyHash);
@@ -157,11 +162,21 @@ function UnlockNftCardCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
       .collectFrom([inputUtxo], getRedeemer({ partial_withdraw: false }))
       .attachSpendingValidator(validator)
       .addSigner(address)
+      .validFrom(lastBlockTime)
       .complete();
     const signedTx = await tx.sign().complete();
     const txHash = await signedTx.submit();
     console.log("txhash", txHash);
-    return txHash;
+    setIsLoading(false);
+    setIsPending(true);
+    await lucid.awaitTx(txHash);
+    queryClient.invalidateQueries({
+      queryKey: [FunctionKey.NFTS],
+    });
+    queryClient.invalidateQueries({
+      queryKey: [FunctionKey.LOCKS],
+    });
+    setIsPending(false);
   }
 
   async function unlockOrWithdrawNft() {
@@ -191,8 +206,8 @@ function UnlockNftCardCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
       </CardContent>
       <CardActions>
         <TransactionButton
-          isLoading={false}
-          isPending={false}
+          isLoading={isLoading}
+          isPending={isPending}
           onClick={unlockOrWithdrawNft}
           disabled={unlockTime != null && now < unlockTime}
           actionText={
