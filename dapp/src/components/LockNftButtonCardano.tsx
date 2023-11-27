@@ -1,15 +1,13 @@
 "use client";
-import { useAccount } from "wagmi";
 import TransactionButton from "./TransactionButton";
 import { Token } from "../utils/cardano/token";
-import * as projected_nft from "projected-nft-sdk";
 import { useDappStore } from "../store";
 import { Value } from "../utils/cardano/value";
 import { validator } from "../utils/cardano/validator";
-import { Data } from "lucid-cardano";
 import { useQueryClient } from "@tanstack/react-query";
 import FunctionKey from "../utils/functionKey";
 import { useState } from "react";
+import { getLockDatum } from "../utils/cardano/datum";
 
 type Props = {
   token: Token;
@@ -26,18 +24,9 @@ export default function LockNftButtonCardano({ token }: Props) {
     console.log("lucid", lucid);
     console.log("paymentKeyHash", paymentKeyHash);
     if (!lucid || !paymentKeyHash) return;
-    let state = projected_nft.State.new(
-      projected_nft.Owner.new_keyhash(
-        projected_nft.Ed25519KeyHash.from_hex(paymentKeyHash),
-      ),
-      projected_nft.Status.new_locked(),
-    );
 
-    let plutus_data_state = state.to_plutus_data();
     const validatorAddress = lucid.utils.validatorToAddress(validator);
-    const datum = Buffer.from(plutus_data_state.to_cbor_bytes()).toString(
-      "hex",
-    );
+    const datum = getLockDatum({ ownerPaymentKeyHash: paymentKeyHash });
     console.log("datum", datum);
 
     token.amount = 1n;

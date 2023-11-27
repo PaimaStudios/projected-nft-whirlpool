@@ -16,16 +16,16 @@ import { useInterval } from "usehooks-ts";
 import { useState } from "react";
 import { useGetLocksCardano } from "../hooks/useGetLocksCardano";
 import { useDappStore } from "../store";
-import * as projected_nft from "projected-nft-sdk";
 import { validator } from "../utils/cardano/validator";
 import { UTxO } from "lucid-cardano";
 import { getRedeemer } from "../utils/cardano/redeemer";
 import { getLastBlockTime } from "../utils/cardano/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import FunctionKey from "../utils/functionKey";
+import { getUnlockDatum } from "../utils/cardano/datum";
 
 const minimumLockTime = BigInt(300000);
-const ttl = 60 * 1000;
+const ttl = 120 * 1000;
 
 function UnlockNftCardCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
   const lucid = useDappStore((state) => state.lucid);
@@ -65,25 +65,12 @@ function UnlockNftCardCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
     const lastBlockTime = await getLastBlockTime();
     console.log("lastBlockTime", lastBlockTime);
 
-    let state = projected_nft.State.new(
-      projected_nft.Owner.new_keyhash(
-        projected_nft.Ed25519KeyHash.from_hex(paymentKeyHash),
-      ),
-      projected_nft.Status.new_unlocking(
-        projected_nft.UnlockingStatus.new(
-          projected_nft.OutRef.new(
-            projected_nft.TransactionHash.from_hex(lockInfo.txId),
-            BigInt(lockInfo.outputIndex),
-          ),
-          BigInt(lastBlockTime + ttl) + minimumLockTime,
-        ),
-      ),
-    );
-    let plutus_data_state = state.to_plutus_data();
-
-    const datum = Buffer.from(plutus_data_state.to_cbor_bytes()).toString(
-      "hex",
-    );
+    const datum = getUnlockDatum({
+      ownerPaymentKeyHash: paymentKeyHash,
+      txId: lockInfo.txId,
+      outputIndex: BigInt(lockInfo.outputIndex),
+      unlockTime: BigInt(lastBlockTime + ttl) + minimumLockTime,
+    });
     console.log("datum", datum);
     const tx = await lucid
       .newTx()
@@ -137,26 +124,6 @@ function UnlockNftCardCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
     const lastBlockTime = await getLastBlockTime();
     console.log("lastBlockTime", lastBlockTime);
 
-    let state = projected_nft.State.new(
-      projected_nft.Owner.new_keyhash(
-        projected_nft.Ed25519KeyHash.from_hex(paymentKeyHash),
-      ),
-      projected_nft.Status.new_unlocking(
-        projected_nft.UnlockingStatus.new(
-          projected_nft.OutRef.new(
-            projected_nft.TransactionHash.from_hex(inputUtxo.txHash),
-            BigInt(inputUtxo.outputIndex),
-          ),
-          BigInt(lastBlockTime + ttl) + minimumLockTime,
-        ),
-      ),
-    );
-    let plutus_data_state = state.to_plutus_data();
-
-    const datum = Buffer.from(plutus_data_state.to_cbor_bytes()).toString(
-      "hex",
-    );
-    console.log("datum", datum);
     const tx = await lucid
       .newTx()
       .collectFrom([inputUtxo], getRedeemer({ partial_withdraw: false }))
