@@ -1,6 +1,7 @@
 import {
   Button,
   Dialog,
+  DialogActions,
   DialogContent,
   DialogProps,
   DialogTitle,
@@ -8,7 +9,7 @@ import {
 } from "@mui/material";
 import { useDappStore } from "../store";
 import { useShallow } from "zustand/react/shallow";
-import { cardanoWallets } from "../utils/constants";
+import { cardanoWallets } from "../utils/cardano/constants";
 
 type WalletInfoDialogProps = {
   onCancel: () => void;
@@ -38,7 +39,9 @@ export default function WalletInfoDialog({
       <DialogContent>
         <Typography sx={{ overflowWrap: "anywhere" }}>{address}</Typography>
       </DialogContent>
-      <Button onClick={disconnect}>Disconnect</Button>
+      <DialogActions>
+        <Button onClick={disconnect}>Disconnect</Button>
+      </DialogActions>
     </Dialog>
   );
 }

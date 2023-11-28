@@ -12,7 +12,7 @@ import { useModal } from "mui-modal-provider";
 import InstallWalletDialog from "./InstallWalletDialog";
 import { Check } from "@mui/icons-material";
 import { CardanoWalletInfo } from "../utils/types";
-import { cardanoWallets } from "../utils/constants";
+import { cardanoWallets } from "../utils/cardano/constants";
 
 type CardanoWalletsDialogProps = {
   onCancel: () => void;

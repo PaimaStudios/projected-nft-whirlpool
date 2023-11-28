@@ -1,6 +1,6 @@
-import { CardanoWalletInfo } from "./types";
+import { CardanoWalletInfo } from "../types";
 
-export const cardanoApiMinSlot = 45080226;
+export const cardanoApiMinSlot = 40000000;
 export const cardanoApiMaxSlot = 2147483647;
 
 export const cardanoWallets: CardanoWalletInfo[] = [
