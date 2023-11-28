@@ -14,6 +14,12 @@ export const formatCardanoAddress = (
   return `${firstPart}...${lastPart}`;
 };
 
+export const formatPolicyId = (policyId: string) => {
+  return `${policyId.substring(0, 10)}...${policyId.substring(
+    policyId.length - 10,
+  )}`;
+};
+
 export const getAddressKeyHashes = (
   lucid: Lucid,
   address: string,

@@ -23,6 +23,7 @@ import { getLastBlockTime } from "../utils/cardano/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import FunctionKey from "../utils/functionKey";
 import { getUnlockDatum } from "../utils/cardano/datum";
+import { PolicyIdCardano } from "./PolicyIdCardano";
 
 const minimumLockTime = BigInt(300000);
 const ttl = 120 * 1000;
@@ -166,9 +167,7 @@ function UnlockNftCardCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
             <Typography variant="body2">{token.getNameUtf8()}</Typography>
             <Typography variant="body2">{token.amount.toString()}</Typography>
           </Stack>
-          <Typography variant="caption" sx={{ overflowWrap: "anywhere" }}>
-            {token.getUnit()}
-          </Typography>
+          <PolicyIdCardano policyId={token.asset.policyId} />
         </Stack>
       </CardContent>
       <CardActions>

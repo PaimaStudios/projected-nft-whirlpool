@@ -11,10 +11,9 @@ import {
 import Grid from "@mui/material/Unstable_Grid2";
 import { useCardanoBalance } from "../hooks/useCardanoBalance";
 import { Token } from "../utils/cardano/token";
-import { useState } from "react";
-import { useEffectOnce } from "usehooks-ts";
 import LockNftButtonCardano from "./LockNftButtonCardano";
 import { useGetNftsMetadataCardano } from "../hooks/useGetNftsMetadataCardano";
+import { PolicyIdCardano } from "./PolicyIdCardano";
 
 function LockNftListItemCardano({
   nft,
@@ -36,9 +35,7 @@ function LockNftListItemCardano({
             <Typography variant="body2">{nft.getNameUtf8()}</Typography>
             <Typography variant="body2">{nft.amount.toString()}</Typography>
           </Stack>
-          <Typography variant="caption" sx={{ overflowWrap: "anywhere" }}>
-            {nft.getUnit()}
-          </Typography>
+          <PolicyIdCardano policyId={nft.asset.policyId} />
         </Stack>
       </CardContent>
       <CardActions>
