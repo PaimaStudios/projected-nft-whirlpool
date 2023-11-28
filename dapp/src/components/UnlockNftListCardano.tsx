@@ -81,7 +81,14 @@ function UnlockNftCardCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
       .addSigner(address)
       .validTo(lastBlockTime + ttl)
       .complete();
-    const signedTx = await tx.sign().complete();
+    let signedTx;
+    try {
+      signedTx = await tx.sign().complete();
+    } catch (err) {
+      console.error(err);
+      setIsLoading(false);
+      return;
+    }
     const txHash = await signedTx.submit();
     console.log("txhash", txHash);
     setIsLoading(false);
@@ -132,7 +139,14 @@ function UnlockNftCardCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
       .addSigner(address)
       .validFrom(lastBlockTime)
       .complete();
-    const signedTx = await tx.sign().complete();
+    let signedTx;
+    try {
+      signedTx = await tx.sign().complete();
+    } catch (err) {
+      console.error(err);
+      setIsLoading(false);
+      return;
+    }
     const txHash = await signedTx.submit();
     console.log("txhash", txHash);
     setIsLoading(false);

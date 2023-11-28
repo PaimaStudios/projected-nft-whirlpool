@@ -39,7 +39,14 @@ export default function LockNftButtonCardano({ token }: Props) {
       )
       .complete();
     setIsLoading(true);
-    const signedTx = await tx.sign().complete();
+    let signedTx;
+    try {
+      signedTx = await tx.sign().complete();
+    } catch (err) {
+      console.error(err);
+      setIsLoading(false);
+      return;
+    }
     const txHash = await signedTx.submit();
     console.log("txhash", txHash);
     setIsLoading(false);
