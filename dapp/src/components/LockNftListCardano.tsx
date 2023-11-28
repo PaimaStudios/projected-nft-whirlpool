@@ -55,7 +55,7 @@ export default function LockNftListCardano() {
   return balance ? (
     <Grid container spacing={2} sx={{ width: "100%" }}>
       {balance?.getTokens().map((nft) => (
-        <Grid xs={4} key={`${nft.getNameUtf8()}-${nft.getUnit()}`}>
+        <Grid xs={3} key={`${nft.getNameUtf8()}-${nft.getUnit()}`}>
           <LockNftListItemCardano
             nft={nft}
             metadata={nftMetadata?.[nft.asset.policyId]?.[nft.asset.name]}

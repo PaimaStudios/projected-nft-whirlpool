@@ -114,16 +114,6 @@ function UnlockNftCardCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
     const inputUtxo = utxos.filter((utxo) => utxo.txHash === lockInfo.txId)[0];
     console.log("utxos", utxos);
     console.log("inputUtxo", inputUtxo);
-    const inputUtxo2: UTxO = {
-      address: validatorAddress,
-      assets: {
-        [lockInfo.token.getUnit()]: lockInfo.token.amount,
-      },
-      outputIndex: lockInfo.outputIndex,
-      txHash: lockInfo.txId,
-      datum: lockInfo.plutusDatum,
-    };
-    console.log("inputUtxo2", inputUtxo2);
 
     if (!inputUtxo) {
       throw new Error("Input UTxO not found!");
@@ -219,7 +209,7 @@ export default function UnlockNftListCardano() {
   return unclaimedLocks.length > 0 ? (
     <Grid container spacing={2} sx={{ width: "100%" }}>
       {unclaimedLocks.map((lock) => (
-        <Grid xs={4} key={lock.txId}>
+        <Grid xs={3} key={lock.txId}>
           <UnlockNftCardCardano lockInfo={lock} />
         </Grid>
       ))}

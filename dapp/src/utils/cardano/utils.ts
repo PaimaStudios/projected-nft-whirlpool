@@ -1,4 +1,4 @@
-import { Lucid, WalletApi } from "lucid-cardano";
+import { Lovelace, Lucid } from "lucid-cardano";
 
 export const formatCardanoAddress = (
   address: string | undefined,
@@ -18,6 +18,14 @@ export const formatPolicyId = (policyId: string) => {
   return `${policyId.substring(0, 10)}...${policyId.substring(
     policyId.length - 10,
   )}`;
+};
+
+export const formatLovelace = (lovelace: Lovelace) => {
+  const ada = Number(lovelace) / 1_000_000;
+  return ada.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 6,
+  });
 };
 
 export const getAddressKeyHashes = (

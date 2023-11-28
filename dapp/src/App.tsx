@@ -28,12 +28,12 @@ export default function App() {
 function Layout() {
   return (
     <MuiSetup>
-      <Providers>
-        <QueryClientProvider client={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <Providers>
           <Navbar />
           <Outlet />
-        </QueryClientProvider>
-      </Providers>
+        </Providers>
+      </QueryClientProvider>
     </MuiSetup>
   );
 }
