@@ -12,4 +12,14 @@ export const theme = createTheme({
     /*...font.style,*/ h1: { fontWeight: 800 },
     button: { fontWeight: 600 },
   },
+  components: {
+    MuiPaper: {
+      styleOverrides: {
+        outlined: ({ theme }) =>
+          theme.unstable_sx({
+            backgroundColor: theme.palette.primary.main,
+          }),
+      },
+    },
+  },
 });

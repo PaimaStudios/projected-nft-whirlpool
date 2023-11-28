@@ -10,10 +10,14 @@ import { useState } from "react";
 import { getLockDatum } from "../utils/cardano/datum";
 
 type Props = {
-  token: Token;
+  tokens: Token[];
+  actionText?: string;
 };
 
-export default function LockNftButtonCardano({ token }: Props) {
+export default function LockNftButtonCardano({
+  tokens,
+  actionText = "Lock token",
+}: Props) {
   const paymentKeyHash = useDappStore((state) => state.paymentKeyHash);
   const lucid = useDappStore((state) => state.lucid);
   const queryClient = useQueryClient();
@@ -29,13 +33,16 @@ export default function LockNftButtonCardano({ token }: Props) {
     const datum = getLockDatum({ ownerPaymentKeyHash: paymentKeyHash });
     console.log("datum", datum);
 
-    token.amount = 1n;
+    // todo Remove after testing
+    tokens.forEach((token) => {
+      token.amount = 1n;
+    });
     const tx = await lucid
       .newTx()
       .payToContract(
         validatorAddress,
         { inline: datum },
-        new Value(0n, [token]).toAssetsMap(),
+        new Value(0n, tokens).toAssetsMap(),
       )
       .complete();
     setIsLoading(true);
@@ -67,7 +74,7 @@ export default function LockNftButtonCardano({ token }: Props) {
       onClick={lockNft}
       isLoading={isLoading}
       isPending={isPending}
-      actionText={"Lock NFT"}
+      actionText={actionText}
     />
   );
 }
