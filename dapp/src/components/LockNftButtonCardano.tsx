@@ -48,6 +48,9 @@ export default function LockNftButtonCardano({ token }: Props) {
     queryClient.invalidateQueries({
       queryKey: [FunctionKey.NFTS],
     });
+    queryClient.invalidateQueries({
+      queryKey: [FunctionKey.LOCKS],
+    });
     setIsPending(false);
     return txHash;
   }

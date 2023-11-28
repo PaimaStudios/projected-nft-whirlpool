@@ -50,3 +50,11 @@ export const getLastBlockTime = async () => {
   ).then((res) => res.json());
   return epochInfo.last_block_time * 1000;
 };
+
+export const processImage = (image: string) => {
+  if (image.startsWith("ipfs://")) {
+    const ipfsHash = image.substring("ipfs://".length);
+    return `https://ipfs.io/ipfs/${ipfsHash}`;
+  }
+  return image;
+};

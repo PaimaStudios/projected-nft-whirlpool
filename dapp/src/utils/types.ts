@@ -40,3 +40,13 @@ export type LockInfoCardano = ProjectedNftCardanoEventsResponseObject & {
   };
   unlockTime: null | bigint;
 };
+
+export type MetadataNftCardano = {
+  [policyId: string]: {
+    [assetName: string]: string;
+  };
+};
+
+export type MetadataNftCardanoResponse = {
+  cip25: MetadataNftCardano;
+};

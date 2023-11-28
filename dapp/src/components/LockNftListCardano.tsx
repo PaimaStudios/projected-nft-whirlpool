@@ -14,20 +14,20 @@ import { Token } from "../utils/cardano/token";
 import { useState } from "react";
 import { useEffectOnce } from "usehooks-ts";
 import LockNftButtonCardano from "./LockNftButtonCardano";
+import { useGetNftsMetadataCardano } from "../hooks/useGetNftsMetadataCardano";
 
-function LockNftListItemCardano({ nft }: { nft: Token }) {
-  const [imageUrl, setImageUrl] = useState<string>();
-  useEffectOnce(() => {
-    async function fetchAndSetImage() {
-      setImageUrl(await nft.asset.getImageUrl());
-    }
-    fetchAndSetImage();
-  });
+function LockNftListItemCardano({
+  nft,
+  metadata,
+}: {
+  nft: Token;
+  metadata?: { image?: string };
+}) {
   return (
     <Card>
       <CardMedia
         sx={{ aspectRatio: 1, objectFit: "cover" }}
-        image={imageUrl ?? "/placeholder.png"}
+        image={metadata?.image ?? "/placeholder.png"}
         title={nft.getNameUtf8()}
       />
       <CardContent>
@@ -50,12 +50,19 @@ function LockNftListItemCardano({ nft }: { nft: Token }) {
 
 export default function LockNftListCardano() {
   const { data: balance } = useCardanoBalance();
+  const { data: nftMetadata } = useGetNftsMetadataCardano(
+    balance?.getTokens().map((token) => token.asset) ?? [],
+  );
   console.log("balance", balance);
+  console.log("nft metadata", nftMetadata);
   return balance ? (
     <Grid container spacing={2} sx={{ width: "100%" }}>
       {balance?.getTokens().map((nft) => (
         <Grid xs={4} key={`${nft.getNameUtf8()}-${nft.getUnit()}`}>
-          <LockNftListItemCardano nft={nft} />
+          <LockNftListItemCardano
+            nft={nft}
+            metadata={nftMetadata?.[nft.asset.policyId]?.[nft.asset.name]}
+          />
         </Grid>
       ))}
     </Grid>
