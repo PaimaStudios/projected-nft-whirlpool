@@ -80,12 +80,13 @@ export default function LockNftListCardano() {
   };
 
   return balance ? (
-    <Stack sx={{ gap: 2 }}>
+    <Stack sx={{ gap: 2, width: "100%" }}>
       {selectMultiple ? (
         <Stack sx={{ flexDirection: "row", justifyContent: "center", gap: 2 }}>
           <LockNftButtonCardano
             tokens={selectedTokens}
             actionText="Lock selected tokens"
+            disabled={selectedTokens.length === 0}
           />
           <Button
             onClick={() => {
@@ -99,6 +100,7 @@ export default function LockNftListCardano() {
       ) : (
         <Button
           variant="contained"
+          size="large"
           sx={{ alignSelf: "center" }}
           onClick={() => {
             setSelectMultiple(!selectMultiple);

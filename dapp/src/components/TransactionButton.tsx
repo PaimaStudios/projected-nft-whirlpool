@@ -1,14 +1,13 @@
 "use client";
-import Button from "@mui/material/Button";
+import Button, { ButtonProps } from "@mui/material/Button";
 
 type Props = {
-  onClick: () => void;
   isLoading: boolean;
   isPending: boolean;
   actionText: string | JSX.Element;
   disabled?: boolean;
   fullWidth?: boolean;
-};
+} & ButtonProps;
 
 export default function TransactionButton({
   onClick,
@@ -17,6 +16,7 @@ export default function TransactionButton({
   actionText,
   disabled,
   fullWidth,
+  ...props
 }: Props) {
   return (
     <Button
@@ -25,6 +25,7 @@ export default function TransactionButton({
       onClick={onClick}
       disabled={isLoading || isPending || disabled}
       fullWidth={fullWidth}
+      {...props}
     >
       {isLoading
         ? "Confirm transaction..."
