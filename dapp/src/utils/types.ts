@@ -31,7 +31,7 @@ export type ProjectedNftCardanoEventsResponse =
   ProjectedNftCardanoEventsResponseObject[];
 
 export type LockInfoCardano = ProjectedNftCardanoEventsResponseObject & {
-  token: Token;
+  tokens: Token[];
   status: "Lock" | "Unlocking" | "Claim";
   owner: string;
   outRef: null | {

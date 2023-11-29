@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import FunctionKey from "../utils/functionKey";
 import { useState } from "react";
 import { getLockDatum } from "../utils/cardano/datum";
+import { nftsQueryInvalidationDelay } from "../utils/cardano/constants";
 
 type Props = {
   tokens: Token[];
@@ -59,9 +60,11 @@ export default function LockNftButtonCardano({
     setIsLoading(false);
     setIsPending(true);
     await lucid.awaitTx(txHash);
-    queryClient.invalidateQueries({
-      queryKey: [FunctionKey.NFTS],
-    });
+    setTimeout(() => {
+      queryClient.invalidateQueries({
+        queryKey: [FunctionKey.NFTS],
+      });
+    }, nftsQueryInvalidationDelay);
     queryClient.invalidateQueries({
       queryKey: [FunctionKey.LOCKS],
     });

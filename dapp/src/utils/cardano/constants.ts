@@ -29,3 +29,5 @@ export const cardanoWallets: CardanoWalletInfo[] = [
     url: "https://typhonwallet.io/",
   },
 ];
+
+export const nftsQueryInvalidationDelay = 1000;

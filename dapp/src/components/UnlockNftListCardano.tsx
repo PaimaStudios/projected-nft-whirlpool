@@ -1,5 +1,8 @@
 "use client";
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Card,
   CardActions,
   CardContent,
@@ -17,32 +20,64 @@ import { useState } from "react";
 import { useGetLocksCardano } from "../hooks/useGetLocksCardano";
 import { useDappStore } from "../store";
 import { validator } from "../utils/cardano/validator";
-import { UTxO } from "lucid-cardano";
 import { getRedeemer } from "../utils/cardano/redeemer";
 import { getLastBlockTime } from "../utils/cardano/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import FunctionKey from "../utils/functionKey";
 import { getUnlockDatum } from "../utils/cardano/datum";
 import { PolicyIdCardano } from "./PolicyIdCardano";
+import { Token } from "../utils/cardano/token";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { nftsQueryInvalidationDelay } from "../utils/cardano/constants";
 
+// From validator
 const minimumLockTime = BigInt(300000);
 const ttl = 120 * 1000;
+// Artificially increase unlockTime by this amount to let chain produce block satisfying the real unlockTime
+const unlockTimeReserve = BigInt(60 * 1000);
 
-function UnlockNftCardCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
+function UnlockNftCardCardano({ token }: { token: Token }) {
+  return (
+    <Card>
+      <CardMedia
+        sx={{ aspectRatio: 1, objectFit: "cover" }}
+        image={"/placeholder.png"}
+        title={token.getNameUtf8()}
+      />
+      <CardContent>
+        <Stack>
+          <Stack sx={{ flexDirection: "row", justifyContent: "space-between" }}>
+            <Typography variant="body2">{token.getNameUtf8()}</Typography>
+            <Typography variant="body2">{token.amount.toString()}</Typography>
+          </Stack>
+          <PolicyIdCardano policyId={token.asset.policyId} />
+        </Stack>
+      </CardContent>
+      <CardActions></CardActions>
+    </Card>
+  );
+}
+
+function UnlockNftListItemCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
   const lucid = useDappStore((state) => state.lucid);
   const address = useDappStore((state) => state.address);
   const paymentKeyHash = useDappStore((state) => state.paymentKeyHash);
-  const { token, unlockTime } = lockInfo;
+  const { tokens } = lockInfo;
+  let { unlockTime } = lockInfo;
   const [now, setNow] = useState<number>(new Date().getTime());
   const [isLoading, setIsLoading] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const queryClient = useQueryClient();
 
+  if (unlockTime) {
+    unlockTime += unlockTimeReserve;
+  }
+
   useInterval(() => {
     setNow(new Date().getTime());
   }, 1000);
 
-  async function unlockNft() {
+  async function unlockTokens() {
     setIsLoading(true);
     console.log("lockinfo", lockInfo);
     console.log("lucid", lucid);
@@ -100,7 +135,7 @@ function UnlockNftCardCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
     setIsPending(false);
   }
 
-  async function withdrawNft() {
+  async function withdrawTokens() {
     setIsLoading(true);
     console.log("lockinfo", lockInfo);
     console.log("lucid", lucid);
@@ -121,6 +156,12 @@ function UnlockNftCardCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
 
     const lastBlockTime = await getLastBlockTime();
     console.log("lastBlockTime", lastBlockTime);
+    if (lastBlockTime < unlockTime!) {
+      alert(
+        "Latest block has not reached unlock time yet. Try again a bit later!",
+      );
+      return;
+    }
 
     const tx = await lucid
       .newTx()
@@ -142,49 +183,46 @@ function UnlockNftCardCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
     setIsLoading(false);
     setIsPending(true);
     await lucid.awaitTx(txHash);
-    queryClient.invalidateQueries({
-      queryKey: [FunctionKey.NFTS],
-    });
+    setTimeout(() => {
+      queryClient.invalidateQueries({
+        queryKey: [FunctionKey.NFTS],
+      });
+    }, nftsQueryInvalidationDelay);
     queryClient.invalidateQueries({
       queryKey: [FunctionKey.LOCKS],
     });
     setIsPending(false);
   }
 
-  async function unlockOrWithdrawNft() {
+  async function unlockOrWithdrawTokens() {
     if (unlockTime == null) {
-      unlockNft();
+      unlockTokens();
     } else {
-      withdrawNft();
+      withdrawTokens();
     }
   }
   return (
-    <Card>
-      <CardMedia
-        sx={{ aspectRatio: 1, objectFit: "cover" }}
-        image={"/placeholder.png"}
-        title={token.getNameUtf8()}
-      />
-      <CardContent>
+    <Accordion sx={{ width: "100%" }}>
+      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Stack>
-          <Stack sx={{ flexDirection: "row", justifyContent: "space-between" }}>
-            <Typography variant="body2">{token.getNameUtf8()}</Typography>
-            <Typography variant="body2">{token.amount.toString()}</Typography>
-          </Stack>
-          <PolicyIdCardano policyId={token.asset.policyId} />
+          <Typography>Transaction ID: {lockInfo.txId}</Typography>
+          <Typography fontWeight={600}>
+            {lockInfo.tokens.length}{" "}
+            {`token${lockInfo.tokens.length > 1 ? "s" : ""}`}
+          </Typography>
         </Stack>
-      </CardContent>
-      <CardActions>
+      </AccordionSummary>
+      <AccordionDetails>
         <TransactionButton
           isLoading={isLoading}
           isPending={isPending}
-          onClick={unlockOrWithdrawNft}
+          onClick={unlockOrWithdrawTokens}
           disabled={unlockTime != null && now < unlockTime}
           actionText={
             unlockTime == null ? (
-              "Request Unlock"
+              "Request Unlock all"
             ) : now > unlockTime ? (
-              "Withdraw NFT"
+              "Withdraw all tokens"
             ) : (
               <Stack sx={{ textTransform: "none" }}>
                 <Countdown deadline={new Date(Number(unlockTime))} />
@@ -192,8 +230,15 @@ function UnlockNftCardCardano({ lockInfo }: { lockInfo: LockInfoCardano }) {
             )
           }
         />
-      </CardActions>
-    </Card>
+        <Grid container spacing={2} sx={{ width: "100%" }}>
+          {tokens.map((token) => (
+            <Grid xs={3} key={token.getUnit()}>
+              <UnlockNftCardCardano token={token} />
+            </Grid>
+          ))}
+        </Grid>
+      </AccordionDetails>
+    </Accordion>
   );
 }
 
@@ -203,18 +248,18 @@ export default function UnlockNftListCardano() {
   if (!locks) {
     return <CircularProgress />;
   }
-  const unclaimedLocks = locks?.filter((lock) => lock.status !== "Claim");
+  const unclaimedLocks = locks.filter((lock) => lock.status !== "Claim");
   console.log("locks", unclaimedLocks);
 
-  return unclaimedLocks.length > 0 ? (
-    <Grid container spacing={2} sx={{ width: "100%" }}>
+  if (unclaimedLocks.length === 0) {
+    return <Typography>None.</Typography>;
+  }
+
+  return (
+    <Stack sx={{ gap: 2, width: "100%" }}>
       {unclaimedLocks.map((lock) => (
-        <Grid xs={3} key={lock.txId}>
-          <UnlockNftCardCardano lockInfo={lock} />
-        </Grid>
+        <UnlockNftListItemCardano lockInfo={lock} key={lock.txId} />
       ))}
-    </Grid>
-  ) : (
-    <Typography>None.</Typography>
+    </Stack>
   );
 }
