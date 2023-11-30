@@ -18,13 +18,16 @@ export type CardanoWalletInfo = {
 };
 
 type ProjectedNftCardanoEventsResponseObject = {
-  txId: string;
-  outputIndex: number;
-  slot: number;
+  actionSlot: number;
+  actionTxId: string;
+  amount: number;
   asset: string;
-  amount: string;
-  status: "Lock" | "Unlocking" | "Claim" | "Invalid";
+  // outputIndex: number;
+  ownerAddress: string;
   plutusDatum: string;
+  previousTxHash: string;
+  previousTxOutputIndex: number | null;
+  status: "Lock" | "Unlocking" | "Claim" | "Invalid";
 };
 
 export type ProjectedNftCardanoEventsResponse =
@@ -33,11 +36,6 @@ export type ProjectedNftCardanoEventsResponse =
 export type LockInfoCardano = ProjectedNftCardanoEventsResponseObject & {
   tokens: Token[];
   status: "Lock" | "Unlocking" | "Claim";
-  owner: string;
-  outRef: null | {
-    hash: string;
-    index: bigint;
-  };
   unlockTime: null | bigint;
 };
 

@@ -44,10 +44,10 @@ const fetchLocks = async (paymentKeyHash: string) => {
             : decodeDatumUnlocking(datum);
         console.log("decoded", decoded);
         if (!decoded) {
-          console.error(`Could not decode datum of tx ${dat.txId}`);
+          console.error(`Could not decode datum of tx ${dat.actionTxId}`);
           return;
         }
-        if (decoded.owner !== paymentKeyHash) {
+        if (dat.ownerAddress !== paymentKeyHash) {
           return;
         }
       }
@@ -56,53 +56,60 @@ const fetchLocks = async (paymentKeyHash: string) => {
 
       switch (dat.status) {
         case "Lock":
-          if (!locksMap[dat.txId]) {
+          if (!locksMap[dat.actionTxId]) {
             const lock: LockInfoCardano = {
               ...dat,
               tokens: [token],
               status: dat.status,
-              ...decoded!,
+              unlockTime: null,
             };
-            locksMap[dat.txId] = lock;
+            locksMap[dat.actionTxId] = lock;
           } else {
-            locksMap[dat.txId].tokens.push(token);
+            locksMap[dat.actionTxId].tokens.push(token);
           }
           break;
         case "Unlocking":
-          if (!decoded || !decoded.outRef) {
+          if (!dat.previousTxHash) {
             console.error(
-              "Unexpected error occured: Unlocking tx does not have outRef",
+              "Unexpected error occured: Unlocking tx does not have previousTxHash",
               dat,
             );
             break;
           }
-          if (!locksMap[decoded.outRef.hash]) {
+          if (!decoded?.unlockTime) {
+            console.error(
+              "Unexpected error occured: Unlocking tx does not have unlockTime",
+              dat,
+            );
+            break;
+          }
+          if (!locksMap[dat.previousTxHash]) {
             break;
           }
           const lock: LockInfoCardano = {
-            ...locksMap[decoded.outRef.hash],
+            ...locksMap[dat.previousTxHash],
             ...dat,
             status: dat.status,
-            ...decoded!,
+            unlockTime: decoded.unlockTime,
           };
-          delete locksMap[decoded.outRef.hash];
-          locksMap[dat.txId] = lock;
+          delete locksMap[dat.previousTxHash];
+          locksMap[dat.actionTxId] = lock;
           break;
         case "Claim":
-          // if (!dat.previousRef) {
-          //   console.error(
-          //     "Unexpected error occured: Claim tx does not have previousRef",
-          //     dat,
-          //   );
-          //   break;
-          // }
-          // delete locksMap[dat.previousRef];
+          if (!dat.previousTxHash) {
+            console.error(
+              "Unexpected error occured: Claim tx does not have previousTxHash",
+              dat,
+            );
+            break;
+          }
+          delete locksMap[dat.previousTxHash];
           break;
       }
     });
     console.log("locksMap", locksMap);
     const locks: LockInfoCardano[] = Object.values(locksMap).sort(
-      (a, b) => a.slot - b.slot,
+      (a, b) => a.actionSlot - b.actionSlot,
     );
     return locks;
   } catch (err) {

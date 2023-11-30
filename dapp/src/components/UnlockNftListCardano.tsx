@@ -104,7 +104,10 @@ function UnlockNftListItemCardano({
 
     const validatorAddress = lucid.utils.validatorToAddress(validator);
     const utxos = await lucid.utxosByOutRef([
-      { txHash: lockInfo.txId, outputIndex: lockInfo.outputIndex },
+      {
+        txHash: lockInfo.actionTxId,
+        outputIndex: 0 /* TODO: lockInfo.outputIndex*/,
+      },
     ]);
     const inputUtxo = utxos[0];
     console.log("utxos", utxos);
@@ -119,8 +122,8 @@ function UnlockNftListItemCardano({
 
     const datum = getUnlockDatum({
       ownerPaymentKeyHash: paymentKeyHash,
-      txId: lockInfo.txId,
-      outputIndex: BigInt(lockInfo.outputIndex),
+      txId: lockInfo.actionTxId,
+      outputIndex: BigInt(0 /* TODO: lockInfo.outputIndex*/),
       unlockTime: BigInt(lastBlockTime + ttl) + minimumLockTime,
     });
     console.log("datum", datum);
@@ -161,7 +164,9 @@ function UnlockNftListItemCardano({
 
     const validatorAddress = lucid.utils.validatorToAddress(validator);
     const utxos = await lucid.utxosAt(validatorAddress);
-    const inputUtxo = utxos.filter((utxo) => utxo.txHash === lockInfo.txId)[0];
+    const inputUtxo = utxos.filter(
+      (utxo) => utxo.txHash === lockInfo.actionTxId,
+    )[0];
     console.log("utxos", utxos);
     console.log("inputUtxo", inputUtxo);
 
@@ -221,7 +226,7 @@ function UnlockNftListItemCardano({
     <Accordion sx={{ width: "100%" }}>
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Stack>
-          <Typography>Transaction ID: {lockInfo.txId}</Typography>
+          <Typography>Transaction ID: {lockInfo.actionTxId}</Typography>
           <Typography fontWeight={600}>
             {lockInfo.tokens.length}{" "}
             {`token${lockInfo.tokens.length > 1 ? "s" : ""}`} (
@@ -288,7 +293,7 @@ export default function UnlockNftListCardano() {
       {unclaimedLocks.map((lock) => (
         <UnlockNftListItemCardano
           lockInfo={lock}
-          key={lock.txId}
+          key={lock.actionTxId}
           metadata={nftMetadata}
         />
       ))}
