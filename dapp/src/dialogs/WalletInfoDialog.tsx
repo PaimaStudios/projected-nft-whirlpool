@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogProps,
   DialogTitle,
+  IconButton,
   Stack,
   Typography,
 } from "@mui/material";
@@ -14,6 +15,7 @@ import { cardanoWallets } from "../utils/cardano/constants";
 import { AddressCardano } from "../components/AddressCardano";
 import { useCardanoBalance } from "../hooks/useCardanoBalance";
 import { formatLovelace } from "../utils/cardano/utils";
+import { Close } from "@mui/icons-material";
 
 type WalletInfoDialogProps = {
   onCancel: () => void;
@@ -43,26 +45,38 @@ export default function WalletInfoDialog({
   }
   return (
     <Dialog {...props}>
-      <DialogTitle>
-        <Stack sx={{ flexDirection: "row", gap: 1 }}>
-          Connected wallet - {selectedWallet?.name}
-          <img
-            src={selectedWallet.icon}
-            alt={selectedWallet.name}
-            style={{ height: 32, aspectRatio: 1 }}
-          />
-        </Stack>
-      </DialogTitle>
+      <Stack
+        sx={{
+          flexDirection: "row",
+          width: "100%",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <DialogTitle>
+          <Stack
+            sx={{ flexDirection: "row", gap: 1, justifyContent: "center" }}
+          >
+            {selectedWallet?.name}
+            <img
+              src={selectedWallet.icon}
+              alt={selectedWallet.name}
+              style={{ height: 32, aspectRatio: 1 }}
+            />
+          </Stack>
+        </DialogTitle>
+        <DialogActions>
+          <IconButton onClick={onCancel} aria-label="close">
+            <Close />
+          </IconButton>
+        </DialogActions>
+      </Stack>
       <DialogContent>
-        <Stack>
-          <Stack sx={{ flexDirection: "row", gap: 1 }}>
-            <Typography>Address: </Typography>
-            <AddressCardano address={address ?? ""} />
-          </Stack>
-          <Stack sx={{ flexDirection: "row", gap: 1 }}>
-            <Typography>Balance: </Typography>
+        <Stack sx={{ alignItems: "center" }}>
+          <AddressCardano address={address ?? ""} />
+          <Typography variant="caption">
             {formatLovelace(balance?.getLovelace() ?? 0n)} ₳
-          </Stack>
+          </Typography>
         </Stack>
       </DialogContent>
       <DialogActions>

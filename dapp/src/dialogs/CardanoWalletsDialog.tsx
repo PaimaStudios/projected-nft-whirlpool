@@ -1,7 +1,9 @@
 import {
   Dialog,
+  DialogActions,
   DialogProps,
   DialogTitle,
+  IconButton,
   MenuItem,
   MenuList,
   Stack,
@@ -10,7 +12,7 @@ import {
 import { useDappStore } from "../store";
 import { useModal } from "mui-modal-provider";
 import InstallWalletDialog from "./InstallWalletDialog";
-import { Check } from "@mui/icons-material";
+import { Check, Close } from "@mui/icons-material";
 import { CardanoWalletInfo } from "../utils/types";
 import { cardanoWallets } from "../utils/cardano/constants";
 
@@ -45,15 +47,34 @@ export default function CardanoWalletsDialog({
           }
         } catch (_) {}
       } else {
-        showModal(InstallWalletDialog, { walletInfo });
+        const modal = showModal(InstallWalletDialog, {
+          walletInfo,
+          onCancel: () => {
+            modal.hide();
+          },
+        });
       }
     }
   };
 
   return (
     <Dialog {...props}>
-      <DialogTitle>Choose a wallet</DialogTitle>
-      <MenuList>
+      <Stack
+        sx={{
+          flexDirection: "row",
+          width: "100%",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <DialogTitle>Choose a wallet</DialogTitle>
+        <DialogActions>
+          <IconButton onClick={onCancel} aria-label="close">
+            <Close />
+          </IconButton>
+        </DialogActions>
+      </Stack>
+      <MenuList sx={{ pb: 0 }}>
         {cardanoWallets.map((wallet) => {
           const installed = walletInstalled(wallet.key);
           const selected = wallet.key === selectedWalletKey;
