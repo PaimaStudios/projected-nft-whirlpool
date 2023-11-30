@@ -1,4 +1,4 @@
-import { RainbowKitProvider, lightTheme } from "@rainbow-me/rainbowkit";
+import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import * as React from "react";
 import "@rainbow-me/rainbowkit/styles.css";
 import { WagmiConfig } from "wagmi";
@@ -20,7 +20,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <WagmiConfig config={config}>
       <RainbowKitProvider
         chains={chains}
-        theme={lightTheme({
+        theme={darkTheme({
           accentColor: "#19b17b",
           accentColorForeground: "EC6B67",
         })}
