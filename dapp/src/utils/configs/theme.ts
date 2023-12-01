@@ -21,5 +21,12 @@ export const theme = createTheme({
           }),
       },
     },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          border: "1px solid rgb(20,20,20)",
+        },
+      },
+    },
   },
 });

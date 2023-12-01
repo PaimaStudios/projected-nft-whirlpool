@@ -22,7 +22,8 @@ type ProjectedNftCardanoEventsResponseObject = {
   actionTxId: string;
   amount: number;
   asset: string;
-  // outputIndex: number;
+  actionOutputIndex: number | null;
+  forHowLong: number | null;
   ownerAddress: string;
   plutusDatum: string;
   previousTxHash: string;

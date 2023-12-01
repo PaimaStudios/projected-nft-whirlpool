@@ -8,7 +8,11 @@ export const getRedeemer = ({
   partial_withdraw: boolean;
 }): Redeemer => {
   const data = new Constr(1, [
-    new Constr(0, [new Constr(0, []), new Constr(1, []), new Constr(1, [])]),
+    new Constr(0, [
+      new Constr(partial_withdraw ? 1 : 0, []),
+      new Constr(1, []),
+      new Constr(1, []),
+    ]),
   ]);
   return Data.to(data);
 };

@@ -3,8 +3,9 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Box,
+  Button,
   Card,
-  CardActions,
   CardContent,
   CardMedia,
   CircularProgress,
@@ -33,6 +34,7 @@ import {
   MetadataCardano,
   useGetNftsMetadataCardano,
 } from "../hooks/useGetNftsMetadataCardano";
+import { Value } from "../utils/cardano/value";
 
 // From validator
 const minimumLockTime = BigInt(300000);
@@ -43,12 +45,20 @@ const unlockTimeReserve = BigInt(60 * 1000);
 function UnlockNftCardCardano({
   token,
   metadata,
+  isSelected,
+  onClick,
 }: {
   token: Token;
   metadata?: { image?: string };
+  isSelected: boolean;
+  onClick: () => void;
 }) {
   return (
-    <Card>
+    <Card
+      sx={{ width: "100%" }}
+      variant={isSelected ? "outlined" : "elevation"}
+      onClick={onClick}
+    >
       <CardMedia
         sx={{ aspectRatio: 1, objectFit: "cover" }}
         image={metadata?.image ?? "/placeholder.png"}
@@ -63,7 +73,7 @@ function UnlockNftCardCardano({
           <PolicyIdCardano policyId={token.asset.policyId} />
         </Stack>
       </CardContent>
-      <CardActions></CardActions>
+      <Stack />
     </Card>
   );
 }
@@ -78,11 +88,13 @@ function UnlockNftListItemCardano({
   const lucid = useDappStore((state) => state.lucid);
   const address = useDappStore((state) => state.address);
   const paymentKeyHash = useDappStore((state) => state.paymentKeyHash);
-  const { tokens } = lockInfo;
+  const { tokens, actionTxId, actionOutputIndex, plutusDatum } = lockInfo;
   let { unlockTime } = lockInfo;
   const [now, setNow] = useState<number>(new Date().getTime());
   const [isLoading, setIsLoading] = useState(false);
   const [isPending, setIsPending] = useState(false);
+  const [selectMultiple, setSelectMultiple] = useState(false);
+  const [selectedTokens, setSelectedTokens] = useState<Token[]>([]);
   const queryClient = useQueryClient();
 
   if (unlockTime) {
@@ -93,20 +105,31 @@ function UnlockNftListItemCardano({
     setNow(new Date().getTime());
   }, 1000);
 
-  async function unlockTokens() {
+  const handleSelect = (token: Token) => {
+    if (selectedTokens.includes(token)) {
+      setSelectedTokens(
+        selectedTokens.filter((selectedToken) => selectedToken !== token),
+      );
+    } else {
+      setSelectedTokens(selectedTokens.concat(token));
+    }
+  };
+
+  async function unlockTokens(partialWithdrawTokens?: Token[]) {
+    console.log("tokens to unlock", partialWithdrawTokens);
     setIsLoading(true);
     console.log("lockinfo", lockInfo);
     console.log("lucid", lucid);
     console.log("paymentKeyHash", paymentKeyHash);
-    if (!lucid || !paymentKeyHash || !address) {
+    if (!lucid || !paymentKeyHash || !address || actionOutputIndex == null) {
       throw new Error("Prerequisites missing!");
     }
 
     const validatorAddress = lucid.utils.validatorToAddress(validator);
     const utxos = await lucid.utxosByOutRef([
       {
-        txHash: lockInfo.actionTxId,
-        outputIndex: 0 /* TODO: lockInfo.outputIndex*/,
+        txHash: actionTxId,
+        outputIndex: actionOutputIndex,
       },
     ]);
     const inputUtxo = utxos[0];
@@ -122,22 +145,45 @@ function UnlockNftListItemCardano({
 
     const datum = getUnlockDatum({
       ownerPaymentKeyHash: paymentKeyHash,
-      txId: lockInfo.actionTxId,
-      outputIndex: BigInt(0 /* TODO: lockInfo.outputIndex*/),
+      txId: actionTxId,
+      outputIndex: BigInt(actionOutputIndex),
       unlockTime: BigInt(lastBlockTime + ttl) + minimumLockTime,
     });
     console.log("datum", datum);
-    const tx = await lucid
+    console.log("plutusDatum", plutusDatum);
+    const valueToUnlock = new Value(
+      inputUtxo.assets["lovelace"],
+      partialWithdrawTokens ?? tokens,
+    );
+    const assetsToUnlock = valueToUnlock.toAssetsMap();
+    const valueToLeaveBe = new Value(
+      0n,
+      tokens.filter((token) => !partialWithdrawTokens?.includes(token)),
+    );
+    const assetsToLeaveBe = valueToLeaveBe.toAssetsMap();
+    console.log("assetsToUnlock", assetsToUnlock);
+    console.log("assetsToLeaveBe", assetsToLeaveBe);
+    let tx = lucid
       .newTx()
-      .collectFrom([inputUtxo], getRedeemer({ partial_withdraw: false }))
+      .collectFrom(
+        [inputUtxo],
+        getRedeemer({ partial_withdraw: !!partialWithdrawTokens }),
+      )
       .attachSpendingValidator(validator)
-      .payToContract(validatorAddress, { inline: datum }, inputUtxo.assets)
+      .payToContract(validatorAddress, { inline: datum }, assetsToUnlock)
       .addSigner(address)
-      .validTo(lastBlockTime + ttl)
-      .complete();
+      .validTo(lastBlockTime + ttl);
+    if (partialWithdrawTokens) {
+      tx = tx.payToContract(
+        validatorAddress,
+        { inline: plutusDatum },
+        assetsToLeaveBe,
+      );
+    }
+    const txComplete = await tx.complete();
     let signedTx;
     try {
-      signedTx = await tx.sign().complete();
+      signedTx = await txComplete.sign().complete();
     } catch (err) {
       console.error(err);
       return;
@@ -158,15 +204,17 @@ function UnlockNftListItemCardano({
     console.log("lockinfo", lockInfo);
     console.log("lucid", lucid);
     console.log("paymentKeyHash", paymentKeyHash);
-    if (!lucid || !paymentKeyHash || !address) {
+    if (!lucid || !paymentKeyHash || !address || actionOutputIndex == null) {
       throw new Error("Prerequisites missing!");
     }
 
-    const validatorAddress = lucid.utils.validatorToAddress(validator);
-    const utxos = await lucid.utxosAt(validatorAddress);
-    const inputUtxo = utxos.filter(
-      (utxo) => utxo.txHash === lockInfo.actionTxId,
-    )[0];
+    const utxos = await lucid.utxosByOutRef([
+      {
+        txHash: actionTxId,
+        outputIndex: actionOutputIndex,
+      },
+    ]);
+    const inputUtxo = utxos[0];
     console.log("utxos", utxos);
     console.log("inputUtxo", inputUtxo);
 
@@ -185,7 +233,7 @@ function UnlockNftListItemCardano({
 
     const tx = await lucid
       .newTx()
-      .collectFrom([inputUtxo], getRedeemer({ partial_withdraw: false }))
+      .collectFrom([inputUtxo], getRedeemer({ partial_withdraw: !!tokens }))
       .attachSpendingValidator(validator)
       .addSigner(address)
       .validFrom(Number(unlockTime!))
@@ -213,47 +261,113 @@ function UnlockNftListItemCardano({
     setIsPending(false);
   }
 
-  async function unlockOrWithdrawTokens() {
-    if (unlockTime == null) {
-      await unlockTokens();
-    } else {
-      await withdrawTokens();
+  async function handleClickUnlockOrWithdrawAll() {
+    try {
+      if (unlockTime == null) {
+        await unlockTokens();
+      } else {
+        await withdrawTokens();
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(`Error: ${err.info || err.message}`);
     }
     setIsLoading(false);
     setIsPending(false);
   }
+
+  async function handleClickRequestPartialUnlockButton() {
+    try {
+      await unlockTokens(selectedTokens);
+    } catch (err: any) {
+      console.error(err);
+      alert(`Error: ${err.info || err.message}`);
+    }
+    setIsLoading(false);
+    setIsPending(false);
+  }
+
   return (
     <Accordion sx={{ width: "100%" }}>
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Stack>
-          <Typography>Transaction ID: {lockInfo.actionTxId}</Typography>
+          <Typography sx={{ overflowWrap: "anywhere" }}>
+            Tx ID: {actionTxId}
+            <Box component="span" fontWeight={700}>
+              #{actionOutputIndex}
+            </Box>
+          </Typography>
           <Typography fontWeight={600}>
-            {lockInfo.tokens.length}{" "}
-            {`token${lockInfo.tokens.length > 1 ? "s" : ""}`} (
-            {lockInfo.tokens.map((token) => token.getNameUtf8()).join(", ")})
+            {tokens.length} {`token${tokens.length > 1 ? "s" : ""}`} (
+            {tokens.map((token) => token.getNameUtf8()).join(", ")})
           </Typography>
         </Stack>
       </AccordionSummary>
       <AccordionDetails>
         <Stack sx={{ gap: 2, width: "100%" }}>
-          <TransactionButton
-            isLoading={isLoading}
-            isPending={isPending}
-            onClick={unlockOrWithdrawTokens}
-            disabled={unlockTime != null && now < unlockTime}
-            actionText={
-              unlockTime == null ? (
-                `Request unlock for all locked tokens (${tokens.length}) in this UTxO`
-              ) : now > unlockTime ? (
-                `Withdraw all withdrawable tokens (${tokens.length}) in this UTxO`
-              ) : (
-                <Stack sx={{ textTransform: "none", flexDirection: "row" }}>
-                  <>Unlocking in: </>
-                  <Countdown deadline={new Date(Number(unlockTime))} />
+          {unlockTime == null &&
+            tokens.length > 1 &&
+            (selectMultiple ? (
+              <Stack sx={{ gap: 2 }}>
+                <Stack
+                  sx={{
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    gap: 2,
+                  }}
+                >
+                  <TransactionButton
+                    isLoading={isLoading}
+                    isPending={isPending}
+                    onClick={handleClickRequestPartialUnlockButton}
+                    disabled={selectedTokens.length === 0}
+                    actionText={`Request unlock for selected tokens`}
+                  />
+                  <Button
+                    onClick={() => {
+                      setSelectMultiple(!selectMultiple);
+                      setSelectedTokens([]);
+                    }}
+                  >
+                    Cancel
+                  </Button>
                 </Stack>
-              )
-            }
-          />
+                <Typography textAlign={"center"}>
+                  Click token cards to select/deselect
+                </Typography>
+              </Stack>
+            ) : (
+              <Button
+                variant="contained"
+                size="large"
+                onClick={() => {
+                  setSelectMultiple(!selectMultiple);
+                }}
+                disabled={isLoading || isPending}
+              >
+                Request partial unlock
+              </Button>
+            ))}
+          {!selectMultiple && (
+            <TransactionButton
+              isLoading={isLoading}
+              isPending={isPending}
+              onClick={handleClickUnlockOrWithdrawAll}
+              disabled={unlockTime != null && now < unlockTime}
+              actionText={
+                unlockTime == null ? (
+                  `Request unlock for all tokens in this UTxO`
+                ) : now > unlockTime ? (
+                  `Withdraw all tokens in this UTxO`
+                ) : (
+                  <Stack sx={{ textTransform: "none", flexDirection: "row" }}>
+                    <>Unlocking in: </>
+                    <Countdown deadline={new Date(Number(unlockTime))} />
+                  </Stack>
+                )
+              }
+            />
+          )}
           <Grid container spacing={2} sx={{ width: "100%" }}>
             {tokens.map((token) => (
               <Grid xs={3} key={token.getUnit()}>
@@ -262,6 +376,10 @@ function UnlockNftListItemCardano({
                   metadata={
                     metadata?.[token.asset.policyId]?.[token.asset.name]
                   }
+                  isSelected={selectedTokens.includes(token)}
+                  onClick={() => {
+                    if (selectMultiple) handleSelect(token);
+                  }}
                 />
               </Grid>
             ))}
@@ -293,7 +411,7 @@ export default function UnlockNftListCardano() {
       {unclaimedLocks.map((lock) => (
         <UnlockNftListItemCardano
           lockInfo={lock}
-          key={lock.actionTxId}
+          key={`${lock.actionTxId}#${lock.actionOutputIndex}`}
           metadata={nftMetadata}
         />
       ))}

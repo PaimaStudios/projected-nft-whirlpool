@@ -75,9 +75,20 @@ export default function LockNftButtonCardano({
     return txHash;
   }
 
+  async function handleClickLockButton() {
+    try {
+      await lockNft();
+    } catch (err: any) {
+      console.error(err);
+      alert(`Error: ${err.info || err.message}`);
+    }
+    setIsLoading(false);
+    setIsPending(false);
+  }
+
   return (
     <TransactionButton
-      onClick={lockNft}
+      onClick={handleClickLockButton}
       isLoading={isLoading}
       isPending={isPending}
       actionText={actionText}

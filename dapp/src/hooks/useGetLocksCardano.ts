@@ -31,80 +31,68 @@ const fetchLocks = async (paymentKeyHash: string) => {
     console.log("fetching locks for", paymentKeyHash);
     console.log("response", responseData);
     responseData.forEach((dat) => {
-      console.log(dat);
+      // console.log('dat', dat);
       if (dat.status === "Invalid") return;
-      let decoded:
-        | ReturnType<typeof decodeDatumLock>
-        | ReturnType<typeof decodeDatumUnlocking> = undefined;
-      if (dat.plutusDatum !== "") {
-        const datum = Data.from(dat.plutusDatum) as Constr<any>;
-        console.log("datum", datum);
-        decoded =
-          dat.status === "Lock"
-            ? decodeDatumLock(datum)
-            : decodeDatumUnlocking(datum);
-        console.log("decoded", decoded);
-        if (!decoded) {
-          console.error(`Could not decode datum of tx ${dat.actionTxId}`);
-          return;
-        }
-        if (dat.ownerAddress !== paymentKeyHash) {
-          return;
-        }
-      }
+      if (dat.ownerAddress !== paymentKeyHash) return;
 
       const token = new Token(new Asset(dat.asset), BigInt(dat.amount));
+      const txKey = `${dat.actionTxId}#${dat.actionOutputIndex}`;
+      const previousTxKey =
+        dat.previousTxHash !== "" && dat.previousTxOutputIndex != null
+          ? `${dat.previousTxHash}#${dat.previousTxOutputIndex}`
+          : null;
 
       switch (dat.status) {
         case "Lock":
-          if (!locksMap[dat.actionTxId]) {
+          if (!locksMap[txKey]) {
             const lock: LockInfoCardano = {
               ...dat,
               tokens: [token],
               status: dat.status,
               unlockTime: null,
             };
-            locksMap[dat.actionTxId] = lock;
+            locksMap[txKey] = lock;
           } else {
-            locksMap[dat.actionTxId].tokens.push(token);
+            locksMap[txKey].tokens.push(token);
           }
           break;
         case "Unlocking":
-          if (!dat.previousTxHash) {
+          if (!previousTxKey) {
             console.error(
               "Unexpected error occured: Unlocking tx does not have previousTxHash",
               dat,
             );
             break;
           }
-          if (!decoded?.unlockTime) {
+          if (!dat.forHowLong) {
             console.error(
               "Unexpected error occured: Unlocking tx does not have unlockTime",
               dat,
             );
             break;
           }
-          if (!locksMap[dat.previousTxHash]) {
-            break;
+          if (!locksMap[txKey]) {
+            const lock: LockInfoCardano = {
+              ...dat,
+              tokens: [token],
+              status: dat.status,
+              unlockTime: BigInt(dat.forHowLong),
+            };
+            delete locksMap[previousTxKey];
+            locksMap[txKey] = lock;
+          } else {
+            locksMap[txKey].tokens.push(token);
           }
-          const lock: LockInfoCardano = {
-            ...locksMap[dat.previousTxHash],
-            ...dat,
-            status: dat.status,
-            unlockTime: decoded.unlockTime,
-          };
-          delete locksMap[dat.previousTxHash];
-          locksMap[dat.actionTxId] = lock;
           break;
         case "Claim":
-          if (!dat.previousTxHash) {
+          if (!previousTxKey) {
             console.error(
               "Unexpected error occured: Claim tx does not have previousTxHash",
               dat,
             );
             break;
           }
-          delete locksMap[dat.previousTxHash];
+          delete locksMap[previousTxKey];
           break;
       }
     });
@@ -119,6 +107,7 @@ const fetchLocks = async (paymentKeyHash: string) => {
   }
 };
 
+/*
 const decodeDatumLock = (data: Constr<any>) => {
   if (data.fields.length !== 2) return undefined;
   return {
@@ -139,6 +128,7 @@ const decodeDatumUnlocking = (data: Constr<any>) => {
     unlockTime: data.fields[1].fields[1] as bigint,
   };
 };
+*/
 
 export const useGetLocksCardano = () => {
   const paymentKeyHash = useDappStore((state) => state.paymentKeyHash);

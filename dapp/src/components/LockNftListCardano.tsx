@@ -50,6 +50,7 @@ function LockNftListItemCardano({
           <PolicyIdCardano policyId={nft.asset.policyId} />
         </Stack>
       </CardContent>
+      <Stack />
       {!selectMultiple && (
         <CardActions>
           <LockNftButtonCardano tokens={[nft]} />
@@ -113,7 +114,7 @@ export default function LockNftListCardano() {
         <Typography textAlign={"center"}>or lock individually</Typography>
       ) : (
         <Typography textAlign={"center"}>
-          Click token card to select/deselect
+          Click token cards to select/deselect
         </Typography>
       )}
       <Grid container spacing={2} sx={{ width: "100%" }}>
