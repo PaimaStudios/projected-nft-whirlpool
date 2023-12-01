@@ -3,13 +3,14 @@ import { configureChains, createConfig } from "wagmi";
 import { sepolia, mainnet } from "wagmi/chains";
 import { publicProvider } from "wagmi/providers/public";
 import { alchemyProvider } from "wagmi/providers/alchemy";
+import env from "./env";
 
 const walletConnectProjectId = "2ad63f343ccc9226126483eca27e8810";
 
 const { chains, publicClient, webSocketPublicClient } = configureChains(
-  [process.env.REACT_APP_TESTNET === "true" ? sepolia : mainnet],
+  [env.REACT_APP_TESTNET ? sepolia : mainnet],
   [
-    alchemyProvider({ apiKey: process.env.REACT_APP_ALCHEMY_API_KEY ?? "" }),
+    alchemyProvider({ apiKey: env.REACT_APP_ALCHEMY_API_KEY ?? "" }),
     publicProvider(),
   ],
 );

@@ -4,6 +4,7 @@ import { Alchemy, Network } from "alchemy-sdk";
 import { useNetwork } from "wagmi";
 import { sepolia, mainnet } from "wagmi/chains";
 import FunctionKey from "../utils/functionKey";
+import env from "../utils/configs/env";
 
 const WagmiToAlchemy: Record<number, Network> = {
   [sepolia.id]: Network.ETH_SEPOLIA,
@@ -20,7 +21,7 @@ export const useGetAlchemy = () => {
         return undefined;
       }
       return new Alchemy({
-        apiKey: process.env.REACT_APP_ALCHEMY_API_KEY,
+        apiKey: env.REACT_APP_ALCHEMY_API_KEY,
         network: WagmiToAlchemy[chain.id],
       });
     },

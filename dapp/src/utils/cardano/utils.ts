@@ -1,4 +1,5 @@
 import { Lovelace, Lucid } from "lucid-cardano";
+import env from "../configs/env";
 
 export const formatCardanoAddress = (
   address: string | undefined,
@@ -49,16 +50,15 @@ export const getAddressKeyHashes = (
  */
 export const getLastBlockTime = async () => {
   const epochInfo = await fetch(
-    process.env.REACT_APP_TESTNET === "true"
+    env.REACT_APP_TESTNET
       ? `https://cardano-preprod.blockfrost.io/api/v0/epochs/latest`
       : `https://cardano-mainnet.blockfrost.io/api/v0/epochs/latest`,
     {
       method: "GET",
       headers: {
-        PROJECT_ID:
-          process.env.REACT_APP_TESTNET === "true"
-            ? (process.env.REACT_APP_BLOCKFROST_PROJECT_ID_PREPROD as string)
-            : (process.env.REACT_APP_BLOCKFROST_PROJECT_ID_MAINNET as string),
+        PROJECT_ID: env.REACT_APP_TESTNET
+          ? (env.REACT_APP_BLOCKFROST_PROJECT_ID_PREPROD as string)
+          : (env.REACT_APP_BLOCKFROST_PROJECT_ID_MAINNET as string),
       },
     },
   ).then((res) => res.json());

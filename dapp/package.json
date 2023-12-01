@@ -26,6 +26,7 @@
     "curve25519-js": "^0.0.4",
     "deno": "^0.1.1",
     "encoding": "^0.1.13",
+    "envalid": "^8.0.0",
     "just-clone": "^6.2.0",
     "lokijs": "^1.5.12",
     "lucid-cardano": "^0.10.7",
