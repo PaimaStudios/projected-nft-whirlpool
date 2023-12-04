@@ -7,8 +7,10 @@ import {
   CardMedia,
   CircularProgress,
   Stack,
+  Switch,
   Typography,
 } from "@mui/material";
+import FormControlLabel from "@mui/material/FormControlLabel";
 import Grid from "@mui/material/Unstable_Grid2";
 import { useCardanoBalance } from "../hooks/useCardanoBalance";
 import { Token } from "../utils/cardano/token";
@@ -16,6 +18,7 @@ import LockNftButtonCardano from "./LockNftButtonCardano";
 import { useGetNftsMetadataCardano } from "../hooks/useGetNftsMetadataCardano";
 import { PolicyIdCardano } from "./PolicyIdCardano";
 import { useState } from "react";
+import { isTokenNft } from "../utils/cardano/utils";
 
 function LockNftListItemCardano({
   nft,
@@ -63,6 +66,7 @@ function LockNftListItemCardano({
 export default function LockNftListCardano() {
   const [selectMultiple, setSelectMultiple] = useState(false);
   const [selectedTokens, setSelectedTokens] = useState<Token[]>([]);
+  const [showOnlyNfts, setShowOnlyNfts] = useState(true);
   const { data: balance } = useCardanoBalance();
   const { data: nftMetadata } = useGetNftsMetadataCardano(
     balance?.getTokens().map((token) => token.asset) ?? [],
@@ -80,7 +84,23 @@ export default function LockNftListCardano() {
     }
   };
 
-  return balance ? (
+  const handleChangeShowOnlyNftsSwitch = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setShowOnlyNfts(event.target.checked);
+    setSelectedTokens(selectedTokens.filter((token) => isTokenNft(token)));
+  };
+
+  if (!balance) {
+    return <CircularProgress />;
+  }
+
+  let tokens = balance.getTokens();
+  if (showOnlyNfts) {
+    tokens = tokens.filter((token) => isTokenNft(token));
+  }
+
+  return (
     <Stack sx={{ gap: 2, width: "100%" }}>
       {selectMultiple ? (
         <Stack sx={{ flexDirection: "row", justifyContent: "center", gap: 2 }}>
@@ -117,8 +137,18 @@ export default function LockNftListCardano() {
           Click token cards to select/deselect
         </Typography>
       )}
+      <FormControlLabel
+        control={
+          <Switch
+            checked={showOnlyNfts}
+            onChange={handleChangeShowOnlyNftsSwitch}
+          />
+        }
+        label="Show only NFTs"
+        sx={{ alignSelf: "end" }}
+      />
       <Grid container spacing={2} sx={{ width: "100%" }}>
-        {balance?.getTokens().map((nft) => (
+        {tokens.map((nft) => (
           <Grid xs={3} key={`${nft.getNameUtf8()}-${nft.getUnit()}`}>
             <LockNftListItemCardano
               nft={nft}
@@ -133,7 +163,5 @@ export default function LockNftListCardano() {
         ))}
       </Grid>
     </Stack>
-  ) : (
-    <CircularProgress />
   );
 }

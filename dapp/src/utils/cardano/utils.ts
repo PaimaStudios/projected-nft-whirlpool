@@ -1,5 +1,6 @@
 import { Lovelace, Lucid } from "lucid-cardano";
 import env from "../configs/env";
+import { Token } from "./token";
 
 export const formatCardanoAddress = (
   address: string | undefined,
@@ -71,4 +72,8 @@ export const processImage = (image: string) => {
     return `https://ipfs.io/ipfs/${ipfsHash}`;
   }
   return image;
+};
+
+export const isTokenNft = (token: Token) => {
+  return token.amount <= 1n;
 };
