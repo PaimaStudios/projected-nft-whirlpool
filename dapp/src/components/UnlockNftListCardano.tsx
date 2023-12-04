@@ -47,11 +47,13 @@ function UnlockNftCardCardano({
   metadata,
   isSelected,
   onClick,
+  displayImage,
 }: {
   token: Token;
   metadata?: { image?: string };
   isSelected: boolean;
   onClick: () => void;
+  displayImage: boolean;
 }) {
   return (
     <Card
@@ -59,11 +61,13 @@ function UnlockNftCardCardano({
       variant={isSelected ? "outlined" : "elevation"}
       onClick={onClick}
     >
-      <CardMedia
-        sx={{ aspectRatio: 1, objectFit: "cover" }}
-        image={metadata?.image ?? "/placeholder.png"}
-        title={token.getNameUtf8()}
-      />
+      {displayImage && (
+        <CardMedia
+          sx={{ aspectRatio: 1, objectFit: "cover" }}
+          image={metadata?.image ?? "/placeholder.png"}
+          title={token.getNameUtf8()}
+        />
+      )}
       <CardContent>
         <Stack>
           <Stack sx={{ flexDirection: "row", justifyContent: "space-between" }}>
@@ -287,6 +291,11 @@ function UnlockNftListItemCardano({
     setIsPending(false);
   }
 
+  const someTokenHasMetadata =
+    tokens.filter(
+      (token) => metadata?.[token.asset.policyId]?.[token.asset.name],
+    ).length > 0;
+
   return (
     <Accordion sx={{ width: "100%" }}>
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -380,6 +389,7 @@ function UnlockNftListItemCardano({
                   onClick={() => {
                     if (selectMultiple) handleSelect(token);
                   }}
+                  displayImage={someTokenHasMetadata}
                 />
               </Grid>
             ))}
