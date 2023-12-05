@@ -37,7 +37,13 @@ const blockTime = 12n;
 // we shall wait 1.5x the average block time until we try to simulate withdraw txn
 const reserveWaitingTime = (blockTime * 3n) / 2n;
 
-function UnlockNftCardEVM({ lockInfo }: { lockInfo: LockInfo }) {
+function UnlockNftCardEVM({
+  lockInfo,
+  displayImage,
+}: {
+  lockInfo: LockInfo;
+  displayImage: boolean;
+}) {
   const { token, tokenId, nftData } = lockInfo;
   let { unlockTime } = lockInfo;
   if (unlockTime > 0n) {
@@ -100,11 +106,13 @@ function UnlockNftCardEVM({ lockInfo }: { lockInfo: LockInfo }) {
   }
   return (
     <Card>
-      <CardMedia
-        sx={{ aspectRatio: 1, objectFit: "cover" }}
-        image={nftData?.media[0]?.gateway ?? "/placeholder.png"}
-        title={nftData?.title}
-      />
+      {displayImage && (
+        <CardMedia
+          sx={{ aspectRatio: 1, objectFit: "cover" }}
+          image={nftData?.media[0]?.gateway ?? "/placeholder.png"}
+          title={nftData?.title}
+        />
+      )}
       <CardContent>
         <Stack direction="row" sx={{ justifyContent: "space-between" }}>
           <Typography variant="body2">{nftData?.title}</Typography>
@@ -157,6 +165,11 @@ function UnlockNftListItemEVM({
     )
     .map((lock) => lock.tokenId);
 
+  const someTokenHasImage = !!locks.find((lock) => {
+    const media = lock.nftData?.media;
+    return media && media.length > 0;
+  });
+
   return (
     <Accordion
       TransitionProps={{ unmountOnExit: true }}
@@ -189,6 +202,7 @@ function UnlockNftListItemEVM({
                   <UnlockNftCardEVM
                     key={`${lock.token}-${lock.tokenId}`}
                     lockInfo={lock}
+                    displayImage={someTokenHasImage}
                   />
                 </Grid>
               ))}
