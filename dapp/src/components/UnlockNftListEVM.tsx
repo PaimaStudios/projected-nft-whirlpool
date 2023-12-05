@@ -158,7 +158,11 @@ function UnlockNftListItemEVM({
     .map((lock) => lock.tokenId);
 
   return (
-    <Accordion TransitionProps={{ unmountOnExit: true }} sx={{ width: "100%" }}>
+    <Accordion
+      TransitionProps={{ unmountOnExit: true }}
+      sx={{ width: "100%" }}
+      defaultExpanded={!!locks.find((lock) => lock.unlockTime !== 0n)}
+    >
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Stack>
           <Typography>{token}</Typography>

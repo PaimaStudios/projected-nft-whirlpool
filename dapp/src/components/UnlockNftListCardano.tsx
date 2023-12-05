@@ -291,13 +291,15 @@ function UnlockNftListItemCardano({
     setIsPending(false);
   }
 
-  const someTokenHasMetadata =
-    tokens.filter(
-      (token) => metadata?.[token.asset.policyId]?.[token.asset.name],
-    ).length > 0;
+  const someTokenHasMetadata = !!tokens.find(
+    (token) => metadata?.[token.asset.policyId]?.[token.asset.name],
+  );
 
   return (
-    <Accordion sx={{ width: "100%" }}>
+    <Accordion
+      sx={{ width: "100%" }}
+      defaultExpanded={lockInfo.unlockTime != null}
+    >
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Stack>
           <Typography sx={{ overflowWrap: "anywhere" }}>
