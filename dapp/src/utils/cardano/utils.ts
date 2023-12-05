@@ -57,9 +57,7 @@ export const getLastBlockTime = async () => {
     {
       method: "GET",
       headers: {
-        PROJECT_ID: env.REACT_APP_TESTNET
-          ? (env.REACT_APP_BLOCKFROST_PROJECT_ID_PREPROD as string)
-          : (env.REACT_APP_BLOCKFROST_PROJECT_ID_MAINNET as string),
+        PROJECT_ID: env.REACT_APP_BLOCKFROST_PROJECT_ID,
       },
     },
   ).then((res) => res.json());
