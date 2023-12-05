@@ -3,12 +3,14 @@ import { useAccount, useContractWrite, useWaitForTransaction } from "wagmi";
 import { hololockerConfig } from "../contracts";
 import {
   useErc721IsApprovedForAll,
-  usePrepareErc721SetApprovalForAll,
   usePrepareHololockerLock,
 } from "../generated";
 import TransactionButton from "./TransactionButton";
 import FunctionKey from "../utils/functionKey";
 import { useQueryClient } from "@tanstack/react-query";
+import { useModal } from "mui-modal-provider";
+import ApproveCollectionDialog from "../dialogs/ApproveCollectionDialog";
+import { useState } from "react";
 
 type Props = {
   token: string;
@@ -18,18 +20,15 @@ type Props = {
 export default function MultilockButtonEVM({ token, tokenIds }: Props) {
   const { address } = useAccount();
   const queryClient = useQueryClient();
+  const { showModal } = useModal();
+  const [approvalTxHash, setApprovalTxHash] = useState<`0x${string}`>();
 
-  const { data: isApproved } = useErc721IsApprovedForAll({
-    address: token as `0x${string}`,
-    args: [address!, hololockerConfig.address],
-    enabled: !!address,
-  });
-
-  const { config: configSetApproval } = usePrepareErc721SetApprovalForAll({
-    address: token as `0x${string}`,
-    args: [hololockerConfig.address, true],
-    enabled: !!address && !isApproved,
-  });
+  const { data: isApproved, refetch: refetchIsApproved } =
+    useErc721IsApprovedForAll({
+      address: token as `0x${string}`,
+      args: [address!, hololockerConfig.address],
+      enabled: !!address,
+    });
 
   const { config: configHololockerLock } = usePrepareHololockerLock({
     address: hololockerConfig.address,
@@ -38,20 +37,10 @@ export default function MultilockButtonEVM({ token, tokenIds }: Props) {
   });
 
   const {
-    write: writeSetApproval,
-    data: dataSetApproval,
-    isLoading: isLoadingSetApproval,
-  } = useContractWrite(configSetApproval);
-
-  const {
     write: writeHololockerLock,
     data: dataHololockerLock,
     isLoading: isLoadingHololockerLock,
   } = useContractWrite(configHololockerLock);
-
-  const { isLoading: isPendingSetApproval } = useWaitForTransaction({
-    hash: dataSetApproval?.hash,
-  });
 
   const { isLoading: isPendingHololockerLock } = useWaitForTransaction({
     hash: dataHololockerLock?.hash,
@@ -65,24 +54,39 @@ export default function MultilockButtonEVM({ token, tokenIds }: Props) {
     },
   });
 
-  async function setApprovalForAll() {
+  const { isLoading: isPendingSetApproval } = useWaitForTransaction({
+    hash: approvalTxHash,
+    onSuccess: () => {
+      refetchIsApproved();
+    },
+  });
+
+  async function handleClickButton() {
     if (isApproved) {
       writeHololockerLock?.();
     } else {
-      writeSetApproval?.();
+      const modal = showModal(ApproveCollectionDialog, {
+        token,
+        onCancel: () => {
+          modal.hide();
+        },
+        onSuccess: () => {
+          refetchIsApproved();
+        },
+        onTxSubmit: (hash) => {
+          refetchIsApproved();
+          setApprovalTxHash(hash);
+        },
+      });
     }
   }
 
   return (
     <TransactionButton
-      onClick={setApprovalForAll}
-      isLoading={isLoadingSetApproval || isLoadingHololockerLock}
-      isPending={isPendingSetApproval || isPendingHololockerLock}
-      actionText={
-        isApproved
-          ? "Lock all NFTs in this collection"
-          : "Approve collection for multilock"
-      }
+      onClick={handleClickButton}
+      isLoading={isLoadingHololockerLock}
+      isPending={isPendingHololockerLock || isPendingSetApproval}
+      actionText={"Lock all NFTs in this collection"}
     />
   );
 }
