@@ -89,15 +89,19 @@ export default function LockNftListEVM() {
               </AccordionSummary>
               <AccordionDetails>
                 <Stack gap={2}>
-                  <MultilockButtonEVM
-                    token={nftContractAddress}
-                    tokenIds={nftGroups[nftContractAddress].map((nft) =>
-                      BigInt(nft.tokenId),
-                    )}
-                  />
-                  <Typography textAlign={"center"}>
-                    or lock individually
-                  </Typography>
+                  {nftGroups[nftContractAddress].length > 1 && (
+                    <>
+                      <MultilockButtonEVM
+                        token={nftContractAddress}
+                        tokenIds={nftGroups[nftContractAddress].map((nft) =>
+                          BigInt(nft.tokenId),
+                        )}
+                      />
+                      <Typography textAlign={"center"}>
+                        or lock individually
+                      </Typography>
+                    </>
+                  )}
                   <Grid container spacing={2}>
                     {nftGroups[nftContractAddress]
                       .sort((a, b) => Number(a.tokenId) - Number(b.tokenId))

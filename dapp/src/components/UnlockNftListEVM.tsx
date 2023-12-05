@@ -186,14 +186,29 @@ function UnlockNftListItemEVM({
       </AccordionSummary>
       <AccordionDetails>
         <Stack gap={2}>
-          <MultirequestunlockButtonEVM
-            token={token}
-            tokenIds={tokenIdsToRequestUnlock}
-          />
-          <MultiwithdrawButtonEVM token={token} tokenIds={tokenIdsToWithdraw} />
-          <Typography textAlign={"center"}>
-            or unlock/withdraw individually
-          </Typography>
+          {locks.length > 1 && (
+            <>
+              {tokenIdsToRequestUnlock.length > 0 && (
+                <MultirequestunlockButtonEVM
+                  token={token}
+                  tokenIds={tokenIdsToRequestUnlock}
+                />
+              )}
+              {tokenIdsToWithdraw.length > 0 && (
+                <MultiwithdrawButtonEVM
+                  token={token}
+                  tokenIds={tokenIdsToWithdraw}
+                />
+              )}
+              {(tokenIdsToRequestUnlock.length > 0 ||
+                tokenIdsToWithdraw.length > 0) && (
+                <Typography textAlign={"center"}>
+                  or unlock/withdraw individually
+                </Typography>
+              )}
+            </>
+          )}
+
           <Grid container spacing={2}>
             {locks
               .sort((a, b) => Number(a.tokenId) - Number(b.tokenId))
