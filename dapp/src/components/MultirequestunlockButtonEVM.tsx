@@ -49,7 +49,7 @@ export default function MultirequestunlockButtonEVM({
       isLoading={isLoadingHololockerUnlock}
       isPending={isPendingHololockerUnlock}
       disabled={tokenIds.length === 0}
-      actionText={`Request unlock for all locked NFTs (${tokenIds.length}) in this collection`}
+      actionText={`Request unlock for all locked tokens (${tokenIds.length})`}
     />
   );
 }

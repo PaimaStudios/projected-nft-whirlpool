@@ -49,7 +49,7 @@ export default function MultiwithdrawButtonEVM({ token, tokenIds }: Props) {
       isLoading={isLoadingHololockerWithdraw}
       isPending={isPendingHololockerWithdraw}
       disabled={tokenIds.length === 0}
-      actionText={`Withdraw all withdrawable NFTs (${tokenIds.length}) in this collection`}
+      actionText={`Withdraw all withdrawable tokens (${tokenIds.length})`}
     />
   );
 }

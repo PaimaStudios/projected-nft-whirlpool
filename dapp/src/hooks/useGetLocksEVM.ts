@@ -82,7 +82,7 @@ const fetchLocks = async (publicClient: any, address: string | undefined) => {
         unlockTime: lockedNftsMap[key].unlockTime,
       };
     });
-    return locks;
+    return locks.sort((a, b) => (a.token < b.token ? -1 : 1));
   } catch (err) {
     return [];
   }
