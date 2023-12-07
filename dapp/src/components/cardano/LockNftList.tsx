@@ -12,15 +12,15 @@ import {
 } from "@mui/material";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Grid from "@mui/material/Unstable_Grid2";
-import { useCardanoBalance } from "../hooks/useCardanoBalance";
-import { Token } from "../utils/cardano/token";
-import LockNftButtonCardano from "./LockNftButtonCardano";
-import { useGetNftsMetadataCardano } from "../hooks/useGetNftsMetadataCardano";
-import { PolicyIdCardano } from "./PolicyIdCardano";
+import { useCardanoBalance } from "../../hooks/cardano/useCardanoBalance";
+import { Token } from "../../utils/cardano/token";
+import LockNftButton from "./LockNftButton";
+import { useGetNftsMetadataCardano } from "../../hooks/cardano/useGetNftsMetadataCardano";
+import { PolicyId } from "./PolicyId";
 import { useState } from "react";
-import { isTokenNft } from "../utils/cardano/utils";
+import { isTokenNft } from "../../utils/cardano/utils";
 
-function LockNftListItemCardano({
+function LockNftListItem({
   nft,
   metadata,
   selectMultiple,
@@ -50,20 +50,20 @@ function LockNftListItemCardano({
             <Typography variant="body2">{nft.getNameUtf8()}</Typography>
             <Typography variant="body2">{nft.amount.toString()}</Typography>
           </Stack>
-          <PolicyIdCardano policyId={nft.asset.policyId} />
+          <PolicyId policyId={nft.asset.policyId} />
         </Stack>
       </CardContent>
       <Stack />
       {!selectMultiple && (
         <CardActions>
-          <LockNftButtonCardano tokens={[nft]} />
+          <LockNftButton tokens={[nft]} />
         </CardActions>
       )}
     </Card>
   );
 }
 
-export default function LockNftListCardano() {
+export default function LockNftList() {
   const [selectMultiple, setSelectMultiple] = useState(false);
   const [selectedTokens, setSelectedTokens] = useState<Token[]>([]);
   const [showOnlyNfts, setShowOnlyNfts] = useState(true);
@@ -104,7 +104,7 @@ export default function LockNftListCardano() {
     <Stack sx={{ gap: 2, width: "100%" }}>
       {selectMultiple ? (
         <Stack sx={{ flexDirection: "row", justifyContent: "center", gap: 2 }}>
-          <LockNftButtonCardano
+          <LockNftButton
             tokens={selectedTokens}
             actionText="Lock selected tokens"
             disabled={selectedTokens.length === 0}
@@ -150,7 +150,7 @@ export default function LockNftListCardano() {
       <Grid container spacing={2} sx={{ width: "100%" }}>
         {tokens.map((nft) => (
           <Grid xs={3} key={`${nft.getNameUtf8()}-${nft.getUnit()}`}>
-            <LockNftListItemCardano
+            <LockNftListItem
               nft={nft}
               metadata={nftMetadata?.[nft.asset.policyId]?.[nft.asset.name]}
               selectMultiple={selectMultiple}

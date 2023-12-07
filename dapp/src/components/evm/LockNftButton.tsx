@@ -1,17 +1,17 @@
 "use client";
 import { useAccount, useContractWrite, useWaitForTransaction } from "wagmi";
-import { hololockerConfig } from "../contracts";
-import { usePrepareErc721SafeTransferFrom } from "../generated";
-import TransactionButton from "./TransactionButton";
+import { hololockerConfig } from "../../contracts";
+import { usePrepareErc721SafeTransferFrom } from "../../generated";
+import TransactionButton from "../TransactionButton";
 import { useQueryClient } from "@tanstack/react-query";
-import FunctionKey from "../utils/functionKey";
+import FunctionKey from "../../utils/functionKey";
 
 type Props = {
   token: string;
   tokenId: bigint;
 };
 
-export default function LockNftButtonEVM({ token, tokenId }: Props) {
+export default function LockNftButton({ token, tokenId }: Props) {
   const { address } = useAccount();
   const queryClient = useQueryClient();
 

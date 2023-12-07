@@ -13,17 +13,17 @@ import {
   Typography,
 } from "@mui/material";
 import Grid from "@mui/material/Unstable_Grid2";
-import { useGetNftsEVM } from "../hooks/useGetNftsEVM";
-import LockNftButtonEVM from "./LockNftButtonEVM";
+import { useGetNftsEVM } from "../../hooks/evm/useGetNftsEVM";
+import LockNftButton from "./LockNftButton";
 import { Nft } from "alchemy-sdk";
-import MultilockButtonEVM from "./MultilockButtonEVM";
+import CollectionLockButton from "./CollectionLockButton";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useState } from "react";
-import { TokenEVM } from "../utils/types";
-import { areEqualTokens } from "../utils/evm/utils";
+import { TokenEVM } from "../../utils/evm/types";
+import { areEqualTokens } from "../../utils/evm/utils";
 import MultipleSelectionLockButton from "./MultipleSelectionLockButton";
 
-function LockNftCardEVM({
+function LockNftCard({
   nft,
   displayImage,
   onClickNftCard,
@@ -60,7 +60,7 @@ function LockNftCardEVM({
       </CardContent>
       {!onClickNftCard && (
         <CardActions>
-          <LockNftButtonEVM
+          <LockNftButton
             token={nft.contract.address}
             tokenId={BigInt(nft.tokenId)}
           />
@@ -70,7 +70,7 @@ function LockNftCardEVM({
   );
 }
 
-function LockNftListItemEVM({
+function LockNftListItem({
   nfts,
   nftContractAddress,
   selectingMultipleLock,
@@ -85,11 +85,7 @@ function LockNftListItemEVM({
 }) {
   const someTokenHasImage = !!nfts.find((nft) => nft.media.length > 0);
   return (
-    <Accordion
-      TransitionProps={{ unmountOnExit: true }}
-      key={nftContractAddress}
-      sx={{ width: "100%" }}
-    >
+    <Accordion TransitionProps={{ unmountOnExit: true }} sx={{ width: "100%" }}>
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Stack>
           <Typography>{nftContractAddress}</Typography>
@@ -102,7 +98,7 @@ function LockNftListItemEVM({
         <Stack gap={2}>
           {nfts.length > 1 && !selectingMultipleLock && (
             <>
-              <MultilockButtonEVM
+              <CollectionLockButton
                 token={nftContractAddress}
                 tokenIds={nfts.map((nft) => BigInt(nft.tokenId))}
               />
@@ -114,7 +110,7 @@ function LockNftListItemEVM({
               .sort((a, b) => Number(a.tokenId) - Number(b.tokenId))
               .map((nft) => (
                 <Grid xs={4} key={`${nft.contract.address}-${nft.tokenId}`}>
-                  <LockNftCardEVM
+                  <LockNftCard
                     nft={nft}
                     displayImage={someTokenHasImage}
                     onClickNftCard={
@@ -138,7 +134,7 @@ function LockNftListItemEVM({
   );
 }
 
-export default function LockNftListEVM() {
+export default function LockNftList() {
   const [selectingMultipleLock, setSelectingMultipleLock] = useState(false);
   const [selectedTokens, setSelectedTokens] = useState<TokenEVM[]>([]);
   const { data: nftsData, fetchNextPage, isFetching } = useGetNftsEVM();
@@ -186,7 +182,8 @@ export default function LockNftListEVM() {
         />
       )}
       {Object.keys(nftGroups).map((nftContractAddress) => (
-        <LockNftListItemEVM
+        <LockNftListItem
+          key={nftContractAddress}
           nftContractAddress={nftContractAddress}
           nfts={nftGroups[nftContractAddress]}
           selectedTokens={selectedTokens}

@@ -1,8 +1,8 @@
 import { Alchemy } from "alchemy-sdk";
-import { useGetAlchemy } from "./useGetAlchemy";
+import { useAlchemy } from "./useAlchemy";
 import { useAccount } from "wagmi";
 import { QueryFunctionContext, useInfiniteQuery } from "@tanstack/react-query";
-import FunctionKey from "../utils/functionKey";
+import FunctionKey from "../../utils/functionKey";
 
 const fetchNfts = async ({
   address,
@@ -23,7 +23,7 @@ const fetchNfts = async ({
 };
 
 export const useGetNftsEVM = () => {
-  const { data: alchemy } = useGetAlchemy();
+  const { data: alchemy } = useAlchemy();
   const { address } = useAccount();
   return useInfiniteQuery({
     queryKey: [FunctionKey.NFTS, { address, alchemy }],

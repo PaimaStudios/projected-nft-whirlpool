@@ -1,14 +1,14 @@
 "use client";
-import TransactionButton from "./TransactionButton";
-import { Token } from "../utils/cardano/token";
-import { useDappStore } from "../store";
-import { Value } from "../utils/cardano/value";
-import { validator } from "../utils/cardano/validator";
+import TransactionButton from "../TransactionButton";
+import { Token } from "../../utils/cardano/token";
+import { useDappStore } from "../../store";
+import { Value } from "../../utils/cardano/value";
+import { validator } from "../../utils/cardano/validator";
 import { useQueryClient } from "@tanstack/react-query";
-import FunctionKey from "../utils/functionKey";
+import FunctionKey from "../../utils/functionKey";
 import { useState } from "react";
-import { getLockDatum } from "../utils/cardano/datum";
-import { nftsQueryInvalidationDelay } from "../utils/cardano/constants";
+import { getLockDatum } from "../../utils/cardano/datum";
+import { nftsQueryInvalidationDelay } from "../../utils/cardano/constants";
 import { ButtonProps } from "@mui/material";
 
 type Props = {
@@ -16,7 +16,7 @@ type Props = {
   actionText?: string;
 } & ButtonProps;
 
-export default function LockNftButtonCardano({
+export default function LockNftButton({
   tokens,
   actionText = "Lock token",
   ...props

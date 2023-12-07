@@ -1,7 +1,7 @@
 import { Alchemy, NftMetadataBatchToken } from "alchemy-sdk";
-import { useGetAlchemy } from "./useGetAlchemy";
+import { useAlchemy } from "./useAlchemy";
 import { useQuery } from "@tanstack/react-query";
-import FunctionKey from "../utils/functionKey";
+import FunctionKey from "../../utils/functionKey";
 
 const fetchNftsMetadata = async (
   alchemy: Alchemy | undefined,
@@ -14,7 +14,7 @@ const fetchNftsMetadata = async (
 };
 
 export const useGetNftsMetadataEVM = (nfts: NftMetadataBatchToken[]) => {
-  const { data: alchemy } = useGetAlchemy();
+  const { data: alchemy } = useAlchemy();
 
   return useQuery({
     queryKey: [FunctionKey.NFTS_METADATA, { nfts, alchemy }],

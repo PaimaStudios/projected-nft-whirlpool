@@ -1,8 +1,8 @@
 "use client";
 import { Stack, Typography } from "@mui/material";
 import { useGetChainType } from "../hooks/useGetChainType";
-import LockNftListEVM from "./LockNftListEVM";
-import LockNftListCardano from "./LockNftListCardano";
+import LockNftListEVM from "./evm/LockNftList";
+import LockNftListCardano from "./cardano/LockNftList";
 
 export default function LockNftSection() {
   const chainType = useGetChainType();

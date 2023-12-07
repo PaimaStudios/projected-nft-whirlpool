@@ -12,8 +12,8 @@ import {
 import { useDappStore } from "../store";
 import { useShallow } from "zustand/react/shallow";
 import { cardanoWallets } from "../utils/cardano/constants";
-import { AddressCardano } from "../components/AddressCardano";
-import { useCardanoBalance } from "../hooks/useCardanoBalance";
+import { AddressCardano } from "../components/cardano/AddressCardano";
+import { useCardanoBalance } from "../hooks/cardano/useCardanoBalance";
 import { formatLovelace } from "../utils/cardano/utils";
 import { Close } from "@mui/icons-material";
 

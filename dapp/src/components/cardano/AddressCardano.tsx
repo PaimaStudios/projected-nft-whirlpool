@@ -1,5 +1,5 @@
 import { Stack, Tooltip, Typography } from "@mui/material";
-import { formatCardanoAddress } from "../utils/cardano/utils";
+import { formatCardanoAddress } from "../../utils/cardano/utils";
 import { useState } from "react";
 
 export const AddressCardano = ({ address }: { address: string }) => {

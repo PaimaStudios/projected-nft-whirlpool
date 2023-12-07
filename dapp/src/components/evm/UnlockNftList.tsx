@@ -11,27 +11,27 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import TransactionButton from "./TransactionButton";
+import TransactionButton from "../TransactionButton";
 import {
   usePrepareHololockerRequestUnlock,
   usePrepareHololockerWithdraw,
-} from "../generated";
+} from "../../generated";
 import { useContractWrite, useWaitForTransaction } from "wagmi";
-import { useGetLocksEVM } from "../hooks/useGetLocksEVM";
-import { LockInfo, TokenEVM } from "../utils/types";
+import { useGetLocksEVM } from "../../hooks/evm/useGetLocksEVM";
+import { LockInfoEVM, TokenEVM } from "../../utils/evm/types";
 import Grid from "@mui/material/Unstable_Grid2";
-import { hololockerConfig } from "../contracts";
-import { Countdown } from "./Countdown";
+import { hololockerConfig } from "../../contracts";
+import { Countdown } from "../Countdown";
 import { useInterval } from "usehooks-ts";
 import { useState } from "react";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { useGetNftsMetadataEVM } from "../hooks/useGetNftsMetadataEVM";
+import { useGetNftsMetadataEVM } from "../../hooks/evm/useGetNftsMetadataEVM";
 import { NftTokenType } from "alchemy-sdk";
-import MultirequestunlockButtonEVM from "./MultirequestunlockButtonEVM";
-import MultiwithdrawButtonEVM from "./MultiwithdrawButtonEVM";
+import CollectionUnlockButton from "./CollectionUnlockButton";
+import CollectionWithdrawButton from "./CollectionWithdrawButton";
 import { useQueryClient } from "@tanstack/react-query";
-import FunctionKey from "../utils/functionKey";
-import { areEqualTokens } from "../utils/evm/utils";
+import FunctionKey from "../../utils/functionKey";
+import { areEqualTokens } from "../../utils/evm/utils";
 import MultipleSelectionUnlockButton from "./MultipleSelectionUnlockButton";
 import MultipleSelectionWithdrawButton from "./MultipleSelectionWithdrawButton";
 
@@ -40,13 +40,13 @@ const blockTime = 12n;
 // we shall wait 1.5x the average block time until we try to simulate withdraw txn
 const reserveWaitingTime = (blockTime * 3n) / 2n;
 
-function UnlockNftCardEVM({
+function UnlockNftCard({
   lockInfo,
   displayImage,
   isSelected,
   onClick,
 }: {
-  lockInfo: LockInfo;
+  lockInfo: LockInfoEVM;
   displayImage: boolean;
   isSelected: boolean;
   onClick?: (token: TokenEVM) => void;
@@ -157,7 +157,7 @@ function UnlockNftCardEVM({
   );
 }
 
-function UnlockNftListItemEVM({
+function UnlockNftListItem({
   token,
   locks,
   onClickNftCard,
@@ -165,7 +165,7 @@ function UnlockNftListItemEVM({
   expanded,
 }: {
   token: string;
-  locks: LockInfo[];
+  locks: LockInfoEVM[];
   onClickNftCard?: (token: TokenEVM) => void;
   selectedTokens: TokenEVM[];
   expanded: boolean;
@@ -222,13 +222,13 @@ function UnlockNftListItemEVM({
                 }}
               >
                 {tokenIdsToRequestUnlock.length > 0 && (
-                  <MultirequestunlockButtonEVM
+                  <CollectionUnlockButton
                     token={token}
                     tokenIds={tokenIdsToRequestUnlock}
                   />
                 )}
                 {tokenIdsToWithdraw.length > 0 && (
-                  <MultiwithdrawButtonEVM
+                  <CollectionWithdrawButton
                     token={token}
                     tokenIds={tokenIdsToWithdraw}
                   />
@@ -248,7 +248,7 @@ function UnlockNftListItemEVM({
               .sort((a, b) => Number(a.tokenId) - Number(b.tokenId))
               .map((lock) => (
                 <Grid xs={4} key={`${token}-${lock.tokenId}`}>
-                  <UnlockNftCardEVM
+                  <UnlockNftCard
                     key={`${lock.token}-${lock.tokenId}`}
                     lockInfo={lock}
                     displayImage={someTokenHasImage}
@@ -268,7 +268,7 @@ function UnlockNftListItemEVM({
   );
 }
 
-export default function UnlockNftListEVM() {
+export default function UnlockNftList() {
   const [now, setNow] = useState<number>(new Date().getTime() / 1000);
   useInterval(() => {
     setNow(new Date().getTime() / 1000);
@@ -302,7 +302,7 @@ export default function UnlockNftListEVM() {
     }
   }
 
-  const lockGroups: Record<string, LockInfo[]> = {};
+  const lockGroups: Record<string, LockInfoEVM[]> = {};
   locks?.forEach((lock) => {
     if (!lockGroups[lock.token]) {
       lockGroups[lock.token] = [];
@@ -372,7 +372,7 @@ export default function UnlockNftListEVM() {
           </Typography>
         )}
       {Object.keys(lockGroups).map((token) => (
-        <UnlockNftListItemEVM
+        <UnlockNftListItem
           token={token}
           locks={lockGroups[token]}
           key={token}

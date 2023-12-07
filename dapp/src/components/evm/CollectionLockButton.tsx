@@ -1,15 +1,15 @@
 "use client";
 import { useAccount, useContractWrite, useWaitForTransaction } from "wagmi";
-import { hololockerConfig } from "../contracts";
+import { hololockerConfig } from "../../contracts";
 import {
   useErc721IsApprovedForAll,
   usePrepareHololockerLock,
-} from "../generated";
-import TransactionButton from "./TransactionButton";
-import FunctionKey from "../utils/functionKey";
+} from "../../generated";
+import TransactionButton from "../TransactionButton";
+import FunctionKey from "../../utils/functionKey";
 import { useQueryClient } from "@tanstack/react-query";
 import { useModal } from "mui-modal-provider";
-import ApproveCollectionDialog from "../dialogs/ApproveCollectionDialog";
+import ApproveCollectionDialog from "../../dialogs/ApproveCollectionDialog";
 import { useState } from "react";
 
 type Props = {
@@ -17,7 +17,7 @@ type Props = {
   tokenIds: bigint[];
 };
 
-export default function MultilockButtonEVM({ token, tokenIds }: Props) {
+export default function CollectionLockButton({ token, tokenIds }: Props) {
   const { address } = useAccount();
   const queryClient = useQueryClient();
   const { showModal } = useModal();

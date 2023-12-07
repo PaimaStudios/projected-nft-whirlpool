@@ -1,37 +1,36 @@
 "use client";
 import { Button, Stack, Typography } from "@mui/material";
 import { useState } from "react";
-import { TokenEVM } from "../utils/types";
-import TransactionButton from "./TransactionButton";
-import { hololockerConfig } from "../contracts";
+import { TokenEVM } from "../../utils/evm/types";
+import TransactionButton from "../TransactionButton";
+import { hololockerConfig } from "../../contracts";
 import { useAccount, useWaitForTransaction } from "wagmi";
-import FunctionKey from "../utils/functionKey";
+import FunctionKey from "../../utils/functionKey";
 import { useQueryClient } from "@tanstack/react-query";
 import { writeContract } from "@wagmi/core";
 
 type Props = {
   selectedTokens: TokenEVM[];
   setSelectedTokens: React.Dispatch<React.SetStateAction<TokenEVM[]>>;
-  selectingMultipleWithdraw: boolean;
-  setSelectingMultipleWithdraw: React.Dispatch<React.SetStateAction<boolean>>;
+  selectingMultipleUnlock: boolean;
+  setSelectingMultipleUnlock: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-export default function MultipleSelectionWithdrawButton({
+export default function MultipleSelectionUnlockButton({
   selectedTokens,
   setSelectedTokens,
-  selectingMultipleWithdraw,
-  setSelectingMultipleWithdraw,
+  selectingMultipleUnlock,
+  setSelectingMultipleUnlock,
 }: Props) {
   const queryClient = useQueryClient();
   const { address } = useAccount();
-  const [withdrawTxHash, setWithdrawTxHash] = useState<`0x${string}`>();
-  const [isLoadingMultipleWithdraw, setIsLoadingMultipleWithdraw] =
-    useState(false);
+  const [unlockTxHash, setUnlockTxHash] = useState<`0x${string}`>();
+  const [isLoadingMultipleUnlock, setIsLoadingMultipleUnlock] = useState(false);
 
-  const { isLoading: isPendingMultipleWithdraw } = useWaitForTransaction({
-    hash: withdrawTxHash,
+  const { isLoading: isPendingMultipleUnlock } = useWaitForTransaction({
+    hash: unlockTxHash,
     onSuccess: () => {
-      setSelectingMultipleWithdraw(false);
+      setSelectingMultipleUnlock(false);
       setSelectedTokens([]);
       queryClient.invalidateQueries({
         queryKey: [FunctionKey.LOCKS],
@@ -39,39 +38,39 @@ export default function MultipleSelectionWithdrawButton({
     },
   });
 
-  const handleClickRequestMultipleWithdrawButton = async () => {
+  const handleClickRequestMultipleUnlockButton = async () => {
     if (!address) return;
     try {
-      setIsLoadingMultipleWithdraw(true);
+      setIsLoadingMultipleUnlock(true);
       const { hash } = await writeContract({
         ...hololockerConfig,
-        functionName: "withdraw",
+        functionName: "requestUnlock",
         args: [
           selectedTokens.map((lock) => lock.token),
           selectedTokens.map((lock) => lock.tokenId),
         ],
       });
-      setWithdrawTxHash(hash);
+      setUnlockTxHash(hash);
     } catch (err) {
       console.error(err);
     } finally {
-      setIsLoadingMultipleWithdraw(false);
+      setIsLoadingMultipleUnlock(false);
     }
   };
 
-  return !selectingMultipleWithdraw ? (
+  return !selectingMultipleUnlock ? (
     <Button
       variant="contained"
       size="large"
       onClick={() => {
-        setSelectingMultipleWithdraw(!selectingMultipleWithdraw);
+        setSelectingMultipleUnlock(!selectingMultipleUnlock);
       }}
     >
-      Select multiple tokens to withdraw
+      Select multiple tokens to unlock
     </Button>
   ) : (
     <Stack sx={{ gap: 2 }}>
-      {selectingMultipleWithdraw && (
+      {selectingMultipleUnlock && (
         <Stack
           sx={{
             flexDirection: "row",
@@ -80,25 +79,25 @@ export default function MultipleSelectionWithdrawButton({
           }}
         >
           <TransactionButton
-            isLoading={isLoadingMultipleWithdraw}
-            isPending={isPendingMultipleWithdraw}
-            onClick={handleClickRequestMultipleWithdrawButton}
+            isLoading={isLoadingMultipleUnlock}
+            isPending={isPendingMultipleUnlock}
+            onClick={handleClickRequestMultipleUnlockButton}
             disabled={selectedTokens.length === 0}
-            actionText={`Withdraw selected tokens`}
+            actionText={`Request unlock for selected tokens`}
           />
           <Button
             onClick={() => {
-              setSelectingMultipleWithdraw(!selectingMultipleWithdraw);
+              setSelectingMultipleUnlock(!selectingMultipleUnlock);
               setSelectedTokens([]);
             }}
-            disabled={isLoadingMultipleWithdraw || isPendingMultipleWithdraw}
+            disabled={isLoadingMultipleUnlock || isPendingMultipleUnlock}
           >
             Cancel
           </Button>
         </Stack>
       )}
 
-      {!isLoadingMultipleWithdraw && !isPendingMultipleWithdraw && (
+      {!isLoadingMultipleUnlock && !isPendingMultipleUnlock && (
         <Typography textAlign={"center"}>
           Click token cards to select/deselect
         </Typography>

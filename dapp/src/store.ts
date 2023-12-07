@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { CardanoWallets } from "./utils/types";
+import { CardanoWallets } from "./utils/cardano/types";
 import { Lucid } from "lucid-cardano";
 import { getAddressKeyHashes } from "./utils/cardano/utils";
 

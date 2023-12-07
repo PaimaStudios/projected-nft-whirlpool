@@ -3,15 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import { Alchemy, Network } from "alchemy-sdk";
 import { useNetwork } from "wagmi";
 import { sepolia, mainnet } from "wagmi/chains";
-import FunctionKey from "../utils/functionKey";
-import env from "../utils/configs/env";
+import FunctionKey from "../../utils/functionKey";
+import env from "../../utils/configs/env";
 
 const WagmiToAlchemy: Record<number, Network> = {
   [sepolia.id]: Network.ETH_SEPOLIA,
   [mainnet.id]: Network.ETH_MAINNET,
 };
 
-export const useGetAlchemy = () => {
+export const useAlchemy = () => {
   const { chain } = useNetwork();
 
   return useQuery({

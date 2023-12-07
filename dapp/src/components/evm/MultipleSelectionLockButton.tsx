@@ -1,18 +1,18 @@
 "use client";
 import { Button, Stack, Typography } from "@mui/material";
 import { useState } from "react";
-import { TokenEVM } from "../utils/types";
-import TransactionButton from "./TransactionButton";
-import { hololockerConfig } from "../contracts";
+import { TokenEVM } from "../../utils/evm/types";
+import TransactionButton from "../TransactionButton";
+import { hololockerConfig } from "../../contracts";
 import { erc721ABI, useAccount, useWaitForTransaction } from "wagmi";
-import FunctionKey from "../utils/functionKey";
+import FunctionKey from "../../utils/functionKey";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   readContracts,
   writeContract,
   prepareWriteContract,
 } from "@wagmi/core";
-import ApproveCollectionDialog from "../dialogs/ApproveCollectionDialog";
+import ApproveCollectionDialog from "../../dialogs/ApproveCollectionDialog";
 import { useModal } from "mui-modal-provider";
 
 type Props = {

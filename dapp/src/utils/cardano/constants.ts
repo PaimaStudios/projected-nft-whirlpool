@@ -1,4 +1,4 @@
-import { CardanoWalletInfo } from "../types";
+import { CardanoWalletInfo } from "./types";
 
 export const cardanoApiMinSlot = 40000000;
 export const cardanoApiMaxSlot = 2147483647;

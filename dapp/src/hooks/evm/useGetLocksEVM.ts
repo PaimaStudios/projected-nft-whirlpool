@@ -1,8 +1,8 @@
 "use client";
 import { useAccount, usePublicClient } from "wagmi";
-import { hololockerConfig } from "../contracts";
-import { LockInfo } from "../utils/types";
-import FunctionKey from "../utils/functionKey";
+import { hololockerConfig } from "../../contracts";
+import { LockInfoEVM } from "../../utils/evm/types";
+import FunctionKey from "../../utils/functionKey";
 import { useQuery } from "@tanstack/react-query";
 
 const fetchLocks = async (publicClient: any, address: string | undefined) => {
@@ -75,7 +75,7 @@ const fetchLocks = async (publicClient: any, address: string | undefined) => {
       }
     });
 
-    const locks: LockInfo[] = Object.keys(lockedNftsMap).map((key) => {
+    const locks: LockInfoEVM[] = Object.keys(lockedNftsMap).map((key) => {
       return {
         token: key.substring(0, key.indexOf("-")) as `0x${string}`,
         tokenId: BigInt(key.substring(key.indexOf("-") + 1)),

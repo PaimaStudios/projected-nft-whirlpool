@@ -1,9 +1,9 @@
 "use client";
 import { useAccount, useContractWrite, useWaitForTransaction } from "wagmi";
-import { hololockerConfig } from "../contracts";
-import { usePrepareHololockerRequestUnlock } from "../generated";
-import TransactionButton from "./TransactionButton";
-import FunctionKey from "../utils/functionKey";
+import { hololockerConfig } from "../../contracts";
+import { usePrepareHololockerRequestUnlock } from "../../generated";
+import TransactionButton from "../TransactionButton";
+import FunctionKey from "../../utils/functionKey";
 import { useQueryClient } from "@tanstack/react-query";
 
 type Props = {
@@ -11,10 +11,7 @@ type Props = {
   tokenIds: bigint[];
 };
 
-export default function MultirequestunlockButtonEVM({
-  token,
-  tokenIds,
-}: Props) {
+export default function CollectionUnlockButton({ token, tokenIds }: Props) {
   const { address } = useAccount();
   const queryClient = useQueryClient();
 

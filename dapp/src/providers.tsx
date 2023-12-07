@@ -5,7 +5,7 @@ import { WagmiConfig } from "wagmi";
 
 import { chains, config } from "./utils/configs/wagmi";
 import ModalProvider from "mui-modal-provider";
-import { useLucid } from "./hooks/useLucid";
+import { useLucid } from "./hooks/cardano/useLucid";
 import { useDappStore } from "./store";
 
 export function Providers({ children }: { children: React.ReactNode }) {

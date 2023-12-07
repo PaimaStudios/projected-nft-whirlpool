@@ -13,7 +13,7 @@ import { useDappStore } from "../store";
 import { useModal } from "mui-modal-provider";
 import InstallWalletDialog from "./InstallWalletDialog";
 import { Check, Close } from "@mui/icons-material";
-import { CardanoWalletInfo } from "../utils/types";
+import { CardanoWalletInfo } from "../utils/cardano/types";
 import { cardanoWallets } from "../utils/cardano/constants";
 
 type CardanoWalletsDialogProps = {

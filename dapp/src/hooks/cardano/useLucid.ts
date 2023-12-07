@@ -3,8 +3,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useCardanoNetworkId } from "./useCardanoNetworkId";
 import { useCardanoWalletApi } from "./useCardanoWalletApi";
-import { useDappStore } from "../store";
-import env from "../utils/configs/env";
+import { useDappStore } from "../../store";
+import env from "../../utils/configs/env";
 
 const useLucid = () => {
   const selectedWallet = useDappStore((state) => state.selectedWallet);

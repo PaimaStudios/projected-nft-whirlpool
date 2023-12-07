@@ -9,7 +9,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { CardanoWalletInfo } from "../utils/types";
+import { CardanoWalletInfo } from "../utils/cardano/types";
 import { Close } from "@mui/icons-material";
 
 type InstallWalletDialogProps = {

@@ -1,17 +1,17 @@
 "use client";
 import { useAccount, useContractWrite, useWaitForTransaction } from "wagmi";
-import { hololockerConfig } from "../contracts";
-import { usePrepareHololockerWithdraw } from "../generated";
-import TransactionButton from "./TransactionButton";
+import { hololockerConfig } from "../../contracts";
+import { usePrepareHololockerWithdraw } from "../../generated";
+import TransactionButton from "../TransactionButton";
 import { useQueryClient } from "@tanstack/react-query";
-import FunctionKey from "../utils/functionKey";
+import FunctionKey from "../../utils/functionKey";
 
 type Props = {
   token: string;
   tokenIds: bigint[];
 };
 
-export default function MultiwithdrawButtonEVM({ token, tokenIds }: Props) {
+export default function CollectionWithdrawButton({ token, tokenIds }: Props) {
   const { address } = useAccount();
   const queryClient = useQueryClient();
 

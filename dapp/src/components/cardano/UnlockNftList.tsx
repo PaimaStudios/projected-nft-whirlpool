@@ -12,29 +12,29 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import TransactionButton from "./TransactionButton";
-import { LockInfoCardano } from "../utils/types";
+import TransactionButton from "../TransactionButton";
+import { LockInfoCardano } from "../../utils/cardano/types";
 import Grid from "@mui/material/Unstable_Grid2";
-import { Countdown } from "./Countdown";
+import { Countdown } from "../Countdown";
 import { useInterval } from "usehooks-ts";
 import { useState } from "react";
-import { useGetLocksCardano } from "../hooks/useGetLocksCardano";
-import { useDappStore } from "../store";
-import { validator } from "../utils/cardano/validator";
-import { getRedeemer } from "../utils/cardano/redeemer";
-import { getLastBlockTime } from "../utils/cardano/utils";
+import { useGetLocksCardano } from "../../hooks/cardano/useGetLocksCardano";
+import { useDappStore } from "../../store";
+import { validator } from "../../utils/cardano/validator";
+import { getRedeemer } from "../../utils/cardano/redeemer";
+import { getLastBlockTime } from "../../utils/cardano/utils";
 import { useQueryClient } from "@tanstack/react-query";
-import FunctionKey from "../utils/functionKey";
-import { getUnlockDatum } from "../utils/cardano/datum";
-import { PolicyIdCardano } from "./PolicyIdCardano";
-import { Token } from "../utils/cardano/token";
+import FunctionKey from "../../utils/functionKey";
+import { getUnlockDatum } from "../../utils/cardano/datum";
+import { PolicyId } from "./PolicyId";
+import { Token } from "../../utils/cardano/token";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { nftsQueryInvalidationDelay } from "../utils/cardano/constants";
+import { nftsQueryInvalidationDelay } from "../../utils/cardano/constants";
 import {
   MetadataCardano,
   useGetNftsMetadataCardano,
-} from "../hooks/useGetNftsMetadataCardano";
-import { Value } from "../utils/cardano/value";
+} from "../../hooks/cardano/useGetNftsMetadataCardano";
+import { Value } from "../../utils/cardano/value";
 
 // From validator
 const minimumLockTime = BigInt(300000);
@@ -42,7 +42,7 @@ const ttl = 120 * 1000;
 // Artificially increase unlockTime by this amount to let chain produce block satisfying the real unlockTime
 const unlockTimeReserve = BigInt(60 * 1000);
 
-function UnlockNftCardCardano({
+function UnlockNftCard({
   token,
   metadata,
   isSelected,
@@ -74,7 +74,7 @@ function UnlockNftCardCardano({
             <Typography variant="body2">{token.getNameUtf8()}</Typography>
             <Typography variant="body2">{token.amount.toString()}</Typography>
           </Stack>
-          <PolicyIdCardano policyId={token.asset.policyId} />
+          <PolicyId policyId={token.asset.policyId} />
         </Stack>
       </CardContent>
       <Stack />
@@ -82,7 +82,7 @@ function UnlockNftCardCardano({
   );
 }
 
-function UnlockNftListItemCardano({
+function UnlockNftListItem({
   lockInfo,
   metadata,
 }: {
@@ -382,7 +382,7 @@ function UnlockNftListItemCardano({
           <Grid container spacing={2} sx={{ width: "100%" }}>
             {tokens.map((token) => (
               <Grid xs={3} key={token.getUnit()}>
-                <UnlockNftCardCardano
+                <UnlockNftCard
                   token={token}
                   metadata={
                     metadata?.[token.asset.policyId]?.[token.asset.name]
@@ -402,7 +402,7 @@ function UnlockNftListItemCardano({
   );
 }
 
-export default function UnlockNftListCardano() {
+export default function UnlockNftList() {
   const { data: locks } = useGetLocksCardano();
   const { data: nftMetadata } = useGetNftsMetadataCardano(
     locks?.flatMap((lock) => lock.tokens).map((token) => token.asset) ?? [],
@@ -421,7 +421,7 @@ export default function UnlockNftListCardano() {
   return (
     <Stack sx={{ gap: 2, width: "100%" }}>
       {unclaimedLocks.map((lock) => (
-        <UnlockNftListItemCardano
+        <UnlockNftListItem
           lockInfo={lock}
           key={`${lock.actionTxId}#${lock.actionOutputIndex}`}
           metadata={nftMetadata}

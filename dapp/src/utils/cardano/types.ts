@@ -1,15 +1,4 @@
-import { Nft } from "alchemy-sdk";
-import { Token } from "./cardano/token";
-
-export type TokenEVM = {
-  token: `0x${string}`;
-  tokenId: bigint;
-};
-
-export type LockInfo = TokenEVM & {
-  unlockTime: bigint;
-  nftData?: Nft;
-};
+import { Token } from "./token";
 
 export type CardanoWallets = "eternl" | "flint" | "nami" | "typhoncip30";
 

@@ -2,10 +2,10 @@ import { Data, WalletApi } from "lucid-cardano";
 import { useEffect, useState } from "react";
 
 import { useCardanoWalletApi } from "./useCardanoWalletApi";
-import { useDappStore } from "../store";
-import { PlutusValueType, Value } from "../utils/cardano/value";
+import { useDappStore } from "../../store";
+import { PlutusValueType, Value } from "../../utils/cardano/value";
 import { useQuery } from "@tanstack/react-query";
-import FunctionKey from "../utils/functionKey";
+import FunctionKey from "../../utils/functionKey";
 
 const fetchBalance = async (walletApi: WalletApi) => {
   const balanceStr = await walletApi.getBalance();

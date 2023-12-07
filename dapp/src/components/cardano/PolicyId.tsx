@@ -1,8 +1,8 @@
 import { Stack, Tooltip, Typography } from "@mui/material";
-import { formatPolicyId } from "../utils/cardano/utils";
+import { formatPolicyId } from "../../utils/cardano/utils";
 import { useState } from "react";
 
-export const PolicyIdCardano = ({ policyId }: { policyId: string }) => {
+export const PolicyId = ({ policyId }: { policyId: string }) => {
   const [policyIdTooltipText, setPolicyIdTooltipText] = useState("Copy");
   return (
     <Stack sx={{ flexDirection: "row" }}>
