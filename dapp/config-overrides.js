@@ -25,6 +25,6 @@ module.exports = function override(config, env) {
     }),
   );
   config.plugins.push(new webpack.HotModuleReplacementPlugin());
-
+  config.ignoreWarnings = [/Failed to parse source map/];
   return config;
 };
