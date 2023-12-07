@@ -1,6 +1,5 @@
 "use client";
 import {
-  Button,
   Card,
   CardActions,
   CardContent,
@@ -19,6 +18,7 @@ import { useGetNftsMetadataCardano } from "../../hooks/cardano/useGetNftsMetadat
 import { PolicyId } from "./PolicyId";
 import { useState } from "react";
 import { isTokenNft } from "../../utils/cardano/utils";
+import MultipleSelectionLockButton from "./MultipleSelectionLockButton";
 
 function LockNftListItem({
   nft,
@@ -33,6 +33,8 @@ function LockNftListItem({
   isSelected: boolean;
   onClick: () => void;
 }) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   return (
     <Card
       sx={{ width: "100%" }}
@@ -56,7 +58,13 @@ function LockNftListItem({
       <Stack />
       {!selectMultiple && (
         <CardActions>
-          <LockNftButton tokens={[nft]} />
+          <LockNftButton
+            tokens={[nft]}
+            isLoading={isLoading}
+            setIsLoading={setIsLoading}
+            isPending={isPending}
+            setIsPending={setIsPending}
+          />
         </CardActions>
       )}
     </Card>
@@ -101,42 +109,13 @@ export default function LockNftList() {
   }
 
   return (
-    <Stack sx={{ gap: 2, width: "100%" }}>
-      {selectMultiple ? (
-        <Stack sx={{ flexDirection: "row", justifyContent: "center", gap: 2 }}>
-          <LockNftButton
-            tokens={selectedTokens}
-            actionText="Lock selected tokens"
-            disabled={selectedTokens.length === 0}
-          />
-          <Button
-            onClick={() => {
-              setSelectMultiple(!selectMultiple);
-              setSelectedTokens([]);
-            }}
-          >
-            Cancel
-          </Button>
-        </Stack>
-      ) : (
-        <Button
-          variant="contained"
-          size="large"
-          sx={{ alignSelf: "center" }}
-          onClick={() => {
-            setSelectMultiple(!selectMultiple);
-          }}
-        >
-          Lock multiple
-        </Button>
-      )}
-      {!selectMultiple ? (
-        <Typography textAlign={"center"}>or lock individually</Typography>
-      ) : (
-        <Typography textAlign={"center"}>
-          Click token cards to select/deselect
-        </Typography>
-      )}
+    <Stack sx={{ gap: 2, width: "100%", alignItems: "center" }}>
+      <MultipleSelectionLockButton
+        selectedTokens={selectedTokens}
+        setSelectedTokens={setSelectedTokens}
+        selectingMultipleLock={selectMultiple}
+        setSelectingMultipleLock={setSelectMultiple}
+      />
       <FormControlLabel
         control={
           <Switch

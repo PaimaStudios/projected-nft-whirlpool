@@ -157,9 +157,13 @@ export default function MultipleSelectionLockButton({
         </Stack>
       )}
 
-      <Typography textAlign={"center"}>
-        Click token cards to select/deselect
-      </Typography>
+      {!isLoadingMultipleLock &&
+        !isPendingMultipleLock &&
+        !isPendingSetApproval && (
+          <Typography textAlign={"center"}>
+            Click token cards to select/deselect
+          </Typography>
+        )}
     </Stack>
   );
 }

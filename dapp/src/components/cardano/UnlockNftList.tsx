@@ -339,13 +339,16 @@ function UnlockNftListItem({
                       setSelectMultiple(!selectMultiple);
                       setSelectedTokens([]);
                     }}
+                    disabled={isLoading || isPending}
                   >
                     Cancel
                   </Button>
                 </Stack>
-                <Typography textAlign={"center"}>
-                  Click token cards to select/deselect
-                </Typography>
+                {!isLoading && !isPending && (
+                  <Typography textAlign={"center"}>
+                    Click token cards to select/deselect
+                  </Typography>
+                )}
               </Stack>
             ) : (
               <Button

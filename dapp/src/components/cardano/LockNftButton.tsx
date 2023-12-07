@@ -6,7 +6,6 @@ import { Value } from "../../utils/cardano/value";
 import { validator } from "../../utils/cardano/validator";
 import { useQueryClient } from "@tanstack/react-query";
 import FunctionKey from "../../utils/functionKey";
-import { useState } from "react";
 import { getLockDatum } from "../../utils/cardano/datum";
 import { nftsQueryInvalidationDelay } from "../../utils/cardano/constants";
 import { ButtonProps } from "@mui/material";
@@ -14,18 +13,24 @@ import { ButtonProps } from "@mui/material";
 type Props = {
   tokens: Token[];
   actionText?: string;
+  isLoading: boolean;
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  isPending: boolean;
+  setIsPending: React.Dispatch<React.SetStateAction<boolean>>;
 } & ButtonProps;
 
 export default function LockNftButton({
   tokens,
   actionText = "Lock token",
+  isLoading,
+  setIsLoading,
+  isPending,
+  setIsPending,
   ...props
 }: Props) {
   const paymentKeyHash = useDappStore((state) => state.paymentKeyHash);
   const lucid = useDappStore((state) => state.lucid);
   const queryClient = useQueryClient();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
 
   async function lockNft() {
     console.log("lucid", lucid);
