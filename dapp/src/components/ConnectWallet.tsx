@@ -14,6 +14,7 @@ import CardanoWalletsDialog from "../dialogs/CardanoWalletsDialog";
 import { useDappStore } from "../store";
 import WalletInfoDialog from "../dialogs/WalletInfoDialog";
 import { formatCardanoAddress } from "../utils/cardano/utils";
+import { formatEVMAddress } from "../utils/evm/utils";
 
 type Props = {
   popoverAnchorOrigin?: PopoverOrigin;
@@ -79,7 +80,7 @@ export default function ConnectWallet({
   const id = open ? "chains-popover" : undefined;
   const formattedAddress =
     chainType === "EVM"
-      ? addressEVM
+      ? formatEVMAddress(addressEVM)
       : chainType === "Cardano"
       ? formatCardanoAddress(address)
       : "";

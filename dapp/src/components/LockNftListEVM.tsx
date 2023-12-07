@@ -23,7 +23,7 @@ import { TokenEVM } from "../utils/types";
 import { areEqualTokens } from "../utils/evm/utils";
 import MultipleSelectionLockButton from "./MultipleSelectionLockButton";
 
-function LockNftListItemEVM({
+function LockNftCardEVM({
   nft,
   displayImage,
   onClickNftCard,
@@ -70,6 +70,74 @@ function LockNftListItemEVM({
   );
 }
 
+function LockNftListItemEVM({
+  nfts,
+  nftContractAddress,
+  selectingMultipleLock,
+  selectedTokens,
+  onClickNftCard,
+}: {
+  nfts: Nft[];
+  nftContractAddress: string;
+  selectingMultipleLock: boolean;
+  selectedTokens: TokenEVM[];
+  onClickNftCard?: (token: TokenEVM) => void;
+}) {
+  const someTokenHasImage = !!nfts.find((nft) => nft.media.length > 0);
+  return (
+    <Accordion
+      TransitionProps={{ unmountOnExit: true }}
+      key={nftContractAddress}
+      sx={{ width: "100%" }}
+    >
+      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+        <Stack>
+          <Typography>{nftContractAddress}</Typography>
+          <Typography fontWeight={600}>
+            {nfts[0].contract.name ?? ""}
+          </Typography>
+        </Stack>
+      </AccordionSummary>
+      <AccordionDetails>
+        <Stack gap={2}>
+          {nfts.length > 1 && !selectingMultipleLock && (
+            <>
+              <MultilockButtonEVM
+                token={nftContractAddress}
+                tokenIds={nfts.map((nft) => BigInt(nft.tokenId))}
+              />
+              <Typography textAlign={"center"}>or lock individually</Typography>
+            </>
+          )}
+          <Grid container spacing={2}>
+            {nfts
+              .sort((a, b) => Number(a.tokenId) - Number(b.tokenId))
+              .map((nft) => (
+                <Grid xs={4} key={`${nft.contract.address}-${nft.tokenId}`}>
+                  <LockNftCardEVM
+                    nft={nft}
+                    displayImage={someTokenHasImage}
+                    onClickNftCard={
+                      selectingMultipleLock ? onClickNftCard : undefined
+                    }
+                    isSelected={
+                      !!selectedTokens.find((token) =>
+                        areEqualTokens(token, {
+                          token: nft.contract.address as `0x${string}`,
+                          tokenId: BigInt(nft.tokenId),
+                        }),
+                      )
+                    }
+                  />
+                </Grid>
+              ))}
+          </Grid>
+        </Stack>
+      </AccordionDetails>
+    </Accordion>
+  );
+}
+
 export default function LockNftListEVM() {
   const [selectingMultipleLock, setSelectingMultipleLock] = useState(false);
   const [selectedTokens, setSelectedTokens] = useState<TokenEVM[]>([]);
@@ -109,78 +177,23 @@ export default function LockNftListEVM() {
   }
   return (
     <Stack sx={{ gap: 2, width: "100%", alignItems: "center" }}>
-      <MultipleSelectionLockButton
-        selectedTokens={selectedTokens}
-        setSelectedTokens={setSelectedTokens}
-        selectingMultipleLock={selectingMultipleLock}
-        setSelectingMultipleLock={setSelectingMultipleLock}
-        nftGroups={nftGroups}
-      />
-      {Object.keys(nftGroups).map((nftContractAddress) => {
-        const someTokenHasImage = !!nftGroups[nftContractAddress].find(
-          (nft) => nft.media.length > 0,
-        );
-        return (
-          <Accordion
-            TransitionProps={{ unmountOnExit: true }}
-            key={nftContractAddress}
-            sx={{ width: "100%" }}
-          >
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Stack>
-                <Typography>{nftContractAddress}</Typography>
-                <Typography fontWeight={600}>
-                  {nftGroups[nftContractAddress][0].contract.name ?? ""}
-                </Typography>
-              </Stack>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Stack gap={2}>
-                {nftGroups[nftContractAddress].length > 1 &&
-                  !selectingMultipleLock && (
-                    <>
-                      <MultilockButtonEVM
-                        token={nftContractAddress}
-                        tokenIds={nftGroups[nftContractAddress].map((nft) =>
-                          BigInt(nft.tokenId),
-                        )}
-                      />
-                      <Typography textAlign={"center"}>
-                        or lock individually
-                      </Typography>
-                    </>
-                  )}
-                <Grid container spacing={2}>
-                  {nftGroups[nftContractAddress]
-                    .sort((a, b) => Number(a.tokenId) - Number(b.tokenId))
-                    .map((nft) => (
-                      <Grid
-                        xs={4}
-                        key={`${nft.contract.address}-${nft.tokenId}`}
-                      >
-                        <LockNftListItemEVM
-                          nft={nft}
-                          displayImage={someTokenHasImage}
-                          onClickNftCard={
-                            selectingMultipleLock ? handleSelect : undefined
-                          }
-                          isSelected={
-                            !!selectedTokens.find((token) =>
-                              areEqualTokens(token, {
-                                token: nft.contract.address as `0x${string}`,
-                                tokenId: BigInt(nft.tokenId),
-                              }),
-                            )
-                          }
-                        />
-                      </Grid>
-                    ))}
-                </Grid>
-              </Stack>
-            </AccordionDetails>
-          </Accordion>
-        );
-      })}
+      {(nftsData.pages[0]?.ownedNfts.length ?? 0) > 1 && (
+        <MultipleSelectionLockButton
+          selectedTokens={selectedTokens}
+          setSelectedTokens={setSelectedTokens}
+          selectingMultipleLock={selectingMultipleLock}
+          setSelectingMultipleLock={setSelectingMultipleLock}
+        />
+      )}
+      {Object.keys(nftGroups).map((nftContractAddress) => (
+        <LockNftListItemEVM
+          nftContractAddress={nftContractAddress}
+          nfts={nftGroups[nftContractAddress]}
+          selectedTokens={selectedTokens}
+          selectingMultipleLock={selectingMultipleLock}
+          onClickNftCard={handleSelect}
+        />
+      ))}
       {isFetching ? (
         <CircularProgress />
       ) : (

@@ -1,6 +1,5 @@
 "use client";
 import { Button, Stack, Typography } from "@mui/material";
-import { Nft } from "alchemy-sdk";
 import { useState } from "react";
 import { TokenEVM } from "../utils/types";
 import TransactionButton from "./TransactionButton";
@@ -21,7 +20,6 @@ type Props = {
   setSelectedTokens: React.Dispatch<React.SetStateAction<TokenEVM[]>>;
   selectingMultipleLock: boolean;
   setSelectingMultipleLock: React.Dispatch<React.SetStateAction<boolean>>;
-  nftGroups: Record<string, Nft[]>;
 };
 
 export default function MultipleSelectionLockButton({
@@ -29,7 +27,6 @@ export default function MultipleSelectionLockButton({
   setSelectedTokens,
   selectingMultipleLock,
   setSelectingMultipleLock,
-  nftGroups,
 }: Props) {
   const queryClient = useQueryClient();
   const { address } = useAccount();
@@ -115,24 +112,20 @@ export default function MultipleSelectionLockButton({
   };
 
   return !selectingMultipleLock ? (
-    Object.keys(nftGroups).length > 1 ? (
-      <>
-        <Button
-          variant="contained"
-          size="large"
-          onClick={() => {
-            setSelectingMultipleLock(!selectingMultipleLock);
-          }}
-        >
-          Select multiple tokens to lock
-        </Button>
-        <Typography textAlign={"center"}>or lock per collections</Typography>
-      </>
-    ) : (
-      <></>
-    )
+    <>
+      <Button
+        variant="contained"
+        size="large"
+        onClick={() => {
+          setSelectingMultipleLock(!selectingMultipleLock);
+        }}
+      >
+        Select multiple tokens to lock
+      </Button>
+      <Typography textAlign={"center"}>or lock per collections</Typography>
+    </>
   ) : (
-    <Stack sx={{ gap: 2 }}>
+    <Stack sx={{ gap: 2 }} component={"section"}>
       {selectingMultipleLock && (
         <Stack
           sx={{

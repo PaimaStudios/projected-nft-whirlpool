@@ -3,7 +3,6 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
-  Button,
   Card,
   CardActions,
   CardContent,
@@ -33,6 +32,8 @@ import MultiwithdrawButtonEVM from "./MultiwithdrawButtonEVM";
 import { useQueryClient } from "@tanstack/react-query";
 import FunctionKey from "../utils/functionKey";
 import { areEqualTokens } from "../utils/evm/utils";
+import MultipleSelectionUnlockButton from "./MultipleSelectionUnlockButton";
+import MultipleSelectionWithdrawButton from "./MultipleSelectionWithdrawButton";
 
 // average block time on ETH
 const blockTime = 12n;
@@ -272,7 +273,6 @@ export default function UnlockNftListEVM() {
   useInterval(() => {
     setNow(new Date().getTime() / 1000);
   }, 1000);
-  const queryClient = useQueryClient();
   const [selectingMultipleUnlock, setSelectingMultipleUnlock] = useState(false);
   const [selectingMultipleWithdraw, setSelectingMultipleWithdraw] =
     useState(false);
@@ -317,57 +317,6 @@ export default function UnlockNftListEVM() {
     });
   });
 
-  const { config: configMultipleUnlock } = usePrepareHololockerRequestUnlock({
-    address: hololockerConfig.address,
-    args: [
-      selectedTokens.map((lock) => lock.token),
-      selectedTokens.map((lock) => lock.tokenId),
-    ],
-    enabled: selectingMultipleUnlock,
-  });
-  const {
-    write: writeMultipleUnlock,
-    data: dataMultipleUnlock,
-    isLoading: isLoadingMultipleUnlock,
-  } = useContractWrite(configMultipleUnlock);
-  const { isLoading: isPendingMultipleUnlock } = useWaitForTransaction({
-    hash: dataMultipleUnlock?.hash,
-    onSuccess: () => {
-      setSelectingMultipleUnlock(false);
-      setSelectedTokens([]);
-      queryClient.invalidateQueries({
-        queryKey: [FunctionKey.LOCKS],
-      });
-    },
-  });
-
-  const { config: configMultipleWithdraw } = usePrepareHololockerWithdraw({
-    address: hololockerConfig.address,
-    args: [
-      selectedTokens.map((lock) => lock.token),
-      selectedTokens.map((lock) => lock.tokenId),
-    ],
-    enabled: selectingMultipleWithdraw,
-  });
-  const {
-    write: writeMultipleWithdraw,
-    data: dataMultipleWithdraw,
-    isLoading: isLoadingMultipleWithdraw,
-  } = useContractWrite(configMultipleWithdraw);
-  const { isLoading: isPendingMultipleWithdraw } = useWaitForTransaction({
-    hash: dataMultipleWithdraw?.hash,
-    onSuccess: () => {
-      setSelectingMultipleWithdraw(false);
-      setSelectedTokens([]);
-      queryClient.invalidateQueries({
-        queryKey: [FunctionKey.LOCKS],
-      });
-      queryClient.invalidateQueries({
-        queryKey: [FunctionKey.NFTS],
-      });
-    },
-  });
-
   const handleSelect = (token: TokenEVM) => {
     const foundToken = selectedTokens.find((x) => areEqualTokens(x, token));
     if (foundToken) {
@@ -379,14 +328,6 @@ export default function UnlockNftListEVM() {
     }
   };
 
-  const handleClickRequestMultipleUnlockButton = () => {
-    writeMultipleUnlock?.();
-  };
-
-  const handleClickRequestMultipleWithdrawButton = () => {
-    writeMultipleWithdraw?.();
-  };
-
   if (!locks) {
     return <CircularProgress />;
   }
@@ -396,103 +337,40 @@ export default function UnlockNftListEVM() {
   }
 
   return (
-    <Stack sx={{ width: "100%", gap: 2 }}>
-      {!selectingMultipleUnlock && !selectingMultipleWithdraw ? (
-        (locksForUnlock.length > 1 || locksForWithdraw.length > 1) && (
-          <>
-            <Stack
-              sx={{
-                flexDirection: "row",
-                justifyContent: "center",
-                gap: 2,
-              }}
-            >
-              {locksForUnlock.length > 1 && (
-                <Button
-                  variant="contained"
-                  size="large"
-                  onClick={() => {
-                    setSelectingMultipleUnlock(!selectingMultipleUnlock);
-                  }}
-                >
-                  Select multiple tokens to unlock
-                </Button>
-              )}
-              {locksForWithdraw.length > 1 && (
-                <Button
-                  variant="contained"
-                  size="large"
-                  onClick={() => {
-                    setSelectingMultipleWithdraw(!selectingMultipleWithdraw);
-                  }}
-                >
-                  Select multiple tokens to withdraw
-                </Button>
-              )}
-            </Stack>
-            <Typography textAlign={"center"}>
-              or unlock/withdraw per collections
-            </Typography>
-          </>
-        )
-      ) : (
-        <Stack sx={{ gap: 2 }}>
-          <Stack
-            sx={{
-              flexDirection: "row",
-              justifyContent: "center",
-              gap: 2,
-            }}
-          >
-            {selectingMultipleUnlock && (
-              <>
-                <TransactionButton
-                  isLoading={isLoadingMultipleUnlock}
-                  isPending={isPendingMultipleUnlock}
-                  onClick={handleClickRequestMultipleUnlockButton}
-                  disabled={selectedTokens.length === 0}
-                  actionText={`Request unlock for selected tokens`}
-                />
-                <Button
-                  onClick={() => {
-                    setSelectingMultipleUnlock(!selectingMultipleUnlock);
-                    setSelectedTokens([]);
-                  }}
-                  disabled={isLoadingMultipleUnlock || isPendingMultipleUnlock}
-                >
-                  Cancel
-                </Button>
-              </>
-            )}
-            {selectingMultipleWithdraw && (
-              <>
-                <TransactionButton
-                  isLoading={isLoadingMultipleWithdraw}
-                  isPending={isPendingMultipleWithdraw}
-                  onClick={handleClickRequestMultipleWithdrawButton}
-                  disabled={selectedTokens.length === 0}
-                  actionText={`Withdraw selected tokens`}
-                />
-                <Button
-                  onClick={() => {
-                    setSelectingMultipleWithdraw(!selectingMultipleWithdraw);
-                    setSelectedTokens([]);
-                  }}
-                  disabled={
-                    isLoadingMultipleWithdraw || isPendingMultipleWithdraw
-                  }
-                >
-                  Cancel
-                </Button>
-              </>
-            )}
-          </Stack>
-
+    <Stack sx={{ width: "100%", gap: 2, alignItems: "center" }}>
+      <Stack
+        sx={{
+          flexDirection: "row",
+          width: "100%",
+          gap: 2,
+          justifyContent: "center",
+        }}
+        component={"section"}
+      >
+        {locksForUnlock.length > 1 && !selectingMultipleWithdraw && (
+          <MultipleSelectionUnlockButton
+            selectedTokens={selectedTokens}
+            setSelectedTokens={setSelectedTokens}
+            selectingMultipleUnlock={selectingMultipleUnlock}
+            setSelectingMultipleUnlock={setSelectingMultipleUnlock}
+          />
+        )}
+        {locksForWithdraw.length > 1 && !selectingMultipleUnlock && (
+          <MultipleSelectionWithdrawButton
+            selectedTokens={selectedTokens}
+            setSelectedTokens={setSelectedTokens}
+            selectingMultipleWithdraw={selectingMultipleWithdraw}
+            setSelectingMultipleWithdraw={setSelectingMultipleWithdraw}
+          />
+        )}
+      </Stack>
+      {(locksForUnlock.length > 1 || locksForWithdraw.length > 1) &&
+        !selectingMultipleUnlock &&
+        !selectingMultipleWithdraw && (
           <Typography textAlign={"center"}>
-            Click token cards to select/deselect
+            or unlock/withdraw per collections
           </Typography>
-        </Stack>
-      )}
+        )}
       {Object.keys(lockGroups).map((token) => (
         <UnlockNftListItemEVM
           token={token}
