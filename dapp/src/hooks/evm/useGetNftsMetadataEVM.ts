@@ -10,7 +10,18 @@ const fetchNftsMetadata = async (
   if (alchemy === undefined || nfts.length === 0) {
     return null;
   }
-  return await alchemy?.nft.getNftMetadataBatch(nfts);
+  // Alchemy API call maximum https://docs.alchemy.com/reference/getnftmetadatabatch-v3
+  const maxSize = 100;
+  const nftsChunks: NftMetadataBatchToken[][] = [];
+  for (let i = 0; i < Math.ceil(nfts.length / maxSize); i++) {
+    nftsChunks.push(nfts.slice(i * maxSize, i * maxSize + maxSize));
+  }
+  const result = await Promise.all(
+    nftsChunks.map(async (nftsChunk) => {
+      return await alchemy?.nft.getNftMetadataBatch(nftsChunk);
+    }),
+  );
+  return result.flat();
 };
 
 export const useGetNftsMetadataEVM = (nfts: NftMetadataBatchToken[]) => {
