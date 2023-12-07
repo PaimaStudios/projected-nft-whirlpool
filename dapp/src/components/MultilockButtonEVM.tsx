@@ -66,7 +66,7 @@ export default function MultilockButtonEVM({ token, tokenIds }: Props) {
       writeHololockerLock?.();
     } else {
       const modal = showModal(ApproveCollectionDialog, {
-        token,
+        tokens: [token],
         onCancel: () => {
           modal.hide();
         },
