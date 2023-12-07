@@ -5,6 +5,9 @@ import { usePrepareHololockerWithdraw } from "../../generated";
 import TransactionButton from "../TransactionButton";
 import { useQueryClient } from "@tanstack/react-query";
 import FunctionKey from "../../utils/functionKey";
+import { useSnackbar } from "notistack";
+import { useEffect } from "react";
+import { SnackbarMessage } from "../../utils/texts";
 
 type Props = {
   token: string;
@@ -12,6 +15,7 @@ type Props = {
 };
 
 export default function CollectionWithdrawButton({ token, tokenIds }: Props) {
+  const { enqueueSnackbar } = useSnackbar();
   const { address } = useAccount();
   const queryClient = useQueryClient();
 
@@ -27,7 +31,7 @@ export default function CollectionWithdrawButton({ token, tokenIds }: Props) {
     isLoading: isLoadingHololockerWithdraw,
   } = useContractWrite(configHololockerWithdraw);
 
-  const { isLoading: isPendingHololockerWithdraw } = useWaitForTransaction({
+  const { isLoading: isPending, isSuccess } = useWaitForTransaction({
     hash: dataHololockerWithdraw?.hash,
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -39,6 +43,24 @@ export default function CollectionWithdrawButton({ token, tokenIds }: Props) {
     },
   });
 
+  useEffect(() => {
+    if (isPending) {
+      enqueueSnackbar({
+        message: SnackbarMessage.TransactionSubmitted,
+        variant: "info",
+      });
+    }
+  }, [isPending]);
+
+  useEffect(() => {
+    if (isSuccess) {
+      enqueueSnackbar({
+        message: SnackbarMessage.WithdrawSuccess,
+        variant: "success",
+      });
+    }
+  }, [isSuccess]);
+
   async function withdraw() {
     writeHololockerWithdraw?.();
   }
@@ -47,7 +69,7 @@ export default function CollectionWithdrawButton({ token, tokenIds }: Props) {
     <TransactionButton
       onClick={withdraw}
       isLoading={isLoadingHololockerWithdraw}
-      isPending={isPendingHololockerWithdraw}
+      isPending={isPending}
       disabled={tokenIds.length === 0}
       actionText={`Withdraw all withdrawable tokens (${tokenIds.length})`}
     />

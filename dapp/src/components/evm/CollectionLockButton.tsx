@@ -10,7 +10,9 @@ import FunctionKey from "../../utils/functionKey";
 import { useQueryClient } from "@tanstack/react-query";
 import { useModal } from "mui-modal-provider";
 import ApproveCollectionDialog from "../../dialogs/ApproveCollectionDialog";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSnackbar } from "notistack";
+import { SnackbarMessage } from "../../utils/texts";
 
 type Props = {
   token: string;
@@ -18,6 +20,7 @@ type Props = {
 };
 
 export default function CollectionLockButton({ token, tokenIds }: Props) {
+  const { enqueueSnackbar } = useSnackbar();
   const { address } = useAccount();
   const queryClient = useQueryClient();
   const { showModal } = useModal();
@@ -42,24 +45,53 @@ export default function CollectionLockButton({ token, tokenIds }: Props) {
     isLoading: isLoadingHololockerLock,
   } = useContractWrite(configHololockerLock);
 
-  const { isLoading: isPendingHololockerLock } = useWaitForTransaction({
-    hash: dataHololockerLock?.hash,
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [FunctionKey.NFTS],
-      });
-      queryClient.invalidateQueries({
-        queryKey: [FunctionKey.LOCKS],
-      });
-    },
-  });
+  const { isLoading: isPendingHololockerLock, isSuccess: isSuccessLock } =
+    useWaitForTransaction({
+      hash: dataHololockerLock?.hash,
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: [FunctionKey.NFTS],
+        });
+        queryClient.invalidateQueries({
+          queryKey: [FunctionKey.LOCKS],
+        });
+      },
+    });
 
-  const { isLoading: isPendingSetApproval } = useWaitForTransaction({
-    hash: approvalTxHash,
-    onSuccess: () => {
-      refetchIsApproved();
-    },
-  });
+  const { isLoading: isPendingSetApproval, isSuccess: isSuccessApproval } =
+    useWaitForTransaction({
+      hash: approvalTxHash,
+      onSuccess: () => {
+        refetchIsApproved();
+      },
+    });
+
+  useEffect(() => {
+    if (isPendingHololockerLock || isPendingSetApproval) {
+      enqueueSnackbar({
+        message: SnackbarMessage.TransactionSubmitted,
+        variant: "info",
+      });
+    }
+  }, [isPendingHololockerLock, isPendingSetApproval]);
+
+  useEffect(() => {
+    if (isSuccessLock) {
+      enqueueSnackbar({
+        message: SnackbarMessage.LockSuccess,
+        variant: "success",
+      });
+    }
+  }, [isSuccessLock]);
+
+  useEffect(() => {
+    if (isSuccessApproval) {
+      enqueueSnackbar({
+        message: SnackbarMessage.ApprovalSuccess,
+        variant: "success",
+      });
+    }
+  }, [isSuccessApproval]);
 
   async function handleClickButton() {
     if (isApproved) {

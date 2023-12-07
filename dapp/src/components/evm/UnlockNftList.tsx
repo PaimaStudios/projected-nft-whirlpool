@@ -23,7 +23,7 @@ import Grid from "@mui/material/Unstable_Grid2";
 import { hololockerConfig } from "../../contracts";
 import { Countdown } from "../Countdown";
 import { useInterval } from "usehooks-ts";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useGetNftsMetadataEVM } from "../../hooks/evm/useGetNftsMetadataEVM";
 import { NftTokenType } from "alchemy-sdk";
@@ -34,6 +34,8 @@ import FunctionKey from "../../utils/functionKey";
 import { areEqualTokens } from "../../utils/evm/utils";
 import MultipleSelectionUnlockButton from "./MultipleSelectionUnlockButton";
 import MultipleSelectionWithdrawButton from "./MultipleSelectionWithdrawButton";
+import { useSnackbar } from "notistack";
+import { SnackbarMessage } from "../../utils/texts";
 
 // average block time on ETH
 const blockTime = 12n;
@@ -51,6 +53,7 @@ function UnlockNftCard({
   isSelected: boolean;
   onClick?: (token: TokenEVM) => void;
 }) {
+  const { enqueueSnackbar } = useSnackbar();
   const { token, tokenId, nftData } = lockInfo;
   let { unlockTime } = lockInfo;
   if (unlockTime > 0n) {
@@ -73,14 +76,15 @@ function UnlockNftCard({
     data: dataUnlock,
     isLoading: isLoadingUnlock,
   } = useContractWrite(configUnlock);
-  const { isLoading: isPendingUnlock } = useWaitForTransaction({
-    hash: dataUnlock?.hash,
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [FunctionKey.LOCKS],
-      });
-    },
-  });
+  const { isLoading: isPendingUnlock, isSuccess: isSuccessUnlock } =
+    useWaitForTransaction({
+      hash: dataUnlock?.hash,
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: [FunctionKey.LOCKS],
+        });
+      },
+    });
 
   const { config: configWithdraw } = usePrepareHololockerWithdraw({
     address: hololockerConfig.address,
@@ -92,17 +96,45 @@ function UnlockNftCard({
     data: dataWithdraw,
     isLoading: isLoadingWithdraw,
   } = useContractWrite(configWithdraw);
-  const { isLoading: isPendingWithdraw } = useWaitForTransaction({
-    hash: dataWithdraw?.hash,
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [FunctionKey.NFTS],
+  const { isLoading: isPendingWithdraw, isSuccess: isSuccessWithdraw } =
+    useWaitForTransaction({
+      hash: dataWithdraw?.hash,
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: [FunctionKey.NFTS],
+        });
+        queryClient.invalidateQueries({
+          queryKey: [FunctionKey.LOCKS],
+        });
+      },
+    });
+
+  useEffect(() => {
+    if (isPendingUnlock || isPendingWithdraw) {
+      enqueueSnackbar({
+        message: SnackbarMessage.TransactionSubmitted,
+        variant: "info",
       });
-      queryClient.invalidateQueries({
-        queryKey: [FunctionKey.LOCKS],
+    }
+  }, [isPendingUnlock, isPendingWithdraw]);
+
+  useEffect(() => {
+    if (isSuccessUnlock) {
+      enqueueSnackbar({
+        message: SnackbarMessage.UnlockSuccess,
+        variant: "success",
       });
-    },
-  });
+    }
+  }, [isSuccessUnlock]);
+
+  useEffect(() => {
+    if (isSuccessWithdraw) {
+      enqueueSnackbar({
+        message: SnackbarMessage.WithdrawSuccess,
+        variant: "success",
+      });
+    }
+  }, [isSuccessWithdraw]);
 
   async function unlockOrWithdrawNft() {
     if (unlockTime === 0n) {

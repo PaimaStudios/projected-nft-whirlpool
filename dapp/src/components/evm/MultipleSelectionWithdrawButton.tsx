@@ -1,6 +1,6 @@
 "use client";
 import { Button, Stack, Typography } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { TokenEVM } from "../../utils/evm/types";
 import TransactionButton from "../TransactionButton";
 import { hololockerConfig } from "../../contracts";
@@ -8,6 +8,8 @@ import { useAccount, useWaitForTransaction } from "wagmi";
 import FunctionKey from "../../utils/functionKey";
 import { useQueryClient } from "@tanstack/react-query";
 import { writeContract } from "@wagmi/core";
+import { useSnackbar } from "notistack";
+import { SnackbarMessage } from "../../utils/texts";
 
 type Props = {
   selectedTokens: TokenEVM[];
@@ -22,13 +24,14 @@ export default function MultipleSelectionWithdrawButton({
   selectingMultipleWithdraw,
   setSelectingMultipleWithdraw,
 }: Props) {
+  const { enqueueSnackbar } = useSnackbar();
   const queryClient = useQueryClient();
   const { address } = useAccount();
   const [withdrawTxHash, setWithdrawTxHash] = useState<`0x${string}`>();
   const [isLoadingMultipleWithdraw, setIsLoadingMultipleWithdraw] =
     useState(false);
 
-  const { isLoading: isPendingMultipleWithdraw } = useWaitForTransaction({
+  const { isLoading: isPending, isSuccess } = useWaitForTransaction({
     hash: withdrawTxHash,
     onSuccess: () => {
       setSelectingMultipleWithdraw(false);
@@ -38,6 +41,24 @@ export default function MultipleSelectionWithdrawButton({
       });
     },
   });
+
+  useEffect(() => {
+    if (isPending) {
+      enqueueSnackbar({
+        message: SnackbarMessage.TransactionSubmitted,
+        variant: "info",
+      });
+    }
+  }, [isPending]);
+
+  useEffect(() => {
+    if (isSuccess) {
+      enqueueSnackbar({
+        message: SnackbarMessage.WithdrawSuccess,
+        variant: "success",
+      });
+    }
+  }, [isSuccess]);
 
   const handleClickRequestMultipleWithdrawButton = async () => {
     if (!address) return;
@@ -81,7 +102,7 @@ export default function MultipleSelectionWithdrawButton({
         >
           <TransactionButton
             isLoading={isLoadingMultipleWithdraw}
-            isPending={isPendingMultipleWithdraw}
+            isPending={isPending}
             onClick={handleClickRequestMultipleWithdrawButton}
             disabled={selectedTokens.length === 0}
             actionText={`Withdraw selected tokens`}
@@ -91,14 +112,14 @@ export default function MultipleSelectionWithdrawButton({
               setSelectingMultipleWithdraw(!selectingMultipleWithdraw);
               setSelectedTokens([]);
             }}
-            disabled={isLoadingMultipleWithdraw || isPendingMultipleWithdraw}
+            disabled={isLoadingMultipleWithdraw || isPending}
           >
             Cancel
           </Button>
         </Stack>
       )}
 
-      {!isLoadingMultipleWithdraw && !isPendingMultipleWithdraw && (
+      {!isLoadingMultipleWithdraw && !isPending && (
         <Typography textAlign={"center"}>
           Click token cards to select/deselect
         </Typography>

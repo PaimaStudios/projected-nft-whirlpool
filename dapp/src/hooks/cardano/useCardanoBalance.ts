@@ -16,10 +16,7 @@ const fetchBalance = async (walletApi: WalletApi) => {
     return new Value(balance);
   }
   if (balance.length !== 2) {
-    alert({
-      title: "Error",
-      message: "Cannot get wallet balance",
-    });
+    console.error("Cannot get wallet balance");
     return null;
   }
 

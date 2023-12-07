@@ -10,6 +10,8 @@ import { getLockDatum } from "../../utils/cardano/datum";
 import { nftsQueryInvalidationDelay } from "../../utils/cardano/constants";
 import { ButtonProps } from "@mui/material";
 import env from "../../utils/configs/env";
+import { useSnackbar } from "notistack";
+import { SnackbarMessage } from "../../utils/texts";
 
 type Props = {
   tokens: Token[];
@@ -29,6 +31,7 @@ export default function LockNftButton({
   setIsPending,
   ...props
 }: Props) {
+  const { enqueueSnackbar } = useSnackbar();
   const paymentKeyHash = useDappStore((state) => state.paymentKeyHash);
   const lucid = useDappStore((state) => state.lucid);
   const queryClient = useQueryClient();
@@ -67,6 +70,10 @@ export default function LockNftButton({
     }
     const txHash = await signedTx.submit();
     console.log("txhash", txHash);
+    enqueueSnackbar({
+      message: SnackbarMessage.TransactionSubmitted,
+      variant: "info",
+    });
     setIsLoading(false);
     setIsPending(true);
     await lucid.awaitTx(txHash);
@@ -78,6 +85,10 @@ export default function LockNftButton({
     queryClient.invalidateQueries({
       queryKey: [FunctionKey.LOCKS],
     });
+    enqueueSnackbar({
+      message: SnackbarMessage.LockSuccess,
+      variant: "success",
+    });
     setIsPending(false);
     return txHash;
   }
@@ -87,7 +98,10 @@ export default function LockNftButton({
       await lockNft();
     } catch (err: any) {
       console.error(err);
-      alert(`Error: ${err.info || err.message}`);
+      enqueueSnackbar({
+        message: `Error: ${err.info || err.message}`,
+        variant: "error",
+      });
     }
     setIsLoading(false);
     setIsPending(false);

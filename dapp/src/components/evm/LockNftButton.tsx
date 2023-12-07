@@ -5,6 +5,9 @@ import { usePrepareErc721SafeTransferFrom } from "../../generated";
 import TransactionButton from "../TransactionButton";
 import { useQueryClient } from "@tanstack/react-query";
 import FunctionKey from "../../utils/functionKey";
+import { useSnackbar } from "notistack";
+import { useEffect } from "react";
+import { SnackbarMessage } from "../../utils/texts";
 
 type Props = {
   token: string;
@@ -13,6 +16,7 @@ type Props = {
 
 export default function LockNftButton({ token, tokenId }: Props) {
   const { address } = useAccount();
+  const { enqueueSnackbar } = useSnackbar();
   const queryClient = useQueryClient();
 
   const { config } = usePrepareErc721SafeTransferFrom({
@@ -23,7 +27,7 @@ export default function LockNftButton({ token, tokenId }: Props) {
 
   const { write, data, isLoading } = useContractWrite(config);
 
-  const { isLoading: isPending } = useWaitForTransaction({
+  const { isLoading: isPending, isSuccess } = useWaitForTransaction({
     hash: data?.hash,
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -34,6 +38,24 @@ export default function LockNftButton({ token, tokenId }: Props) {
       });
     },
   });
+
+  useEffect(() => {
+    if (isPending) {
+      enqueueSnackbar({
+        message: SnackbarMessage.TransactionSubmitted,
+        variant: "info",
+      });
+    }
+  }, [isPending]);
+
+  useEffect(() => {
+    if (isSuccess) {
+      enqueueSnackbar({
+        message: SnackbarMessage.LockSuccess,
+        variant: "success",
+      });
+    }
+  }, [isSuccess]);
 
   async function lockNft() {
     write?.();

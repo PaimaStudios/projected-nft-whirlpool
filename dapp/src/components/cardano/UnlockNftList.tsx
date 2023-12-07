@@ -35,6 +35,8 @@ import {
   useGetNftsMetadataCardano,
 } from "../../hooks/cardano/useGetNftsMetadataCardano";
 import { Value } from "../../utils/cardano/value";
+import { useSnackbar } from "notistack";
+import { SnackbarMessage } from "../../utils/texts";
 
 // From validator
 const minimumLockTime = BigInt(300000);
@@ -89,6 +91,7 @@ function UnlockNftListItem({
   lockInfo: LockInfoCardano;
   metadata: MetadataCardano | null | undefined;
 }) {
+  const { enqueueSnackbar } = useSnackbar();
   const lucid = useDappStore((state) => state.lucid);
   const address = useDappStore((state) => state.address);
   const paymentKeyHash = useDappStore((state) => state.paymentKeyHash);
@@ -194,9 +197,17 @@ function UnlockNftListItem({
     }
     const txHash = await signedTx.submit();
     console.log("txhash", txHash);
+    enqueueSnackbar({
+      message: SnackbarMessage.TransactionSubmitted,
+      variant: "info",
+    });
     setIsLoading(false);
     setIsPending(true);
     await lucid.awaitTx(txHash);
+    enqueueSnackbar({
+      message: SnackbarMessage.UnlockSuccess,
+      variant: "success",
+    });
     queryClient.invalidateQueries({
       queryKey: [FunctionKey.LOCKS],
     });
@@ -229,9 +240,10 @@ function UnlockNftListItem({
     const lastBlockTime = await getLastBlockTime();
     console.log("lastBlockTime", lastBlockTime);
     if (lastBlockTime < unlockTime!) {
-      alert(
-        "Latest block has not reached unlock time yet. Try again a bit later!",
-      );
+      enqueueSnackbar({
+        message: SnackbarMessage.BlockDidNotReachUnlockTime,
+        variant: "warning",
+      });
       return;
     }
 
@@ -251,9 +263,17 @@ function UnlockNftListItem({
     }
     const txHash = await signedTx.submit();
     console.log("txhash", txHash);
+    enqueueSnackbar({
+      message: SnackbarMessage.TransactionSubmitted,
+      variant: "info",
+    });
     setIsLoading(false);
     setIsPending(true);
     await lucid.awaitTx(txHash);
+    enqueueSnackbar({
+      message: SnackbarMessage.WithdrawSuccess,
+      variant: "success",
+    });
     setTimeout(() => {
       queryClient.invalidateQueries({
         queryKey: [FunctionKey.NFTS],
@@ -274,7 +294,10 @@ function UnlockNftListItem({
       }
     } catch (err: any) {
       console.error(err);
-      alert(`Error: ${err.info || err.message}`);
+      enqueueSnackbar({
+        message: `Error: ${err.info || err.message}`,
+        variant: "error",
+      });
     }
     setIsLoading(false);
     setIsPending(false);
@@ -285,7 +308,10 @@ function UnlockNftListItem({
       await unlockTokens(selectedTokens);
     } catch (err: any) {
       console.error(err);
-      alert(`Error: ${err.info || err.message}`);
+      enqueueSnackbar({
+        message: `Error: ${err.info || err.message}`,
+        variant: "error",
+      });
     }
     setIsLoading(false);
     setIsPending(false);

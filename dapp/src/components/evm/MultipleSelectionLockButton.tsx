@@ -1,6 +1,6 @@
 "use client";
 import { Button, Stack, Typography } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { TokenEVM } from "../../utils/evm/types";
 import TransactionButton from "../TransactionButton";
 import { hololockerConfig } from "../../contracts";
@@ -14,6 +14,8 @@ import {
 } from "@wagmi/core";
 import ApproveCollectionDialog from "../../dialogs/ApproveCollectionDialog";
 import { useModal } from "mui-modal-provider";
+import { SnackbarMessage } from "../../utils/texts";
+import { useSnackbar } from "notistack";
 
 type Props = {
   selectedTokens: TokenEVM[];
@@ -28,6 +30,7 @@ export default function MultipleSelectionLockButton({
   selectingMultipleLock,
   setSelectingMultipleLock,
 }: Props) {
+  const { enqueueSnackbar } = useSnackbar();
   const queryClient = useQueryClient();
   const { address } = useAccount();
   const { showModal } = useModal();
@@ -35,23 +38,52 @@ export default function MultipleSelectionLockButton({
   const [lockTxHash, setLockTxHash] = useState<`0x${string}`>();
   const [isLoadingMultipleLock, setIsLoadingMultipleLock] = useState(false);
 
-  const { isLoading: isPendingMultipleLock } = useWaitForTransaction({
-    hash: lockTxHash,
-    onSuccess: () => {
-      setSelectingMultipleLock(false);
-      setSelectedTokens([]);
-      queryClient.invalidateQueries({
-        queryKey: [FunctionKey.LOCKS],
-      });
-      queryClient.invalidateQueries({
-        queryKey: [FunctionKey.NFTS],
-      });
-    },
-  });
+  const { isLoading: isPendingMultipleLock, isSuccess: isSuccessLock } =
+    useWaitForTransaction({
+      hash: lockTxHash,
+      onSuccess: () => {
+        setSelectingMultipleLock(false);
+        setSelectedTokens([]);
+        queryClient.invalidateQueries({
+          queryKey: [FunctionKey.LOCKS],
+        });
+        queryClient.invalidateQueries({
+          queryKey: [FunctionKey.NFTS],
+        });
+      },
+    });
 
-  const { isLoading: isPendingSetApproval } = useWaitForTransaction({
-    hash: approvalTxHash,
-  });
+  const { isLoading: isPendingSetApproval, isSuccess: isSuccessSetApproval } =
+    useWaitForTransaction({
+      hash: approvalTxHash,
+    });
+
+  useEffect(() => {
+    if (isPendingMultipleLock || isPendingSetApproval) {
+      enqueueSnackbar({
+        message: SnackbarMessage.TransactionSubmitted,
+        variant: "info",
+      });
+    }
+  }, [isPendingMultipleLock, isPendingSetApproval]);
+
+  useEffect(() => {
+    if (isSuccessLock) {
+      enqueueSnackbar({
+        message: SnackbarMessage.LockSuccess,
+        variant: "success",
+      });
+    }
+  }, [isSuccessLock]);
+
+  useEffect(() => {
+    if (isSuccessSetApproval) {
+      enqueueSnackbar({
+        message: SnackbarMessage.ApprovalSuccess,
+        variant: "success",
+      });
+    }
+  }, [isSuccessSetApproval]);
 
   const handleClickRequestMultipleLockButton = async () => {
     if (!address) return;

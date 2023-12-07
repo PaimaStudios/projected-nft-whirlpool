@@ -5,6 +5,9 @@ import { usePrepareHololockerRequestUnlock } from "../../generated";
 import TransactionButton from "../TransactionButton";
 import FunctionKey from "../../utils/functionKey";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSnackbar } from "notistack";
+import { useEffect } from "react";
+import { SnackbarMessage } from "../../utils/texts";
 
 type Props = {
   token: string;
@@ -12,6 +15,7 @@ type Props = {
 };
 
 export default function CollectionUnlockButton({ token, tokenIds }: Props) {
+  const { enqueueSnackbar } = useSnackbar();
   const { address } = useAccount();
   const queryClient = useQueryClient();
 
@@ -27,7 +31,7 @@ export default function CollectionUnlockButton({ token, tokenIds }: Props) {
     isLoading: isLoadingHololockerUnlock,
   } = useContractWrite(configHololockerUnlock);
 
-  const { isLoading: isPendingHololockerUnlock } = useWaitForTransaction({
+  const { isLoading: isPending, isSuccess } = useWaitForTransaction({
     hash: dataHololockerUnlock?.hash,
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -35,6 +39,24 @@ export default function CollectionUnlockButton({ token, tokenIds }: Props) {
       });
     },
   });
+
+  useEffect(() => {
+    if (isPending) {
+      enqueueSnackbar({
+        message: SnackbarMessage.TransactionSubmitted,
+        variant: "info",
+      });
+    }
+  }, [isPending]);
+
+  useEffect(() => {
+    if (isSuccess) {
+      enqueueSnackbar({
+        message: SnackbarMessage.LockSuccess,
+        variant: "success",
+      });
+    }
+  }, [isSuccess]);
 
   async function requestUnlock() {
     writeHololockerUnlock?.();
@@ -44,7 +66,7 @@ export default function CollectionUnlockButton({ token, tokenIds }: Props) {
     <TransactionButton
       onClick={requestUnlock}
       isLoading={isLoadingHololockerUnlock}
-      isPending={isPendingHololockerUnlock}
+      isPending={isPending}
       disabled={tokenIds.length === 0}
       actionText={`Request unlock for all locked tokens (${tokenIds.length})`}
     />

@@ -1,6 +1,6 @@
 "use client";
 import { Button, Stack, Typography } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { TokenEVM } from "../../utils/evm/types";
 import TransactionButton from "../TransactionButton";
 import { hololockerConfig } from "../../contracts";
@@ -8,6 +8,8 @@ import { useAccount, useWaitForTransaction } from "wagmi";
 import FunctionKey from "../../utils/functionKey";
 import { useQueryClient } from "@tanstack/react-query";
 import { writeContract } from "@wagmi/core";
+import { useSnackbar } from "notistack";
+import { SnackbarMessage } from "../../utils/texts";
 
 type Props = {
   selectedTokens: TokenEVM[];
@@ -22,12 +24,13 @@ export default function MultipleSelectionUnlockButton({
   selectingMultipleUnlock,
   setSelectingMultipleUnlock,
 }: Props) {
+  const { enqueueSnackbar } = useSnackbar();
   const queryClient = useQueryClient();
   const { address } = useAccount();
   const [unlockTxHash, setUnlockTxHash] = useState<`0x${string}`>();
   const [isLoadingMultipleUnlock, setIsLoadingMultipleUnlock] = useState(false);
 
-  const { isLoading: isPendingMultipleUnlock } = useWaitForTransaction({
+  const { isLoading: isPending, isSuccess } = useWaitForTransaction({
     hash: unlockTxHash,
     onSuccess: () => {
       setSelectingMultipleUnlock(false);
@@ -37,6 +40,24 @@ export default function MultipleSelectionUnlockButton({
       });
     },
   });
+
+  useEffect(() => {
+    if (isPending) {
+      enqueueSnackbar({
+        message: SnackbarMessage.TransactionSubmitted,
+        variant: "info",
+      });
+    }
+  }, [isPending]);
+
+  useEffect(() => {
+    if (isSuccess) {
+      enqueueSnackbar({
+        message: SnackbarMessage.UnlockSuccess,
+        variant: "success",
+      });
+    }
+  }, [isSuccess]);
 
   const handleClickRequestMultipleUnlockButton = async () => {
     if (!address) return;
@@ -80,7 +101,7 @@ export default function MultipleSelectionUnlockButton({
         >
           <TransactionButton
             isLoading={isLoadingMultipleUnlock}
-            isPending={isPendingMultipleUnlock}
+            isPending={isPending}
             onClick={handleClickRequestMultipleUnlockButton}
             disabled={selectedTokens.length === 0}
             actionText={`Request unlock for selected tokens`}
@@ -90,14 +111,14 @@ export default function MultipleSelectionUnlockButton({
               setSelectingMultipleUnlock(!selectingMultipleUnlock);
               setSelectedTokens([]);
             }}
-            disabled={isLoadingMultipleUnlock || isPendingMultipleUnlock}
+            disabled={isLoadingMultipleUnlock || isPending}
           >
             Cancel
           </Button>
         </Stack>
       )}
 
-      {!isLoadingMultipleUnlock && !isPendingMultipleUnlock && (
+      {!isLoadingMultipleUnlock && !isPending && (
         <Typography textAlign={"center"}>
           Click token cards to select/deselect
         </Typography>
