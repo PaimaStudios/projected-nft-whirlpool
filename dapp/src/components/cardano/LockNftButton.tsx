@@ -9,6 +9,7 @@ import FunctionKey from "../../utils/functionKey";
 import { getLockDatum } from "../../utils/cardano/datum";
 import { nftsQueryInvalidationDelay } from "../../utils/cardano/constants";
 import { ButtonProps } from "@mui/material";
+import env from "../../utils/configs/env";
 
 type Props = {
   tokens: Token[];
@@ -41,10 +42,11 @@ export default function LockNftButton({
     const datum = getLockDatum({ ownerPaymentKeyHash: paymentKeyHash });
     console.log("datum", datum);
 
-    // todo Remove after testing
-    tokens = tokens.map((token) => {
-      return new Token(token.asset, 1n);
-    });
+    if (env.REACT_APP_TESTNET) {
+      tokens = tokens.map((token) => {
+        return new Token(token.asset, 1n);
+      });
+    }
 
     const tx = await lucid
       .newTx()
