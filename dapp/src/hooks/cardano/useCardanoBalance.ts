@@ -1,5 +1,4 @@
 import { Data, WalletApi } from "lucid-cardano";
-import { useEffect, useState } from "react";
 
 import { useCardanoWalletApi } from "./useCardanoWalletApi";
 import { useDappStore } from "../../store";
