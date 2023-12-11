@@ -16,6 +16,7 @@ type Props = {
   setSelectedTokens: React.Dispatch<React.SetStateAction<TokenEVM[]>>;
   selectingMultipleWithdraw: boolean;
   setSelectingMultipleWithdraw: React.Dispatch<React.SetStateAction<boolean>>;
+  selectAllTokens: () => void;
 };
 
 export default function MultipleSelectionWithdrawButton({
@@ -23,6 +24,7 @@ export default function MultipleSelectionWithdrawButton({
   setSelectedTokens,
   selectingMultipleWithdraw,
   setSelectingMultipleWithdraw,
+  selectAllTokens,
 }: Props) {
   const { enqueueSnackbar } = useSnackbar();
   const queryClient = useQueryClient();
@@ -38,6 +40,9 @@ export default function MultipleSelectionWithdrawButton({
       setSelectedTokens([]);
       queryClient.invalidateQueries({
         queryKey: [FunctionKey.LOCKS],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [FunctionKey.NFTS],
       });
     },
   });
@@ -100,6 +105,12 @@ export default function MultipleSelectionWithdrawButton({
             gap: 2,
           }}
         >
+          <Button
+            onClick={selectAllTokens}
+            disabled={isLoadingMultipleWithdraw || isPending}
+          >
+            Select all
+          </Button>
           <TransactionButton
             isLoading={isLoadingMultipleWithdraw}
             isPending={isPending}

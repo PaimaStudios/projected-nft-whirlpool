@@ -16,6 +16,7 @@ type Props = {
   setSelectedTokens: React.Dispatch<React.SetStateAction<TokenEVM[]>>;
   selectingMultipleUnlock: boolean;
   setSelectingMultipleUnlock: React.Dispatch<React.SetStateAction<boolean>>;
+  selectAllTokens: () => void;
 };
 
 export default function MultipleSelectionUnlockButton({
@@ -23,6 +24,7 @@ export default function MultipleSelectionUnlockButton({
   setSelectedTokens,
   selectingMultipleUnlock,
   setSelectingMultipleUnlock,
+  selectAllTokens,
 }: Props) {
   const { enqueueSnackbar } = useSnackbar();
   const queryClient = useQueryClient();
@@ -99,6 +101,12 @@ export default function MultipleSelectionUnlockButton({
             gap: 2,
           }}
         >
+          <Button
+            onClick={selectAllTokens}
+            disabled={isLoadingMultipleUnlock || isPending}
+          >
+            Select all
+          </Button>
           <TransactionButton
             isLoading={isLoadingMultipleUnlock}
             isPending={isPending}

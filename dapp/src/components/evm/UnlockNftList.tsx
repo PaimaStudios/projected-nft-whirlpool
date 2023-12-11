@@ -385,6 +385,9 @@ export default function UnlockNftList() {
             setSelectedTokens={setSelectedTokens}
             selectingMultipleUnlock={selectingMultipleUnlock}
             setSelectingMultipleUnlock={setSelectingMultipleUnlock}
+            selectAllTokens={() => {
+              setSelectedTokens(locksForUnlock);
+            }}
           />
         )}
         {locksForWithdraw.length > 1 && !selectingMultipleUnlock && (
@@ -393,6 +396,9 @@ export default function UnlockNftList() {
             setSelectedTokens={setSelectedTokens}
             selectingMultipleWithdraw={selectingMultipleWithdraw}
             setSelectingMultipleWithdraw={setSelectingMultipleWithdraw}
+            selectAllTokens={() => {
+              setSelectedTokens(locksForWithdraw);
+            }}
           />
         )}
       </Stack>

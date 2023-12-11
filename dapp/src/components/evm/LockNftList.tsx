@@ -171,6 +171,14 @@ export default function LockNftList() {
   if (Object.keys(nftGroups).length === 0) {
     return <Typography>None.</Typography>;
   }
+  const tokens = Object.values(nftGroups)
+    .flat()
+    .map((nft) => {
+      return {
+        token: nft.contract.address as `0x${string}`,
+        tokenId: BigInt(nft.tokenId),
+      };
+    });
   return (
     <Stack sx={{ gap: 2, width: "100%", alignItems: "center" }}>
       {(nftsData.pages[0]?.ownedNfts.length ?? 0) > 1 && (
@@ -179,6 +187,9 @@ export default function LockNftList() {
           setSelectedTokens={setSelectedTokens}
           selectingMultipleLock={selectingMultipleLock}
           setSelectingMultipleLock={setSelectingMultipleLock}
+          selectAllTokens={() => {
+            setSelectedTokens(tokens);
+          }}
         />
       )}
       {Object.keys(nftGroups).map((nftContractAddress) => (
