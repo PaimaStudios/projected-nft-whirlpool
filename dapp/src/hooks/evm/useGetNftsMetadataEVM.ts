@@ -4,10 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import FunctionKey from "../../utils/functionKey";
 
 const fetchNftsMetadata = async (
-  alchemy: Alchemy | undefined,
+  alchemy: Alchemy | undefined | null,
   nfts: NftMetadataBatchToken[],
 ) => {
-  if (alchemy === undefined || nfts.length === 0) {
+  if (alchemy == null || nfts.length === 0) {
     return null;
   }
   // Alchemy API call maximum https://docs.alchemy.com/reference/getnftmetadatabatch-v3

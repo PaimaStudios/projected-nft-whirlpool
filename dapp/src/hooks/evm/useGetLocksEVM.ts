@@ -1,9 +1,9 @@
 "use client";
 import { useAccount, usePublicClient } from "wagmi";
-import { hololockerConfig } from "../../contracts";
 import { LockInfoEVM } from "../../utils/evm/types";
 import FunctionKey from "../../utils/functionKey";
 import { useQuery } from "@tanstack/react-query";
+import { hololockerConfig } from "../../utils/evm/contracts";
 
 const fetchLocks = async (publicClient: any, address: string | undefined) => {
   if (address === undefined) {

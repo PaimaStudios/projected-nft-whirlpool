@@ -10,11 +10,11 @@ const fetchNfts = async ({
   queryParams,
 }: {
   address: string | undefined;
-  alchemy: Alchemy | undefined;
+  alchemy: Alchemy | undefined | null;
   queryParams: QueryFunctionContext<any, string>;
 }) => {
   const { pageParam } = queryParams;
-  if (address === undefined || alchemy === undefined) {
+  if (address === undefined || alchemy == null) {
     return null;
   }
   return await alchemy.nft.getNftsForOwner(address, {

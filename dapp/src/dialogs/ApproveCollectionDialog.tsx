@@ -10,12 +10,12 @@ import {
 } from "@mui/material";
 import { Close } from "@mui/icons-material";
 import { usePrepareErc721SetApprovalForAll } from "../generated";
-import { hololockerConfig } from "../contracts";
 import { useContractWrite, useWaitForTransaction } from "wagmi";
 import TransactionButton from "../components/TransactionButton";
 import { useEffect } from "react";
 import { formatEVMAddress } from "../utils/evm/utils";
 import CheckIcon from "@mui/icons-material/Check";
+import { hololockerConfig } from "../utils/evm/contracts";
 
 type ApproveCollectionSectionProps = {
   onSuccess: () => void;

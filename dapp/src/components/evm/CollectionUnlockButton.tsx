@@ -1,6 +1,6 @@
 "use client";
 import { useAccount, useContractWrite, useWaitForTransaction } from "wagmi";
-import { hololockerConfig } from "../../contracts";
+import { hololockerConfig } from "../../utils/evm/contracts";
 import { usePrepareHololockerRequestUnlock } from "../../generated";
 import TransactionButton from "../TransactionButton";
 import FunctionKey from "../../utils/functionKey";

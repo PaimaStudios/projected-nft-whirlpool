@@ -3,7 +3,7 @@ import * as React from "react";
 import "@rainbow-me/rainbowkit/styles.css";
 import { WagmiConfig } from "wagmi";
 
-import { chains, config } from "./utils/configs/wagmi";
+import { chains, config } from "./utils/evm/wagmi";
 import ModalProvider from "mui-modal-provider";
 import { useLucid } from "./hooks/cardano/useLucid";
 import { useDappStore } from "./store";

@@ -1,6 +1,6 @@
 "use client";
 import { useAccount, useContractWrite, useWaitForTransaction } from "wagmi";
-import { hololockerConfig } from "../../contracts";
+import { hololockerConfig } from "../../utils/evm/contracts";
 import { usePrepareErc721SafeTransferFrom } from "../../generated";
 import TransactionButton from "../TransactionButton";
 import { useQueryClient } from "@tanstack/react-query";

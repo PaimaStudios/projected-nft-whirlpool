@@ -3,7 +3,7 @@ import { Button, Stack, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import { TokenEVM } from "../../utils/evm/types";
 import TransactionButton from "../TransactionButton";
-import { hololockerConfig } from "../../contracts";
+import { hololockerConfig } from "../../utils/evm/contracts";
 import { erc721ABI, useAccount, useWaitForTransaction } from "wagmi";
 import FunctionKey from "../../utils/functionKey";
 import { useQueryClient } from "@tanstack/react-query";

@@ -20,7 +20,7 @@ import { useContractWrite, useWaitForTransaction } from "wagmi";
 import { useGetLocksEVM } from "../../hooks/evm/useGetLocksEVM";
 import { LockInfoEVM, TokenEVM } from "../../utils/evm/types";
 import Grid from "@mui/material/Unstable_Grid2";
-import { hololockerConfig } from "../../contracts";
+import { hololockerConfig } from "../../utils/evm/contracts";
 import { Countdown } from "../Countdown";
 import { useInterval } from "usehooks-ts";
 import { useEffect, useState } from "react";
