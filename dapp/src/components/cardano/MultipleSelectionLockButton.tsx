@@ -9,6 +9,7 @@ type Props = {
   setSelectedTokens: React.Dispatch<React.SetStateAction<Token[]>>;
   selectingMultipleLock: boolean;
   setSelectingMultipleLock: React.Dispatch<React.SetStateAction<boolean>>;
+  selectAllTokens: () => void;
 };
 
 export default function MultipleSelectionLockButton({
@@ -16,6 +17,7 @@ export default function MultipleSelectionLockButton({
   setSelectedTokens,
   selectingMultipleLock,
   setSelectingMultipleLock,
+  selectAllTokens,
 }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [isPending, setIsPending] = useState(false);
@@ -42,6 +44,9 @@ export default function MultipleSelectionLockButton({
             gap: 2,
           }}
         >
+          <Button onClick={selectAllTokens} disabled={isLoading || isPending}>
+            Select all
+          </Button>
           <LockNftButton
             tokens={selectedTokens}
             actionText="Lock selected tokens"

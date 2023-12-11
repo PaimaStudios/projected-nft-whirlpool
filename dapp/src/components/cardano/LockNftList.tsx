@@ -115,6 +115,9 @@ export default function LockNftList() {
         setSelectedTokens={setSelectedTokens}
         selectingMultipleLock={selectMultiple}
         setSelectingMultipleLock={setSelectMultiple}
+        selectAllTokens={() => {
+          setSelectedTokens(tokens);
+        }}
       />
       <FormControlLabel
         control={
