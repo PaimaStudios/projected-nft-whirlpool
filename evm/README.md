@@ -3,7 +3,7 @@
 This is a Projected NFT Whirlpool EVM smart contract.  
 Sepolia is used as a testnet. Get test tokens [here](https://sepoliafaucet.com/)
 
-<!-- Deployed on Sepolia: [0x](https://sepolia.etherscan.io/address/0x) -->
+Deployed at 0x963ba25745aEE135EdCFC2d992D5A939d42738B6: [Ethereum Sepolia](https://sepolia.etherscan.io/address/0x963ba25745aEE135EdCFC2d992D5A939d42738B6), [Arbitrum Sepolia](https://sepolia.arbiscan.io/address/0x963ba25745aEE135EdCFC2d992D5A939d42738B6)
 
 ## Overview
 
