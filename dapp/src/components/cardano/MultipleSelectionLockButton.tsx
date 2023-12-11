@@ -3,8 +3,6 @@ import { Button, Stack, Typography } from "@mui/material";
 import LockNftButton from "./LockNftButton";
 import { Token } from "../../utils/cardano/token";
 import { useState } from "react";
-import { useSnackbar } from "notistack";
-import { SnackbarMessage } from "../../utils/texts";
 
 type Props = {
   selectedTokens: Token[];
@@ -19,7 +17,6 @@ export default function MultipleSelectionLockButton({
   selectingMultipleLock,
   setSelectingMultipleLock,
 }: Props) {
-  const { enqueueSnackbar } = useSnackbar();
   const [isLoading, setIsLoading] = useState(false);
   const [isPending, setIsPending] = useState(false);
   return !selectingMultipleLock ? (
@@ -28,10 +25,7 @@ export default function MultipleSelectionLockButton({
         variant="contained"
         size="large"
         onClick={() => {
-          enqueueSnackbar({
-            message: SnackbarMessage.TransactionSubmitted,
-            variant: "info",
-          });
+          setSelectingMultipleLock(!selectingMultipleLock);
         }}
       >
         Select multiple tokens to lock
