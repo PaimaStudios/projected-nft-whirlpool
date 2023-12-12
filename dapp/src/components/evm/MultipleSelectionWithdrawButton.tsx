@@ -100,7 +100,7 @@ export default function MultipleSelectionWithdrawButton({
       {selectingMultipleWithdraw && (
         <Stack
           sx={{
-            flexDirection: "row",
+            flexDirection: { xs: "column", sm: "row" },
             justifyContent: "center",
             gap: 2,
           }}

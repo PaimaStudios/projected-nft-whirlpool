@@ -20,7 +20,7 @@ import CollectionLockButton from "./CollectionLockButton";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useState } from "react";
 import { TokenEVM } from "../../utils/evm/types";
-import { areEqualTokens } from "../../utils/evm/utils";
+import { areEqualTokens, formatEVMAddress } from "../../utils/evm/utils";
 import MultipleSelectionLockButton from "./MultipleSelectionLockButton";
 
 function LockNftCard({
@@ -88,7 +88,7 @@ function LockNftListItem({
     <Accordion TransitionProps={{ unmountOnExit: true }} sx={{ width: "100%" }}>
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Stack>
-          <Typography>{nftContractAddress}</Typography>
+          <Typography>{formatEVMAddress(nftContractAddress)}</Typography>
           <Typography fontWeight={600}>
             {nfts[0].contract.name ?? ""}
           </Typography>
@@ -109,7 +109,12 @@ function LockNftListItem({
             {nfts
               .sort((a, b) => Number(a.tokenId) - Number(b.tokenId))
               .map((nft) => (
-                <Grid xs={4} key={`${nft.contract.address}-${nft.tokenId}`}>
+                <Grid
+                  xs={6}
+                  sm={4}
+                  md={3}
+                  key={`${nft.contract.address}-${nft.tokenId}`}
+                >
                   <LockNftCard
                     nft={nft}
                     displayImage={someTokenHasImage}

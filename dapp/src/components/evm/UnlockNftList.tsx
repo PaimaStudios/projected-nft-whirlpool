@@ -31,7 +31,7 @@ import CollectionUnlockButton from "./CollectionUnlockButton";
 import CollectionWithdrawButton from "./CollectionWithdrawButton";
 import { useQueryClient } from "@tanstack/react-query";
 import FunctionKey from "../../utils/functionKey";
-import { areEqualTokens } from "../../utils/evm/utils";
+import { areEqualTokens, formatEVMAddress } from "../../utils/evm/utils";
 import MultipleSelectionUnlockButton from "./MultipleSelectionUnlockButton";
 import MultipleSelectionWithdrawButton from "./MultipleSelectionWithdrawButton";
 import { useSnackbar } from "notistack";
@@ -235,7 +235,7 @@ function UnlockNftListItem({
     >
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Stack>
-          <Typography>{token}</Typography>
+          <Typography>{formatEVMAddress(token.toLowerCase())}</Typography>
           <Typography fontWeight={600}>
             {locks[0].nftData?.contract.name ?? ""}
           </Typography>
@@ -279,7 +279,7 @@ function UnlockNftListItem({
             {locks
               .sort((a, b) => Number(a.tokenId) - Number(b.tokenId))
               .map((lock) => (
-                <Grid xs={4} key={`${token}-${lock.tokenId}`}>
+                <Grid xs={6} sm={4} md={3} key={`${token}-${lock.tokenId}`}>
                   <UnlockNftCard
                     key={`${lock.token}-${lock.tokenId}`}
                     lockInfo={lock}

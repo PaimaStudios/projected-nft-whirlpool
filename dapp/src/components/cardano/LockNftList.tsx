@@ -131,7 +131,12 @@ export default function LockNftList() {
       />
       <Grid container spacing={2} sx={{ width: "100%" }}>
         {tokens.map((nft) => (
-          <Grid xs={3} key={`${nft.getNameUtf8()}-${nft.getUnit()}`}>
+          <Grid
+            xs={6}
+            sm={4}
+            md={3}
+            key={`${nft.getNameUtf8()}-${nft.getUnit()}`}
+          >
             <LockNftListItem
               nft={nft}
               metadata={nftMetadata?.[nft.asset.policyId]?.[nft.asset.name]}

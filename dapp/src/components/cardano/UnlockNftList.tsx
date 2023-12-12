@@ -410,7 +410,7 @@ function UnlockNftListItem({
           )}
           <Grid container spacing={2} sx={{ width: "100%" }}>
             {tokens.map((token) => (
-              <Grid xs={3} key={token.getUnit()}>
+              <Grid xs={6} sm={4} md={3} key={token.getUnit()}>
                 <UnlockNftCard
                   token={token}
                   metadata={

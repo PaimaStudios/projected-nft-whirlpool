@@ -96,7 +96,7 @@ export default function MultipleSelectionUnlockButton({
       {selectingMultipleUnlock && (
         <Stack
           sx={{
-            flexDirection: "row",
+            flexDirection: { xs: "column", sm: "row" },
             justifyContent: "center",
             gap: 2,
           }}

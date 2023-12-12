@@ -39,7 +39,7 @@ export default function MultipleSelectionLockButton({
       {selectingMultipleLock && (
         <Stack
           sx={{
-            flexDirection: "row",
+            flexDirection: { xs: "column", sm: "row" },
             justifyContent: "center",
             gap: 2,
           }}

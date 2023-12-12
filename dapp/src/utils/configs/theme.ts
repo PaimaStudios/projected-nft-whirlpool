@@ -1,6 +1,6 @@
-import { createTheme } from "@mui/material/styles";
+import { createTheme, responsiveFontSizes } from "@mui/material/styles";
 
-export const theme = createTheme({
+export let theme = createTheme({
   palette: {
     mode: "dark",
     primary: { main: "#19b17b" },
@@ -28,5 +28,14 @@ export const theme = createTheme({
         },
       },
     },
+    MuiToolbar: {
+      styleOverrides: {
+        root: {
+          paddingLeft: 0,
+          paddingRight: 0,
+        },
+      },
+    },
   },
 });
+theme = responsiveFontSizes(theme);

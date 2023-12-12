@@ -8,7 +8,9 @@ export default function UnlockNftSection() {
   const chainType = useGetChainType();
   return (
     <Stack sx={{ alignItems: "center", gap: 2, width: "100%" }}>
-      <Typography variant="h3">Projected tokens</Typography>
+      <Typography variant="h3" textAlign={"center"}>
+        Projected tokens
+      </Typography>
       {chainType === "EVM" ? (
         <UnlockNftListEVM />
       ) : chainType === "Cardano" ? (
