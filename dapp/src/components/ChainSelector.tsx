@@ -3,6 +3,7 @@ import { useChainModal } from "@rainbow-me/rainbowkit";
 import { useGetChainType } from "../hooks/useGetChainType";
 import { useNetwork } from "wagmi";
 import { isChainSupported } from "../utils/evm/chains";
+import slugify from "slugify";
 
 type Props = {
   text?: string;
@@ -18,12 +19,27 @@ export default function ChainSelector({ text }: Props) {
       openChainModalEVM?.();
     }
   };
+  console.log("chain", chainEVM);
 
-  if (chainType !== "EVM") {
+  if (!chainEVM) {
     return <></>;
   }
-  const chainName =
-    text ??
-    (isChainSupported(chainEVM?.id) ? chainEVM?.name : "Unsupported network");
-  return <Button onClick={handleClickWhenConnected}>{chainName}</Button>;
+
+  return (
+    <Button onClick={handleClickWhenConnected}>
+      {isChainSupported(chainEVM.id) ? (
+        <img
+          src={`/chains/${slugify(chainEVM.name)}.svg`}
+          alt={`${chainEVM.name} network icon`}
+        />
+      ) : (
+        text ?? (
+          <img
+            src={`/chains/unknown.svg`}
+            alt={`${chainEVM.name} network icon`}
+          />
+        )
+      )}
+    </Button>
+  );
 }
