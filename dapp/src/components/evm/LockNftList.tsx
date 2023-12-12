@@ -22,6 +22,7 @@ import { useState } from "react";
 import { TokenEVM } from "../../utils/evm/types";
 import { areEqualTokens, formatEVMAddress } from "../../utils/evm/utils";
 import MultipleSelectionLockButton from "./MultipleSelectionLockButton";
+import CopyableTypography from "../CopyableTypography";
 
 function LockNftCard({
   nft,
@@ -88,7 +89,10 @@ function LockNftListItem({
     <Accordion TransitionProps={{ unmountOnExit: true }} sx={{ width: "100%" }}>
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Stack>
-          <Typography>{formatEVMAddress(nftContractAddress)}</Typography>
+          <CopyableTypography
+            textDisplay={formatEVMAddress(nftContractAddress) ?? ""}
+            textValue={nftContractAddress}
+          />
           <Typography fontWeight={600}>
             {nfts[0].contract.name ?? ""}
           </Typography>

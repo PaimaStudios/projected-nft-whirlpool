@@ -36,6 +36,7 @@ import MultipleSelectionUnlockButton from "./MultipleSelectionUnlockButton";
 import MultipleSelectionWithdrawButton from "./MultipleSelectionWithdrawButton";
 import { useSnackbar } from "notistack";
 import { SnackbarMessage } from "../../utils/texts";
+import CopyableTypography from "../CopyableTypography";
 
 // average block time on ETH
 const blockTime = 12n;
@@ -235,7 +236,10 @@ function UnlockNftListItem({
     >
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Stack>
-          <Typography>{formatEVMAddress(token.toLowerCase())}</Typography>
+          <CopyableTypography
+            textDisplay={formatEVMAddress(token.toLowerCase()) ?? ""}
+            textValue={token.toLowerCase()}
+          />
           <Typography fontWeight={600}>
             {locks[0].nftData?.contract.name ?? ""}
           </Typography>

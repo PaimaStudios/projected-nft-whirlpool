@@ -13,7 +13,7 @@ export default function IsConnectedWrapper({ children }: PropsWithChildren) {
 
   if (chainType == null) {
     return (
-      <Stack sx={{ my: 4, gap: 2, alignItems: "center" }}>
+      <Stack sx={{ my: 4, gap: 2, alignItems: "center", textAlign: "center" }}>
         <Typography>
           Connect your wallet to get started with using the Projected NFT
           Whirlpool dApp
