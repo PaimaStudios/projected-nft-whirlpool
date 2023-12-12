@@ -33,7 +33,6 @@ const fetchNftsMetadata = async (
       }
       assetsReqParam[asset.policyId].push(asset.name);
     });
-    console.log("assets param", assetsReqParam);
 
     const nftInfo = await paginatedMetadataNft(
       env.REACT_APP_CARDANO_API_URL_BASE,

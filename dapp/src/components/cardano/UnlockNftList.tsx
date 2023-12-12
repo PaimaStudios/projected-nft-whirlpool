@@ -123,11 +123,7 @@ function UnlockNftListItem({
   };
 
   async function unlockTokens(partialWithdrawTokens?: Token[]) {
-    console.log("tokens to unlock", partialWithdrawTokens);
     setIsLoading(true);
-    console.log("lockinfo", lockInfo);
-    console.log("lucid", lucid);
-    console.log("paymentKeyHash", paymentKeyHash);
     if (!lucid || !paymentKeyHash || !address || actionOutputIndex == null) {
       throw new Error("Prerequisites missing!");
     }
@@ -140,15 +136,12 @@ function UnlockNftListItem({
       },
     ]);
     const inputUtxo = utxos[0];
-    console.log("utxos", utxos);
-    console.log("inputUtxo", inputUtxo);
 
     if (!inputUtxo) {
       throw new Error("Input UTxO not found!");
     }
 
     const lastBlockTime = await getLastBlockTime();
-    console.log("lastBlockTime", lastBlockTime);
 
     const datum = getUnlockDatum({
       ownerPaymentKeyHash: paymentKeyHash,
@@ -156,8 +149,6 @@ function UnlockNftListItem({
       outputIndex: BigInt(actionOutputIndex),
       unlockTime: BigInt(lastBlockTime + ttl) + minimumLockTime,
     });
-    console.log("datum", datum);
-    console.log("plutusDatum", plutusDatum);
     const valueToUnlock = new Value(
       inputUtxo.assets["lovelace"],
       partialWithdrawTokens ?? tokens,
@@ -168,8 +159,6 @@ function UnlockNftListItem({
       tokens.filter((token) => !partialWithdrawTokens?.includes(token)),
     );
     const assetsToLeaveBe = valueToLeaveBe.toAssetsMap();
-    console.log("assetsToUnlock", assetsToUnlock);
-    console.log("assetsToLeaveBe", assetsToLeaveBe);
     let tx = lucid
       .newTx()
       .collectFrom(
@@ -216,9 +205,6 @@ function UnlockNftListItem({
 
   async function withdrawTokens() {
     setIsLoading(true);
-    console.log("lockinfo", lockInfo);
-    console.log("lucid", lucid);
-    console.log("paymentKeyHash", paymentKeyHash);
     if (!lucid || !paymentKeyHash || !address || actionOutputIndex == null) {
       throw new Error("Prerequisites missing!");
     }
@@ -230,15 +216,12 @@ function UnlockNftListItem({
       },
     ]);
     const inputUtxo = utxos[0];
-    console.log("utxos", utxos);
-    console.log("inputUtxo", inputUtxo);
 
     if (!inputUtxo) {
       throw new Error("Input UTxO not found!");
     }
 
     const lastBlockTime = await getLastBlockTime();
-    console.log("lastBlockTime", lastBlockTime);
     if (lastBlockTime < unlockTime!) {
       enqueueSnackbar({
         message: SnackbarMessage.BlockDidNotReachUnlockTime,
@@ -441,7 +424,6 @@ export default function UnlockNftList() {
     return <CircularProgress />;
   }
   const unclaimedLocks = locks.filter((lock) => lock.status !== "Claim");
-  console.log("locks", unclaimedLocks);
 
   if (unclaimedLocks.length === 0) {
     return <Typography>None.</Typography>;

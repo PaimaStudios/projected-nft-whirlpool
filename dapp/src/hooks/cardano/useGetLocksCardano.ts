@@ -23,10 +23,7 @@ const fetchLocks = async (paymentKeyHash: string) => {
     );
     const responseData: ProjectedNftCardanoEventsResponse = request.data;
     const locksMap: Record<string, LockInfoCardano> = {};
-    console.log("fetching locks for", paymentKeyHash);
-    console.log("response", responseData);
     responseData.forEach((dat) => {
-      // console.log('dat', dat);
       if (dat.status === "Invalid") return;
       if (dat.ownerAddress !== paymentKeyHash) return;
 
@@ -91,7 +88,6 @@ const fetchLocks = async (paymentKeyHash: string) => {
           break;
       }
     });
-    console.log("locksMap", locksMap);
     const locks: LockInfoCardano[] = Object.values(locksMap).sort(
       (a, b) => a.actionSlot - b.actionSlot,
     );

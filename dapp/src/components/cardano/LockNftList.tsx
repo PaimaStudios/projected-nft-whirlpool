@@ -79,8 +79,6 @@ export default function LockNftList() {
   const { data: nftMetadata } = useGetNftsMetadataCardano(
     balance?.getTokens().map((token) => token.asset) ?? [],
   );
-  console.log("balance", balance);
-  console.log("nft metadata", nftMetadata);
 
   const handleSelect = (token: Token) => {
     if (selectedTokens.includes(token)) {

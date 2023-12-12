@@ -25,7 +25,6 @@ export const useDappStore = create<State & Actions>((set) => ({
     set(() => ({ lucid }));
     if (lucid) {
       const address = await lucid?.wallet.address();
-      console.log("keys", getAddressKeyHashes(lucid, address));
       const paymentKeyHash = getAddressKeyHashes(lucid, address).paymentKeyHash;
       set(() => ({
         address,

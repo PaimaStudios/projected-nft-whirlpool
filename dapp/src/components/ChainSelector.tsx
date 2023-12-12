@@ -19,7 +19,6 @@ export default function ChainSelector({ text }: Props) {
       openChainModalEVM?.();
     }
   };
-  console.log("chain", chainEVM);
 
   if (!chainEVM) {
     return <></>;

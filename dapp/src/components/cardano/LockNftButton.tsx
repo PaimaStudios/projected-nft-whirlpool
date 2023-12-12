@@ -37,13 +37,10 @@ export default function LockNftButton({
   const queryClient = useQueryClient();
 
   async function lockNft() {
-    console.log("lucid", lucid);
-    console.log("paymentKeyHash", paymentKeyHash);
     if (!lucid || !paymentKeyHash) return;
 
     const validatorAddress = lucid.utils.validatorToAddress(validator);
     const datum = getLockDatum({ ownerPaymentKeyHash: paymentKeyHash });
-    console.log("datum", datum);
 
     if (env.REACT_APP_TESTNET) {
       tokens = tokens.map((token) => {
