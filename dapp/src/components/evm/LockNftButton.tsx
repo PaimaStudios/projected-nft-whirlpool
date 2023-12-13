@@ -1,13 +1,13 @@
 "use client";
-import { useAccount, useContractWrite, useWaitForTransaction } from "wagmi";
+import { erc721ABI, useAccount, useWaitForTransaction } from "wagmi";
 import { hololockerConfig } from "../../utils/evm/contracts";
-import { usePrepareErc721SafeTransferFrom } from "../../generated";
 import TransactionButton from "../TransactionButton";
 import { useQueryClient } from "@tanstack/react-query";
 import FunctionKey from "../../utils/functionKey";
 import { useSnackbar } from "notistack";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { SnackbarMessage } from "../../utils/texts";
+import { writeContract } from "@wagmi/core";
 
 type Props = {
   token: string;
@@ -18,17 +18,11 @@ export default function LockNftButton({ token, tokenId }: Props) {
   const { address } = useAccount();
   const { enqueueSnackbar } = useSnackbar();
   const queryClient = useQueryClient();
-
-  const { config } = usePrepareErc721SafeTransferFrom({
-    address: token as `0x${string}`,
-    args: [address!, hololockerConfig.address, tokenId],
-    enabled: !!address,
-  });
-
-  const { write, data, isLoading } = useContractWrite(config);
+  const [isLoading, setIsLoading] = useState(false);
+  const [txHash, setTxHash] = useState<`0x${string}`>();
 
   const { isLoading: isPending, isSuccess } = useWaitForTransaction({
-    hash: data?.hash,
+    hash: txHash,
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [FunctionKey.NFTS],
@@ -58,7 +52,21 @@ export default function LockNftButton({ token, tokenId }: Props) {
   }, [isSuccess]);
 
   async function lockNft() {
-    write?.();
+    if (!address) return;
+    setIsLoading(true);
+    try {
+      const { hash } = await writeContract({
+        abi: erc721ABI,
+        address: token as `0x${string}`,
+        functionName: "safeTransferFrom",
+        args: [address, hololockerConfig.address, tokenId],
+      });
+      setTxHash(hash);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (

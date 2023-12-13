@@ -9,13 +9,13 @@ import {
   Typography,
 } from "@mui/material";
 import { Close } from "@mui/icons-material";
-import { usePrepareErc721SetApprovalForAll } from "../generated";
-import { useContractWrite, useWaitForTransaction } from "wagmi";
+import { useWaitForTransaction } from "wagmi";
 import TransactionButton from "../components/TransactionButton";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { formatEVMAddress } from "../utils/evm/utils";
 import CheckIcon from "@mui/icons-material/Check";
 import { hololockerConfig } from "../utils/evm/contracts";
+import { erc721ABI, writeContract } from "@wagmi/core";
 
 type ApproveCollectionSectionProps = {
   onSuccess: () => void;
@@ -35,19 +35,11 @@ function ApproveCollectionSection({
   onSuccess,
   onTxSubmit,
 }: ApproveCollectionSectionProps) {
-  const { config: configSetApproval } = usePrepareErc721SetApprovalForAll({
-    address: token as `0x${string}`,
-    args: [hololockerConfig.address, true],
-  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [txHash, setTxHash] = useState<`0x${string}`>();
 
-  const {
-    write: writeSetApproval,
-    data: dataSetApproval,
-    isLoading: isLoadingSetApproval,
-  } = useContractWrite(configSetApproval);
-
-  const { isLoading: isPendingSetApproval, isSuccess } = useWaitForTransaction({
-    hash: dataSetApproval?.hash,
+  const { isLoading: isPending, isSuccess } = useWaitForTransaction({
+    hash: txHash,
 
     onSuccess: () => {
       onSuccess();
@@ -55,13 +47,26 @@ function ApproveCollectionSection({
   });
 
   useEffect(() => {
-    if (isPendingSetApproval && dataSetApproval) {
-      onTxSubmit(dataSetApproval.hash);
+    if (isPending && txHash) {
+      onTxSubmit(txHash);
     }
-  }, [isPendingSetApproval]);
+  }, [isPending]);
 
   async function handleClickApprove() {
-    writeSetApproval?.();
+    setIsLoading(true);
+    try {
+      const { hash } = await writeContract({
+        abi: erc721ABI,
+        address: token as `0x${string}`,
+        functionName: "setApprovalForAll",
+        args: [hololockerConfig.address, true],
+      });
+      setTxHash(hash);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -72,8 +77,8 @@ function ApproveCollectionSection({
       ) : (
         <TransactionButton
           onClick={handleClickApprove}
-          isLoading={isLoadingSetApproval}
-          isPending={isPendingSetApproval}
+          isLoading={isLoading}
+          isPending={isPending}
           actionText={`Approve`}
         />
       )}

@@ -86,7 +86,7 @@ function LockNftListItem({
 }) {
   const someTokenHasImage = !!nfts.find((nft) => nft.media.length > 0);
   return (
-    <Accordion TransitionProps={{ unmountOnExit: true }} sx={{ width: "100%" }}>
+    <Accordion sx={{ width: "100%" }}>
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Stack>
           <CopyableTypography

@@ -12,11 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import TransactionButton from "../TransactionButton";
-import {
-  usePrepareHololockerRequestUnlock,
-  usePrepareHololockerWithdraw,
-} from "../../generated";
-import { useContractWrite, useWaitForTransaction } from "wagmi";
+import { useWaitForTransaction } from "wagmi";
 import { useGetLocksEVM } from "../../hooks/evm/useGetLocksEVM";
 import { LockInfoEVM, TokenEVM } from "../../utils/evm/types";
 import Grid from "@mui/material/Unstable_Grid2";
@@ -37,6 +33,7 @@ import MultipleSelectionWithdrawButton from "./MultipleSelectionWithdrawButton";
 import { useSnackbar } from "notistack";
 import { SnackbarMessage } from "../../utils/texts";
 import CopyableTypography from "../CopyableTypography";
+import { writeContract } from "@wagmi/core";
 
 // average block time on ETH
 const blockTime = 12n;
@@ -55,6 +52,10 @@ function UnlockNftCard({
   onClick?: (token: TokenEVM) => void;
 }) {
   const { enqueueSnackbar } = useSnackbar();
+  const [isLoadingUnlock, setIsLoadingUnlock] = useState(false);
+  const [isLoadingWithdraw, setIsLoadingWithdraw] = useState(false);
+  const [txHashUnlock, setTxHashUnlock] = useState<`0x${string}`>();
+  const [txHashWithdraw, setTxHashWithdraw] = useState<`0x${string}`>();
   const { token, tokenId, nftData } = lockInfo;
   let { unlockTime } = lockInfo;
   if (unlockTime > 0n) {
@@ -67,19 +68,9 @@ function UnlockNftCard({
     setNow(new Date().getTime() / 1000);
   }, 1000);
 
-  const { config: configUnlock } = usePrepareHololockerRequestUnlock({
-    address: hololockerConfig.address,
-    args: [[token], [tokenId]],
-    enabled: unlockTime === 0n,
-  });
-  const {
-    write: writeUnlock,
-    data: dataUnlock,
-    isLoading: isLoadingUnlock,
-  } = useContractWrite(configUnlock);
   const { isLoading: isPendingUnlock, isSuccess: isSuccessUnlock } =
     useWaitForTransaction({
-      hash: dataUnlock?.hash,
+      hash: txHashUnlock,
       onSuccess: () => {
         queryClient.invalidateQueries({
           queryKey: [FunctionKey.LOCKS],
@@ -87,19 +78,9 @@ function UnlockNftCard({
       },
     });
 
-  const { config: configWithdraw } = usePrepareHololockerWithdraw({
-    address: hololockerConfig.address,
-    args: [[token], [tokenId]],
-    enabled: unlockTime > 0n && now > unlockTime,
-  });
-  const {
-    write: writeWithdraw,
-    data: dataWithdraw,
-    isLoading: isLoadingWithdraw,
-  } = useContractWrite(configWithdraw);
   const { isLoading: isPendingWithdraw, isSuccess: isSuccessWithdraw } =
     useWaitForTransaction({
-      hash: dataWithdraw?.hash,
+      hash: txHashWithdraw,
       onSuccess: () => {
         queryClient.invalidateQueries({
           queryKey: [FunctionKey.NFTS],
@@ -139,9 +120,33 @@ function UnlockNftCard({
 
   async function unlockOrWithdrawNft() {
     if (unlockTime === 0n) {
-      writeUnlock?.();
+      setIsLoadingUnlock(true);
+      try {
+        const { hash } = await writeContract({
+          ...hololockerConfig,
+          functionName: "requestUnlock",
+          args: [[token], [tokenId]],
+        });
+        setTxHashUnlock(hash);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoadingUnlock(false);
+      }
     } else {
-      writeWithdraw?.();
+      setIsLoadingWithdraw(true);
+      try {
+        const { hash } = await writeContract({
+          ...hololockerConfig,
+          functionName: "withdraw",
+          args: [[token], [tokenId]],
+        });
+        setTxHashWithdraw(hash);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoadingWithdraw(false);
+      }
     }
   }
   return (
@@ -227,7 +232,6 @@ function UnlockNftListItem({
 
   return (
     <Accordion
-      TransitionProps={{ unmountOnExit: true }}
       sx={{ width: "100%" }}
       expanded={accordionExpanded}
       onChange={() => {

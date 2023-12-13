@@ -1,10 +1,7 @@
 "use client";
-import { useAccount, useContractWrite, useWaitForTransaction } from "wagmi";
+import { useAccount, useWaitForTransaction } from "wagmi";
 import { hololockerConfig } from "../../utils/evm/contracts";
-import {
-  useErc721IsApprovedForAll,
-  usePrepareHololockerLock,
-} from "../../generated";
+import { useErc721IsApprovedForAll } from "../../generated";
 import TransactionButton from "../TransactionButton";
 import FunctionKey from "../../utils/functionKey";
 import { useQueryClient } from "@tanstack/react-query";
@@ -13,6 +10,7 @@ import ApproveCollectionDialog from "../../dialogs/ApproveCollectionDialog";
 import { useEffect, useState } from "react";
 import { useSnackbar } from "notistack";
 import { SnackbarMessage } from "../../utils/texts";
+import { writeContract } from "@wagmi/core";
 
 type Props = {
   token: string;
@@ -25,6 +23,8 @@ export default function CollectionLockButton({ token, tokenIds }: Props) {
   const queryClient = useQueryClient();
   const { showModal } = useModal();
   const [approvalTxHash, setApprovalTxHash] = useState<`0x${string}`>();
+  const [isLoading, setIsLoading] = useState(false);
+  const [lockTxHash, setLockTxHash] = useState<`0x${string}`>();
 
   const { data: isApproved, refetch: refetchIsApproved } =
     useErc721IsApprovedForAll({
@@ -33,21 +33,9 @@ export default function CollectionLockButton({ token, tokenIds }: Props) {
       enabled: !!address,
     });
 
-  const { config: configHololockerLock } = usePrepareHololockerLock({
-    address: hololockerConfig.address,
-    args: [Array(tokenIds.length).fill(token), tokenIds, address!],
-    enabled: !!address && !!isApproved,
-  });
-
-  const {
-    write: writeHololockerLock,
-    data: dataHololockerLock,
-    isLoading: isLoadingHololockerLock,
-  } = useContractWrite(configHololockerLock);
-
   const { isLoading: isPendingHololockerLock, isSuccess: isSuccessLock } =
     useWaitForTransaction({
-      hash: dataHololockerLock?.hash,
+      hash: lockTxHash,
       onSuccess: () => {
         queryClient.invalidateQueries({
           queryKey: [FunctionKey.NFTS],
@@ -95,7 +83,20 @@ export default function CollectionLockButton({ token, tokenIds }: Props) {
 
   async function handleClickButton() {
     if (isApproved) {
-      writeHololockerLock?.();
+      if (!address) return;
+      setIsLoading(true);
+      try {
+        const { hash } = await writeContract({
+          ...hololockerConfig,
+          functionName: "lock",
+          args: [Array(tokenIds.length).fill(token), tokenIds, address!],
+        });
+        setLockTxHash(hash);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
     } else {
       const modal = showModal(ApproveCollectionDialog, {
         tokens: [token],
@@ -116,7 +117,7 @@ export default function CollectionLockButton({ token, tokenIds }: Props) {
   return (
     <TransactionButton
       onClick={handleClickButton}
-      isLoading={isLoadingHololockerLock}
+      isLoading={isLoading}
       isPending={isPendingHololockerLock || isPendingSetApproval}
       actionText={"Lock all NFTs in this collection"}
     />

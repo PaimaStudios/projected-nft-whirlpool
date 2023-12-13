@@ -1,13 +1,13 @@
 "use client";
-import { useAccount, useContractWrite, useWaitForTransaction } from "wagmi";
+import { useAccount, useWaitForTransaction } from "wagmi";
 import { hololockerConfig } from "../../utils/evm/contracts";
-import { usePrepareHololockerRequestUnlock } from "../../generated";
 import TransactionButton from "../TransactionButton";
 import FunctionKey from "../../utils/functionKey";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSnackbar } from "notistack";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { SnackbarMessage } from "../../utils/texts";
+import { writeContract } from "@wagmi/core";
 
 type Props = {
   token: string;
@@ -18,21 +18,11 @@ export default function CollectionUnlockButton({ token, tokenIds }: Props) {
   const { enqueueSnackbar } = useSnackbar();
   const { address } = useAccount();
   const queryClient = useQueryClient();
-
-  const { config: configHololockerUnlock } = usePrepareHololockerRequestUnlock({
-    address: hololockerConfig.address,
-    args: [Array(tokenIds.length).fill(token), tokenIds],
-    enabled: !!address,
-  });
-
-  const {
-    write: writeHololockerUnlock,
-    data: dataHololockerUnlock,
-    isLoading: isLoadingHololockerUnlock,
-  } = useContractWrite(configHololockerUnlock);
+  const [isLoading, setIsLoading] = useState(false);
+  const [txHash, setTxHash] = useState<`0x${string}`>();
 
   const { isLoading: isPending, isSuccess } = useWaitForTransaction({
-    hash: dataHololockerUnlock?.hash,
+    hash: txHash,
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [FunctionKey.LOCKS],
@@ -59,13 +49,26 @@ export default function CollectionUnlockButton({ token, tokenIds }: Props) {
   }, [isSuccess]);
 
   async function requestUnlock() {
-    writeHololockerUnlock?.();
+    if (!address) return;
+    setIsLoading(true);
+    try {
+      const { hash } = await writeContract({
+        ...hololockerConfig,
+        functionName: "requestUnlock",
+        args: [Array(tokenIds.length).fill(token), tokenIds],
+      });
+      setTxHash(hash);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
     <TransactionButton
       onClick={requestUnlock}
-      isLoading={isLoadingHololockerUnlock}
+      isLoading={isLoading}
       isPending={isPending}
       disabled={tokenIds.length === 0}
       actionText={`Request unlock for all locked tokens (${tokenIds.length})`}
