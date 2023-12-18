@@ -13,10 +13,15 @@ import { useModal } from "mui-modal-provider";
 import CardanoWalletsDialog from "../dialogs/CardanoWalletsDialog";
 import { useDappStore } from "../store";
 import WalletInfoDialog from "../dialogs/WalletInfoDialog";
-import { formatCardanoAddress } from "../utils/cardano/utils";
+import {
+  connectWallet,
+  formatCardanoAddress,
+  getCardanoWallets,
+} from "../utils/cardano/utils";
 import { formatEVMAddress } from "../utils/evm/utils";
 import { VmTypes } from "../utils/constants";
 import assertNever from "assert-never";
+import InstallWalletDialog from "../dialogs/InstallWalletDialog";
 
 type Props = {
   popoverAnchorOrigin?: PopoverOrigin;
@@ -39,6 +44,7 @@ export default function ConnectWallet({
   const vmType = useGetVmType();
   const { address: addressEVM } = useAccount();
   const address = useDappStore((state) => state.address);
+  const selectWallet = useDappStore((state) => state.selectWallet);
 
   const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(
     null,
@@ -58,11 +64,23 @@ export default function ConnectWallet({
   };
 
   const openCardanoConnect = () => {
-    const modal = showModal(CardanoWalletsDialog, {
-      onCancel: () => {
-        modal.hide();
-      },
-    });
+    const wallets = getCardanoWallets();
+    if (wallets.length === 0) {
+      const modal = showModal(InstallWalletDialog, {
+        onCancel: () => {
+          modal.hide();
+        },
+      });
+    } else if (wallets.length === 1) {
+      connectWallet(wallets[0], selectWallet);
+    } else {
+      const modal = showModal(CardanoWalletsDialog, {
+        wallets,
+        onCancel: () => {
+          modal.hide();
+        },
+      });
+    }
     handleClose();
   };
 

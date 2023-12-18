@@ -11,7 +11,6 @@ import {
 } from "@mui/material";
 import { useDappStore } from "../store";
 import { useShallow } from "zustand/react/shallow";
-import { cardanoWallets } from "../utils/cardano/constants";
 import { AddressCardano } from "../components/cardano/AddressCardano";
 import { useCardanoBalance } from "../hooks/cardano/useCardanoBalance";
 import { formatLovelace } from "../utils/cardano/utils";
@@ -37,9 +36,10 @@ export default function WalletInfoDialog({
     selectWallet(undefined);
     onCancel();
   };
-  const selectedWallet = cardanoWallets.find(
-    (wallet) => wallet.key === selectedWalletKey,
-  );
+  if (!selectedWalletKey) {
+    return <></>;
+  }
+  const selectedWallet = window.cardano[selectedWalletKey];
   if (!selectedWallet) {
     return <></>;
   }

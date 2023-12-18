@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { CardanoWallets } from "./utils/cardano/types";
 import { Lucid } from "lucid-cardano";
 import { getAddressKeyHashes } from "./utils/cardano/utils";
 
@@ -7,12 +6,12 @@ type State = {
   address: string | undefined;
   paymentKeyHash: string | undefined;
   lucid: Lucid | undefined;
-  selectedWallet: CardanoWallets | undefined;
+  selectedWallet: string | undefined;
 };
 
 type Actions = {
   setLucid: (lucid: Lucid | undefined) => Promise<void>;
-  selectWallet: (wallet: CardanoWallets | undefined) => void;
+  selectWallet: (wallet: string | undefined) => void;
 };
 
 export const selectedWalletLocalStorageKey = "selectedWallet";
@@ -33,9 +32,9 @@ export const useDappStore = create<State & Actions>((set) => ({
     }
   },
   selectedWallet:
-    (localStorage.getItem(selectedWalletLocalStorageKey) as CardanoWallets) ||
+    (localStorage.getItem(selectedWalletLocalStorageKey) as string) ||
     undefined,
-  selectWallet: (wallet: CardanoWallets | undefined) => {
+  selectWallet: (wallet: string | undefined) => {
     set(() => ({ selectedWallet: wallet }));
     if (wallet === undefined) {
       localStorage.removeItem(selectedWalletLocalStorageKey);

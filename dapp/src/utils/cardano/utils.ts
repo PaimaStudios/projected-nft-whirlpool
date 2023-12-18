@@ -75,3 +75,37 @@ export const processImage = (image: string) => {
 export const isTokenNft = (token: Token) => {
   return token.amount <= 1n;
 };
+
+export const getCardanoWallets = () => {
+  if (!window.cardano) {
+    return [];
+  }
+  const walletKeys = Object.keys(window.cardano).filter((key) => {
+    return (
+      typeof window.cardano[key].apiVersion === "string" &&
+      typeof window.cardano[key].icon === "string" &&
+      typeof window.cardano[key].name === "string" &&
+      typeof window.cardano[key].enable === "function" &&
+      typeof window.cardano[key].isEnabled === "function"
+    );
+  });
+  return walletKeys.map((key) => {
+    return { ...window.cardano[key], key: key };
+  });
+};
+
+export const connectWallet = async (
+  wallet: ReturnType<typeof getCardanoWallets>[number],
+  selectWallet: (wallet: string) => void,
+) => {
+  if (typeof window !== "undefined" && window.cardano) {
+    try {
+      const walletApi = await wallet.enable();
+      if (walletApi) {
+        selectWallet(wallet.key);
+      }
+    } catch (err: any) {
+      console.error(err);
+    }
+  }
+};

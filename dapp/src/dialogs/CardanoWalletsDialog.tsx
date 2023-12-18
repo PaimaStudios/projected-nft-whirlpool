@@ -10,21 +10,19 @@ import {
   Typography,
 } from "@mui/material";
 import { useDappStore } from "../store";
-import { useModal } from "mui-modal-provider";
-import InstallWalletDialog from "./InstallWalletDialog";
 import { Check, Close } from "@mui/icons-material";
-import { CardanoWalletInfo } from "../utils/cardano/types";
-import { cardanoWallets } from "../utils/cardano/constants";
+import { connectWallet, getCardanoWallets } from "../utils/cardano/utils";
 
 type CardanoWalletsDialogProps = {
   onCancel: () => void;
+  wallets: ReturnType<typeof getCardanoWallets>;
 } & DialogProps;
 
 export default function CardanoWalletsDialog({
   onCancel,
+  wallets,
   ...props
 }: CardanoWalletsDialogProps) {
-  const { showModal } = useModal();
   const selectWallet = useDappStore((state) => state.selectWallet);
   const selectedWalletKey = useDappStore((state) => state.selectedWallet);
 
@@ -34,27 +32,6 @@ export default function CardanoWalletsDialog({
     }
 
     return false;
-  };
-
-  const connectWallet = async (walletInfo: CardanoWalletInfo) => {
-    if (typeof window !== "undefined" && window.cardano) {
-      if (window.cardano[walletInfo.key]) {
-        try {
-          const walletApi = await window.cardano[walletInfo.key].enable();
-          if (walletApi) {
-            selectWallet(walletInfo.key);
-            onCancel();
-          }
-        } catch (_) {}
-      } else {
-        const modal = showModal(InstallWalletDialog, {
-          walletInfo,
-          onCancel: () => {
-            modal.hide();
-          },
-        });
-      }
-    }
   };
 
   return (
@@ -74,12 +51,18 @@ export default function CardanoWalletsDialog({
           </IconButton>
         </DialogActions>
       </Stack>
-      <MenuList sx={{ pb: 0 }}>
-        {cardanoWallets.map((wallet) => {
+      <MenuList>
+        {wallets.map((wallet) => {
           const installed = walletInstalled(wallet.key);
           const selected = wallet.key === selectedWalletKey;
           return (
-            <MenuItem onClick={() => connectWallet(wallet)} key={wallet.key}>
+            <MenuItem
+              onClick={async () => {
+                await connectWallet(wallet, selectWallet);
+                onCancel();
+              }}
+              key={wallet.key}
+            >
               <Stack
                 sx={{
                   flexDirection: "row",

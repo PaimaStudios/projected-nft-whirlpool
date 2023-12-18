@@ -9,17 +9,19 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { CardanoWalletInfo } from "../utils/cardano/types";
 import { Close } from "@mui/icons-material";
 
 type InstallWalletDialogProps = {
   onCancel: () => void;
-  walletInfo: CardanoWalletInfo;
 } & DialogProps;
+
+const recommendedCardanoWallet = {
+  name: "Flint",
+  url: "https://flint-wallet.com/",
+};
 
 export default function InstallWalletDialog({
   onCancel,
-  walletInfo,
   ...props
 }: InstallWalletDialogProps) {
   return (
@@ -32,7 +34,7 @@ export default function InstallWalletDialog({
           alignItems: "center",
         }}
       >
-        <DialogTitle>{walletInfo.name} wallet not installed</DialogTitle>
+        <DialogTitle>No wallet detected</DialogTitle>
         <DialogActions>
           <IconButton onClick={onCancel} aria-label="close">
             <Close />
@@ -41,12 +43,13 @@ export default function InstallWalletDialog({
       </Stack>
       <DialogContent>
         <Typography>
-          Please install and enable {walletInfo.name} wallet extension!
+          No Cardano wallet has been detected. Please install and enable one. We
+          recommend using {recommendedCardanoWallet.name}.
         </Typography>
       </DialogContent>
       <DialogActions>
-        <Button href={walletInfo.url} target="_blank">
-          Install extension
+        <Button href={recommendedCardanoWallet.url} target="_blank">
+          Install {recommendedCardanoWallet.name}
         </Button>
       </DialogActions>
     </Dialog>

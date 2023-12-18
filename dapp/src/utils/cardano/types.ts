@@ -1,14 +1,5 @@
 import { Token } from "./token";
 
-export type CardanoWallets = "eternl" | "flint" | "nami" | "typhoncip30";
-
-export type CardanoWalletInfo = {
-  name: string;
-  icon: string;
-  key: CardanoWallets;
-  url: string;
-};
-
 type ProjectedNftCardanoEventsResponseObject = {
   actionSlot: number;
   actionTxId: string;
