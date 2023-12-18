@@ -12,7 +12,7 @@ export type CardanoWalletInfo = {
 type ProjectedNftCardanoEventsResponseObject = {
   actionSlot: number;
   actionTxId: string;
-  amount: number;
+  amount: string;
   asset: string;
   actionOutputIndex: number | null;
   forHowLong: number | null;
