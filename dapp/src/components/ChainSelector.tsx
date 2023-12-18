@@ -1,9 +1,11 @@
 import { Button } from "@mui/material";
 import { useChainModal } from "@rainbow-me/rainbowkit";
-import { useGetChainType } from "../hooks/useGetChainType";
+import { useGetVmType } from "../hooks/useGetVmType";
 import { useNetwork } from "wagmi";
 import { isChainSupported } from "../utils/evm/chains";
 import slugify from "slugify";
+import { VmTypes } from "../utils/constants";
+import assertNever from "assert-never";
 
 type Props = {
   text?: string;
@@ -11,13 +13,18 @@ type Props = {
 
 export default function ChainSelector({ text }: Props) {
   const { openChainModal: openChainModalEVM } = useChainModal();
-  const chainType = useGetChainType();
+  const vmType = useGetVmType();
   const { chain: chainEVM } = useNetwork();
 
   const handleClickWhenConnected = () => {
-    if (chainType === "EVM") {
+    if (vmType === VmTypes.EVM) {
       openChainModalEVM?.();
+      return;
     }
+    if (vmType === VmTypes.Cardano || vmType === VmTypes.None) {
+      return;
+    }
+    assertNever(vmType);
   };
 
   if (!chainEVM) {

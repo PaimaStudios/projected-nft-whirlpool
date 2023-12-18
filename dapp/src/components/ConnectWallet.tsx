@@ -8,13 +8,15 @@ import {
 import { useAccountModal, useConnectModal } from "@rainbow-me/rainbowkit";
 import React from "react";
 import { useAccount } from "wagmi";
-import { useGetChainType } from "../hooks/useGetChainType";
+import { useGetVmType } from "../hooks/useGetVmType";
 import { useModal } from "mui-modal-provider";
 import CardanoWalletsDialog from "../dialogs/CardanoWalletsDialog";
 import { useDappStore } from "../store";
 import WalletInfoDialog from "../dialogs/WalletInfoDialog";
 import { formatCardanoAddress } from "../utils/cardano/utils";
 import { formatEVMAddress } from "../utils/evm/utils";
+import { VmTypes } from "../utils/constants";
+import assertNever from "assert-never";
 
 type Props = {
   popoverAnchorOrigin?: PopoverOrigin;
@@ -34,7 +36,7 @@ export default function ConnectWallet({
   const { showModal } = useModal();
   const { openConnectModal: openConnectModalEVM } = useConnectModal();
   const { openAccountModal: openAccountModalEVM } = useAccountModal();
-  const chainType = useGetChainType();
+  const vmType = useGetVmType();
   const { address: addressEVM } = useAccount();
   const address = useDappStore((state) => state.address);
 
@@ -65,28 +67,36 @@ export default function ConnectWallet({
   };
 
   const handleClickWhenConnected = () => {
-    if (chainType === "EVM") {
+    if (vmType === VmTypes.None) {
+      return;
+    }
+    if (vmType === VmTypes.EVM) {
       openAccountModalEVM?.();
-    } else if (chainType === "Cardano") {
+      return;
+    } else if (vmType === VmTypes.Cardano) {
       const modal = showModal(WalletInfoDialog, {
         onCancel: () => {
           modal.hide();
         },
       });
+      return;
     }
+    assertNever(vmType);
   };
 
   const open = Boolean(anchorEl);
   const id = open ? "chains-popover" : undefined;
   const formattedAddress =
-    chainType === "EVM"
+    vmType === VmTypes.EVM
       ? formatEVMAddress(addressEVM)
-      : chainType === "Cardano"
+      : vmType === VmTypes.Cardano
       ? formatCardanoAddress(address)
-      : "";
+      : vmType === VmTypes.None
+      ? ""
+      : assertNever(vmType);
   return (
     <>
-      {chainType == null ? (
+      {vmType === VmTypes.None ? (
         <Button aria-describedby={id} onClick={handleClick}>
           Connect wallet
         </Button>

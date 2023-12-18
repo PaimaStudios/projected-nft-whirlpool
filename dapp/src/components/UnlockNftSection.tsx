@@ -1,22 +1,26 @@
 "use client";
 import { Stack, Typography } from "@mui/material";
 import UnlockNftListEVM from "./evm/UnlockNftList";
-import { useGetChainType } from "../hooks/useGetChainType";
+import { useGetVmType } from "../hooks/useGetVmType";
 import UnlockNftListCardano from "./cardano/UnlockNftList";
+import { VmTypes } from "../utils/constants";
+import assertNever from "assert-never";
 
 export default function UnlockNftSection() {
-  const chainType = useGetChainType();
+  const vmType = useGetVmType();
   return (
     <Stack sx={{ alignItems: "center", gap: 2, width: "100%" }}>
       <Typography variant="h3" textAlign={"center"}>
         Projected tokens
       </Typography>
-      {chainType === "EVM" ? (
+      {vmType === VmTypes.None ? (
+        <></>
+      ) : vmType === VmTypes.EVM ? (
         <UnlockNftListEVM />
-      ) : chainType === "Cardano" ? (
+      ) : vmType === VmTypes.Cardano ? (
         <UnlockNftListCardano />
       ) : (
-        <></>
+        assertNever(vmType)
       )}
     </Stack>
   );
