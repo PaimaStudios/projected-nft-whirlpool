@@ -98,29 +98,6 @@ const fetchLocks = async (paymentKeyHash: string) => {
   }
 };
 
-/*
-const decodeDatumLock = (data: Constr<any>) => {
-  if (data.fields.length !== 2) return undefined;
-  return {
-    owner: data.fields[0].fields[0] as string,
-    outRef: null,
-    unlockTime: null,
-  };
-};
-
-const decodeDatumUnlocking = (data: Constr<any>) => {
-  if (data.fields.length !== 2) return undefined;
-  return {
-    owner: data.fields[0].fields[0] as string,
-    outRef: {
-      hash: data.fields[1].fields[0].fields[0].fields[0] as string,
-      index: data.fields[1].fields[0].fields[1] as bigint,
-    },
-    unlockTime: data.fields[1].fields[1] as bigint,
-  };
-};
-*/
-
 export const useGetLocksCardano = () => {
   const paymentKeyHash = useDappStore((state) => state.paymentKeyHash);
 
