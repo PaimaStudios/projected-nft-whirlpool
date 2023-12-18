@@ -128,6 +128,15 @@ function UnlockNftListItem({
       throw new Error("Prerequisites missing!");
     }
 
+    if (!actionTxId) {
+      console.error("actionTxId missing in lock info", lockInfo);
+      return;
+    }
+    if (!plutusDatum) {
+      console.error("plutusDatum missing in lock info", lockInfo);
+      return;
+    }
+
     const validatorAddress = lucid.utils.validatorToAddress(validator);
     const utxos = await lucid.utxosByOutRef([
       {
@@ -207,6 +216,11 @@ function UnlockNftListItem({
     setIsLoading(true);
     if (!lucid || !paymentKeyHash || !address || actionOutputIndex == null) {
       throw new Error("Prerequisites missing!");
+    }
+
+    if (!actionTxId) {
+      console.error("actionTxId missing in lock info", lockInfo);
+      return;
     }
 
     const utxos = await lucid.utxosByOutRef([

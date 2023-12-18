@@ -1,8 +1,5 @@
 "use client";
-import {
-  LockInfoCardano,
-  ProjectedNftCardanoEventsResponse,
-} from "../../utils/cardano/types";
+import { LockInfoCardano } from "../../utils/cardano/types";
 import FunctionKey from "../../utils/functionKey";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
@@ -14,6 +11,7 @@ import {
   cardanoApiMinSlot,
 } from "../../utils/cardano/constants";
 import env from "../../utils/configs/env";
+import { ProjectedNftRangeResponse } from "@dcspark/carp-client/shared/models/ProjectedNftRange";
 
 const fetchLocks = async (paymentKeyHash: string) => {
   try {
@@ -21,7 +19,7 @@ const fetchLocks = async (paymentKeyHash: string) => {
       `${env.REACT_APP_CARDANO_API_URL_BASE}/projected-nft/range`,
       { range: { minSlot: cardanoApiMinSlot, maxSlot: cardanoApiMaxSlot } },
     );
-    const responseData: ProjectedNftCardanoEventsResponse = request.data;
+    const responseData: ProjectedNftRangeResponse = request.data;
     const locksMap: Record<string, LockInfoCardano> = {};
     responseData.forEach((dat) => {
       if (dat.status === "Invalid") return;

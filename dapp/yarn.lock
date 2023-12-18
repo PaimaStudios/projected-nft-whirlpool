@@ -1340,10 +1340,10 @@
   resolved "https://registry.yarnpkg.com/@dcspark/cardano-multiplatform-lib-browser/-/cardano-multiplatform-lib-browser-3.1.2.tgz#1495d57b6d129c50a87bc838c11d0b7d7ad6939d"
   integrity sha512-BDIF33nqEKAGn72+ESD1fLgnWCZJbPWnVKHr0cy7Al2zhvM30rGsajcJNHLPh2XXZQh1H35fBiHHR2uUyZRRpw==
 
-"@dcspark/carp-client@^2.1.0":
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/@dcspark/carp-client/-/carp-client-2.1.0.tgz#6dded550a49eae71309d205e543090a1187f93b2"
-  integrity sha512-Z0bf/4QAlEhdHvO9egBN+AT0r5ljcJxXjCQi+rUn6vcT2t1njtW5pzLYHgyzADBz93W9MRO/5ZfL3YxYGMBAiw==
+"@dcspark/carp-client@^2.3.1":
+  version "2.3.1"
+  resolved "https://registry.yarnpkg.com/@dcspark/carp-client/-/carp-client-2.3.1.tgz#535f964dae2eeb46acc330cae4855965280879d5"
+  integrity sha512-KmVfrkH8WuuNUDsKwbJquP9wOnpHCxU4udlzXi8bap93NgV3Ctq9Hmk9wzvj7Mz+9OgByODU0YT6C9Lo6CqXFA==
   dependencies:
     axios "^0.27.2"
 
