@@ -1,5 +1,10 @@
 import { Constr, Data } from "lucid-cardano";
 
+// Check hololocker.ak for datum definitions
+
+/**
+ * State { owner: Owner::PKH(address), status: Status::Locked }
+ */
 export const getLockDatum = ({
   ownerPaymentKeyHash,
 }: {
@@ -12,6 +17,9 @@ export const getLockDatum = ({
   return Data.to(data);
 };
 
+/**
+ * State { owner, Unlocking { out_ref, for_how_long } }
+ */
 export const getUnlockDatum = ({
   ownerPaymentKeyHash,
   txId,
