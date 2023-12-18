@@ -12,7 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import TransactionButton from "../TransactionButton";
-import { useWaitForTransaction } from "wagmi";
+import { useNetwork, useWaitForTransaction } from "wagmi";
 import { useGetLocksEVM } from "../../hooks/evm/useGetLocksEVM";
 import { LockInfoEVM, TokenEVM } from "../../utils/evm/types";
 import Grid from "@mui/material/Unstable_Grid2";
@@ -34,11 +34,7 @@ import { useSnackbar } from "notistack";
 import { SnackbarMessage } from "../../utils/texts";
 import CopyableTypography from "../CopyableTypography";
 import { writeContract } from "@wagmi/core";
-
-// average block time on ETH
-const blockTime = 12n;
-// we shall wait 1.5x the average block time until we try to simulate withdraw txn
-const reserveWaitingTime = (blockTime * 3n) / 2n;
+import { getChainReserveWaitingTime } from "../../utils/evm/chains";
 
 function UnlockNftCard({
   lockInfo,
@@ -51,6 +47,7 @@ function UnlockNftCard({
   isSelected: boolean;
   onClick?: (token: TokenEVM) => void;
 }) {
+  const { chain } = useNetwork();
   const { enqueueSnackbar } = useSnackbar();
   const [isLoadingUnlock, setIsLoadingUnlock] = useState(false);
   const [isLoadingWithdraw, setIsLoadingWithdraw] = useState(false);
@@ -59,7 +56,7 @@ function UnlockNftCard({
   const { token, tokenId, nftData } = lockInfo;
   let { unlockTime } = lockInfo;
   if (unlockTime > 0n) {
-    unlockTime += reserveWaitingTime;
+    unlockTime += getChainReserveWaitingTime(chain?.id);
   }
   const [now, setNow] = useState<number>(new Date().getTime() / 1000);
   const queryClient = useQueryClient();
@@ -208,6 +205,7 @@ function UnlockNftListItem({
   selectedTokens: TokenEVM[];
   expanded: boolean;
 }) {
+  const { chain } = useNetwork();
   const [now, setNow] = useState<number>(new Date().getTime() / 1000);
   useInterval(() => {
     setNow(new Date().getTime() / 1000);
@@ -221,7 +219,8 @@ function UnlockNftListItem({
   const tokenIdsToWithdraw = locks
     .filter(
       (lock) =>
-        lock.unlockTime !== 0n && now > lock.unlockTime + reserveWaitingTime,
+        lock.unlockTime !== 0n &&
+        now > lock.unlockTime + getChainReserveWaitingTime(chain?.id),
     )
     .map((lock) => lock.tokenId);
 
@@ -309,6 +308,7 @@ function UnlockNftListItem({
 }
 
 export default function UnlockNftList() {
+  const { chain } = useNetwork();
   const [now, setNow] = useState<number>(new Date().getTime() / 1000);
   useInterval(() => {
     setNow(new Date().getTime() / 1000);
@@ -332,7 +332,8 @@ export default function UnlockNftList() {
   const locksForWithdraw =
     locks?.filter(
       (lock) =>
-        lock.unlockTime > 0n && now > lock.unlockTime + reserveWaitingTime,
+        lock.unlockTime > 0n &&
+        now > lock.unlockTime + getChainReserveWaitingTime(chain?.id),
     ) ?? [];
   if (locks) {
     if (selectingMultipleUnlock) {

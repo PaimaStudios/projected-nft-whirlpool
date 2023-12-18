@@ -20,5 +20,5 @@ Run `yarn generate` to generate new hooks when contracts are changed.
 
 A common hook `useGetChainType` is used throughout the dApp to differentiate chain type (Cardano and EVM). If you wish to add a different type of chain (eg. Aptos), look there.
 
-EVM chains specifics are defined in the `src/utils/evm/chains` (supported chains), `src/utils/evm/contracts` (Hololocker contract address) and `src/utils/evm/wagmi` (wagmi providers).
+EVM chains specifics are defined in the `src/utils/evm/chains` (supported chains and their constants), `src/utils/evm/contracts` (Hololocker contract address) and `src/utils/evm/wagmi` (wagmi providers).
 Cardano chain specifics are defined in the `src/utils/cardano/validator` (validator code)
