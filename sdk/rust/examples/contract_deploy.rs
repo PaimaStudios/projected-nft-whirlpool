@@ -623,10 +623,7 @@ async fn handle_unlock(
     builder
         .add_input(
             SingleInputBuilder::new(
-                TransactionInput::new(
-                    contract_input_pointer.hash,
-                    contract_input_pointer.index,
-                ),
+                TransactionInput::new(contract_input_pointer.hash, contract_input_pointer.index),
                 TransactionOutput::new(lock_on.clone(), contract_input.clone(), None, None),
             )
             .plutus_script_inline_datum(
@@ -885,10 +882,7 @@ async fn handle_claim(
     builder
         .add_input(
             SingleInputBuilder::new(
-                TransactionInput::new(
-                    contract_input_pointer.hash,
-                    contract_input_pointer.index,
-                ),
+                TransactionInput::new(contract_input_pointer.hash, contract_input_pointer.index),
                 TransactionOutput::new(lock_on.clone(), contract_input.clone(), None, None),
             )
             .plutus_script_inline_datum(
