@@ -23,9 +23,9 @@ impl MintRedeemer {
     pub fn from_plutus_data(
         redeemer: &cml_chain_wasm::plutus::PlutusData,
     ) -> Result<MintRedeemer, JsValue> {
-        cardano_projected_nft_sdk::MintRedeemer::try_from(Into::<cml_chain::plutus::PlutusData>::into(
-            redeemer.clone(),
-        ))
+        cardano_projected_nft_sdk::MintRedeemer::try_from(
+            Into::<cml_chain::plutus::PlutusData>::into(redeemer.clone()),
+        )
         .map(MintRedeemer)
         .map_err(|e| JsValue::from_str(&format!("from_plutus_data: {}", e)))
     }
@@ -56,7 +56,9 @@ impl MintRedeemer {
 
     pub fn kind(&self) -> MintRedeemerKind {
         match &self.0 {
-            cardano_projected_nft_sdk::MintRedeemer::MintTokens { .. } => MintRedeemerKind::MintTokens,
+            cardano_projected_nft_sdk::MintRedeemer::MintTokens { .. } => {
+                MintRedeemerKind::MintTokens
+            }
             cardano_projected_nft_sdk::MintRedeemer::BurnTokens => MintRedeemerKind::BurnTokens,
         }
     }
@@ -506,7 +508,10 @@ impl OutRef {
     }
 
     pub fn new(tx_id: &cml_crypto_wasm::TransactionHash, index: u64) -> Self {
-        Self(cardano_projected_nft_sdk::OutRef::new(tx_id.clone().into(), index))
+        Self(cardano_projected_nft_sdk::OutRef::new(
+            tx_id.clone().into(),
+            index,
+        ))
     }
 }
 
