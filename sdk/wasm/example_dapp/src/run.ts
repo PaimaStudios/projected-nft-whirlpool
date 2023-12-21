@@ -1,4 +1,4 @@
-import * as projected_nft from "projected-nft-sdk";
+import * as projected_nft from "cardano-projected-nft-sdk";
 
 let state = projected_nft.State.new(
     projected_nft.Owner.new_nft(

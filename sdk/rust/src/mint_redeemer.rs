@@ -23,7 +23,7 @@ impl From<MintRedeemer> for PlutusData {
     fn from(value: MintRedeemer) -> Self {
         match value {
             MintRedeemer::MintTokens { total } => PlutusData::new_constr_plutus_data(
-                ConstrPlutusData::new(0, vec![PlutusData::new_big_int(BigInt::from(total))]),
+                ConstrPlutusData::new(0, vec![PlutusData::new_integer(BigInt::from(total))]),
             ),
             MintRedeemer::BurnTokens => {
                 PlutusData::new_constr_plutus_data(ConstrPlutusData::new(1, vec![]))
@@ -43,7 +43,7 @@ impl TryFrom<PlutusData> for MintRedeemer {
 
         match constr.alternative {
             0 => match constr.fields.get(0) {
-                Some(PlutusData::BigInt(bigint)) => Ok(MintRedeemer::MintTokens {
+                Some(PlutusData::Integer(bigint)) => Ok(MintRedeemer::MintTokens {
                     total: bigint
                         .as_u64()
                         .ok_or("Mint tokens total valus can't be represented as u64".to_string())?,

@@ -100,9 +100,9 @@ checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
 name = "base64"
-version = "0.21.4"
+version = "0.21.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ba43ea6f343b788c8764558649e08df62f86c6ef251fdaeb1ffd010a9ae50a2"
+checksum = "35636a1494ede3b646cc98f74f8e62c773a38a659ebc777a2cf26b9b74171df9"
 
 [[package]]
 name = "bech32"
@@ -159,6 +159,45 @@ name = "bytes"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2bd12c1caf447e69cd4528f47f94d203fd2582878ecb9e9465484c4148a8223"
+
+[[package]]
+name = "cardano-projected-nft-sdk"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bip39",
+ "cbor_event",
+ "clap",
+ "cml-chain",
+ "cml-core",
+ "cml-crypto",
+ "hex",
+ "reqwest",
+ "schemars",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "serde_yaml",
+ "tokio",
+]
+
+[[package]]
+name = "cardano-projected-nft-sdk-wasm"
+version = "0.1.0"
+dependencies = [
+ "cardano-projected-nft-sdk",
+ "cbor_event",
+ "cml-chain",
+ "cml-chain-wasm",
+ "cml-core",
+ "cml-core-wasm",
+ "cml-crypto",
+ "cml-crypto-wasm",
+ "linked-hash-map",
+ "serde-wasm-bindgen 0.5.0",
+ "serde_json",
+ "wasm-bindgen",
+]
 
 [[package]]
 name = "cbor_event"
@@ -224,9 +263,10 @@ checksum = "cd7cc57abe963c6d3b9d8be5b06ba7c8957a930305ca90304f24ef040aa6f961"
 [[package]]
 name = "cml-chain"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/cardano-multiplatform-lib.git?rev=acca172633d0570a7432058aa5b0717ad2f0c6d7#acca172633d0570a7432058aa5b0717ad2f0c6d7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d07a94cfb4c3837a0cc97323ec281cc6ede491279f8d80faf69005902023807d"
 dependencies = [
- "base64 0.13.1",
+ "base64 0.21.5",
  "bech32",
  "cbor_event",
  "cml-core",
@@ -245,13 +285,15 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
+ "unicode-segmentation",
  "wasm-bindgen",
 ]
 
 [[package]]
 name = "cml-chain-wasm"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/cardano-multiplatform-lib.git?rev=acca172633d0570a7432058aa5b0717ad2f0c6d7#acca172633d0570a7432058aa5b0717ad2f0c6d7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "26ad1da56edb0172c04b36dcd1bb67e58a2fa079233ee641e25d6c2bc6f54009"
 dependencies = [
  "cbor_event",
  "cml-chain",
@@ -259,6 +301,7 @@ dependencies = [
  "cml-core-wasm",
  "cml-crypto",
  "cml-crypto-wasm",
+ "hex",
  "linked-hash-map",
  "serde-wasm-bindgen 0.4.5",
  "serde_json",
@@ -268,7 +311,8 @@ dependencies = [
 [[package]]
 name = "cml-core"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/cardano-multiplatform-lib.git?rev=acca172633d0570a7432058aa5b0717ad2f0c6d7#acca172633d0570a7432058aa5b0717ad2f0c6d7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "34899789d0bf57c079c0a77f7f6bdd6428d52bdeb1ec466b132802dbd46ebc15"
 dependencies = [
  "base64 0.13.1",
  "bech32",
@@ -293,10 +337,12 @@ dependencies = [
 [[package]]
 name = "cml-core-wasm"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/cardano-multiplatform-lib.git?rev=acca172633d0570a7432058aa5b0717ad2f0c6d7#acca172633d0570a7432058aa5b0717ad2f0c6d7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ae49a89c77f0987d1da05ad94c5264a48d2ff15b692a03dcee29a2b51990287"
 dependencies = [
  "cbor_event",
  "cml-core",
+ "hex",
  "linked-hash-map",
  "serde-wasm-bindgen 0.4.5",
  "serde_json",
@@ -306,8 +352,10 @@ dependencies = [
 [[package]]
 name = "cml-crypto"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/cardano-multiplatform-lib.git?rev=acca172633d0570a7432058aa5b0717ad2f0c6d7#acca172633d0570a7432058aa5b0717ad2f0c6d7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02775162430e97004d49882d64a095b055dd28052bc88fc8978e7155ee7ec603"
 dependencies = [
+ "base64 0.21.5",
  "bech32",
  "cbor_event",
  "cfg-if",
@@ -328,7 +376,8 @@ dependencies = [
 [[package]]
 name = "cml-crypto-wasm"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/cardano-multiplatform-lib.git?rev=acca172633d0570a7432058aa5b0717ad2f0c6d7#acca172633d0570a7432058aa5b0717ad2f0c6d7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "766b8a215caf2e3b3fe054bbb25dbd07630ff335cb7cba86029c85ad0f6a4f7d"
 dependencies = [
  "cbor_event",
  "cml-crypto",
@@ -1094,45 +1143,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "projected-nft-sdk"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bip39",
- "cbor_event",
- "clap",
- "cml-chain",
- "cml-core",
- "cml-crypto",
- "hex",
- "reqwest",
- "schemars",
- "serde",
- "serde_derive",
- "serde_json",
- "serde_yaml",
- "tokio",
-]
-
-[[package]]
-name = "projected-nft-sdk-wasm"
-version = "0.1.0"
-dependencies = [
- "cbor_event",
- "cml-chain",
- "cml-chain-wasm",
- "cml-core",
- "cml-core-wasm",
- "cml-crypto",
- "cml-crypto-wasm",
- "linked-hash-map",
- "projected-nft-sdk",
- "serde-wasm-bindgen 0.5.0",
- "serde_json",
- "wasm-bindgen",
-]
-
-[[package]]
 name = "quote"
 version = "1.0.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1186,7 +1196,7 @@ version = "0.11.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "046cd98826c46c2ac8ddecae268eb5c2e58628688a5fc7a2643704a73faba95b"
 dependencies = [
- "base64 0.21.4",
+ "base64 0.21.5",
  "bytes",
  "encoding_rs",
  "futures-core",
@@ -1660,6 +1670,12 @@ checksum = "5c5713f0fc4b5db668a2ac63cdb7bb4469d8c9fed047b1d0292cc7b0ce2ba921"
 dependencies = [
  "tinyvec",
 ]
+
+[[package]]
+name = "unicode-segmentation"
+version = "1.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1dd624098567895118886609431a7c3b8f516e41d30e0643f03d94592a147e36"
 
 [[package]]
 name = "unsafe-libyaml"

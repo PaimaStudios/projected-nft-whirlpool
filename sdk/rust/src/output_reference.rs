@@ -37,7 +37,7 @@ impl From<OutRef> for PlutusData {
             vec![PlutusData::new_bytes(out_ref.tx_id.to_raw_bytes().to_vec())],
         ));
 
-        let output_index = PlutusData::new_big_int(BigInt::from(out_ref.index));
+        let output_index = PlutusData::new_integer(BigInt::from(out_ref.index));
 
         PlutusData::new_constr_plutus_data(ConstrPlutusData::new(
             0,
@@ -76,7 +76,7 @@ fn get_out_ref(constr: ConstrPlutusData) -> Result<OutRef, String> {
         .get(1)
         .ok_or("no field found for output index while parsing out ref")?
     {
-        PlutusData::BigInt(index) => index.as_u64().ok_or(format!(
+        PlutusData::Integer(index) => index.as_u64().ok_or(format!(
             "can't convert output index bigint {} to u64 while parsing unlocking status",
             index
         ))?,
