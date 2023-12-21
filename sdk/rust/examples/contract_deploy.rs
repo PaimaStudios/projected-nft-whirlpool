@@ -292,7 +292,7 @@ async fn handle_lock(
     let datum = match config.control_nft.clone() {
         None if config.receipt_nft.is_none() => State {
             owner: Owner::PKH(match payment_address.payment_cred().unwrap() {
-                StakeCredential::PubKey { hash, .. } => hash.clone(),
+                StakeCredential::PubKey { hash, .. } => *hash,
                 StakeCredential::Script { .. } => {
                     return Err(anyhow!("Expected payment address, not script"))
                 }
@@ -456,7 +456,7 @@ async fn handle_lock_nft(
     let datum = match config.control_nft.clone() {
         None => State {
             owner: Owner::PKH(match payment_address.payment_cred().unwrap() {
-                StakeCredential::PubKey { hash, .. } => hash.clone(),
+                StakeCredential::PubKey { hash, .. } => *hash,
                 StakeCredential::Script { .. } => {
                     return Err(anyhow!("Expected payment address, not script"))
                 }
@@ -609,7 +609,7 @@ async fn handle_unlock(
         nft_input_owner: match config.control_nft.clone() {
             None => None,
             Some(_) => Some(OutRef {
-                tx_id: config.inputs.last().cloned().unwrap().hash.clone(),
+                tx_id: config.inputs.last().cloned().unwrap().hash,
                 index: config.inputs.last().cloned().unwrap().index,
             }),
         },
@@ -624,7 +624,7 @@ async fn handle_unlock(
         .add_input(
             SingleInputBuilder::new(
                 TransactionInput::new(
-                    contract_input_pointer.hash.clone(),
+                    contract_input_pointer.hash,
                     contract_input_pointer.index,
                 ),
                 TransactionOutput::new(lock_on.clone(), contract_input.clone(), None, None),
@@ -656,7 +656,7 @@ async fn handle_unlock(
     }
 
     builder.add_required_signer(match payment_address.payment_cred().unwrap() {
-        StakeCredential::PubKey { hash, .. } => hash.clone(),
+        StakeCredential::PubKey { hash, .. } => *hash,
         StakeCredential::Script { .. } => {
             return Err(anyhow!("script is not suported as required signer"));
         }
@@ -691,7 +691,7 @@ async fn handle_unlock(
     let new_datum = match config.control_nft.clone() {
         None => State {
             owner: Owner::PKH(match payment_address.payment_cred().unwrap() {
-                StakeCredential::PubKey { hash, .. } => hash.clone(),
+                StakeCredential::PubKey { hash, .. } => *hash,
                 StakeCredential::Script { .. } => {
                     return Err(anyhow!("Expected payment address, not script"))
                 }
@@ -886,7 +886,7 @@ async fn handle_claim(
         .add_input(
             SingleInputBuilder::new(
                 TransactionInput::new(
-                    contract_input_pointer.hash.clone(),
+                    contract_input_pointer.hash,
                     contract_input_pointer.index,
                 ),
                 TransactionOutput::new(lock_on.clone(), contract_input.clone(), None, None),
@@ -903,7 +903,7 @@ async fn handle_claim(
         .unwrap();
 
     builder.add_required_signer(match payment_address.payment_cred().unwrap() {
-        StakeCredential::PubKey { hash, .. } => hash.clone(),
+        StakeCredential::PubKey { hash, .. } => *hash,
         StakeCredential::Script { .. } => {
             return Err(anyhow!("script is not suported as required signer"));
         }

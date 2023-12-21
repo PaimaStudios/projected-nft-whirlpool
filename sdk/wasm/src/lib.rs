@@ -112,7 +112,7 @@ impl NFT {
     }
 
     pub fn policy_id(&self) -> cml_chain_wasm::PolicyId {
-        self.0.clone().into()
+        self.0.into()
     }
 
     pub fn asset_name(&self) -> cml_chain_wasm::assets::AssetName {
@@ -162,7 +162,7 @@ impl Owner {
 
     pub fn new_nft(nft: &NFT) -> Self {
         Self(cardano_projected_nft_sdk::Owner::new_nft(
-            nft.0.clone(),
+            nft.0,
             nft.1.clone(),
         ))
     }
@@ -183,7 +183,7 @@ impl Owner {
 
     pub fn as_public_keyhash(&self) -> Option<cml_crypto_wasm::Ed25519KeyHash> {
         match &self.0 {
-            cardano_projected_nft_sdk::Owner::PKH(pkh) => Some(pkh.clone().into()),
+            cardano_projected_nft_sdk::Owner::PKH(pkh) => Some((*pkh).into()),
             _ => None,
         }
     }
@@ -191,7 +191,7 @@ impl Owner {
     pub fn as_nft(&self) -> Option<NFT> {
         match &self.0 {
             cardano_projected_nft_sdk::Owner::NFT(policy_id, asset_name) => {
-                Some(NFT(policy_id.clone(), asset_name.clone()))
+                Some(NFT(*policy_id, asset_name.clone()))
             }
             _ => None,
         }
