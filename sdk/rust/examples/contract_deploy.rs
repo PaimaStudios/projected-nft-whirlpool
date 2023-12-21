@@ -42,7 +42,7 @@ use cml_core::Int;
 use cml_crypto::{
     Bip32PrivateKey, PrivateKey, PublicKey, RawBytesEncoding, ScriptHash, TransactionHash,
 };
-use projected_nft_sdk::{OutRef, Owner, Redeem, State, Status};
+use cardano_projected_nft_sdk::{OutRef, Owner, Redeem, State, Status};
 
 #[derive(Parser)]
 pub struct CommandLine {
