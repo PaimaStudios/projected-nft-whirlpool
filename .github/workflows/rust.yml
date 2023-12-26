@@ -24,28 +24,24 @@ jobs:
 
       - name: "Format check"
         uses: actions-rs/cargo@v1
-        working-directory: ./cardano
         with:
           command: fmt
-          args: -- --check
+          args: -- --check --manifest-path ./cardano/Cargo.toml --all
 
       - name: "Linter checks"
         uses: actions-rs/cargo@v1
-        working-directory: ./cardano
         with:
           command: clippy
-          args: --all-features --all-targets -- --deny "clippy::all"
+          args: --all-features --all-targets --manifest-path ./cardano/Cargo.toml -- --deny "clippy::all"
 
       - name: "Check"
         uses: actions-rs/cargo@v1
-        working-directory: ./cardano
         with:
           command: check
-          args: --all-features --all-targets
+          args: --all-features --all-targets --manifest-path ./cardano/Cargo.toml
 
       - name: "Test"
         uses: actions-rs/cargo@v1
-        working-directory: ./cardano
         with:
           command: test
-          args: --all-features --all-targets
+          args: --all-features --all-targets --manifest-path ./cardano/Cargo.toml

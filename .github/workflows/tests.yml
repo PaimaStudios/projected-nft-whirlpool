@@ -12,10 +12,9 @@ jobs:
       - uses: actions/checkout@v3
 
       - uses: aiken-lang/setup-aiken@v0.1.0
-        working-directory: ./cardano
         with:
           version: v1.0.19-alpha
 
-      - run: aiken fmt --check
-      - run: aiken check
-      - run: aiken build
+      - run: aiken fmt ./cardano --check
+      - run: aiken check ./cardano
+      - run: aiken build ./cardano
