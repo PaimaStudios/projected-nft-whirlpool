@@ -373,10 +373,7 @@ impl Status {
             cardano_projected_nft_sdk::Status::Unlocking {
                 out_ref,
                 for_how_long,
-            } => Some(UnlockingStatus(
-                out_ref.clone(),
-                for_how_long.clone(),
-            )),
+            } => Some(UnlockingStatus(out_ref.clone(), for_how_long.clone())),
             _ => None,
         }
     }
