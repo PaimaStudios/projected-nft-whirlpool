@@ -161,7 +161,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2bd12c1caf447e69cd4528f47f94d203fd2582878ecb9e9465484c4148a8223"
 
 [[package]]
-name = "cardano-projected-nft-sdk"
+name = "cardano-projected-nft"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -182,10 +182,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "cardano-projected-nft-sdk-wasm"
+name = "cardano-projected-nft-json-schema-gen"
+version = "0.0.1"
+dependencies = [
+ "cardano-projected-nft",
+ "cml-chain",
+ "cml-crypto",
+ "schemars",
+ "serde_json",
+]
+
+[[package]]
+name = "cardano-projected-nft-wasm"
 version = "0.1.0"
 dependencies = [
- "cardano-projected-nft-sdk",
+ "cardano-projected-nft",
  "cbor_event",
  "cml-chain",
  "cml-chain-wasm",

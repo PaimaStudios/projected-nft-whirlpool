@@ -13,7 +13,7 @@
     "cbor": "^9.0.1",
     "deno": "^0.1.1",
     "lucid-cardano": "^0.10.7",
-    "cardano-projected-nft-sdk": "file:../pkg"
+    "cardano-projected-nft": "file:../pkg"
   },
   "keywords": [],
   "author": "",

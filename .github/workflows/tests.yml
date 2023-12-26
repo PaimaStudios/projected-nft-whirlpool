@@ -15,6 +15,6 @@ jobs:
         with:
           version: v1.0.19-alpha
 
-      - run: aiken fmt --check
-      - run: aiken check
-      - run: aiken build
+      - run: aiken fmt ./cardano --check
+      - run: aiken check ./cardano
+      - run: aiken build ./cardano

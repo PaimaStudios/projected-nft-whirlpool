@@ -4,7 +4,7 @@ The Projected NFT Whirlpool is a new protocol for the Paima Whirlpool vision to 
 
 You can find the full docs on this [here](https://docs.paimastudios.com/home/multichain-support/projected-nfts/cross-chain/basics)
 
-# Building
+## Published packages
 
-1. Install [Aiken](https://aiken-lang.org/installation-instructions)
-2. Run `aiken build` or `aiken check`
+- [Cardano NodeJS](https://www.npmjs.com/package/@paima/cardano-projected-nft-nodejs)
+- [Cardano Browser](https://www.npmjs.com/package/@paima/cardano-projected-nft-browser)

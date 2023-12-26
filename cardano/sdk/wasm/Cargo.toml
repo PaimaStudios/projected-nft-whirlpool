@@ -1,5 +1,5 @@
 [package]
-name = "cardano-projected-nft-sdk-wasm"
+name = "cardano-projected-nft-wasm"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,7 +7,7 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-cardano-projected-nft-sdk = { path = "../rust" }
+cardano-projected-nft = { path = "../rust" }
 
 cml-core = { version = "0.1.0" }
 cml-chain = { version = "0.1.0" }

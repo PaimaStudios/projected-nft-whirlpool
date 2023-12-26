@@ -1,0 +1,12 @@
+[package]
+name = "cardano-projected-nft-json-schema-gen"
+version = "0.0.1"
+edition = "2018"
+
+
+[dependencies]
+serde_json = "1.0.57"
+schemars = "0.8.8"
+cardano-projected-nft = { path = "../../rust" }
+cml-chain = { version = "0.1.0" }
+cml-crypto = { version = "0.1.0" }

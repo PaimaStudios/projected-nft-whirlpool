@@ -1,0 +1,30 @@
+policy_id = _CDDL_CODEGEN_RAW_BYTES_TYPE_
+asset_name = _CDDL_CODEGEN_EXTERN_TYPE_
+ed25519_key_hash = _CDDL_CODEGEN_RAW_BYTES_TYPE_
+out_ref = _CDDL_CODEGEN_EXTERN_TYPE_
+big_int = _CDDL_CODEGEN_EXTERN_TYPE_ ; https://github.com/dcSpark/cddl-codegen/issues/220
+
+owner =
+    ed25519_key_hash            ; @name PKH
+  / [policy_id, asset_name]     ; @name NFT
+  / asset_name                  ; @name Receipt
+
+status =
+    0                                           ; @name Locked
+    / [out_ref: out_ref, for_how_long: big_int] ; @name Unlocking
+
+
+state =
+    [ owner: owner
+    , status: status
+    ]
+
+redeem =
+    [ partial_withdraw: bool
+    , nft_input_owner: out_ref / null
+    , new_receipt_owner: asset_name / null
+    ]
+
+mint_redeemer =
+    [total: big_int] ; @name MintTokens
+    / 1              ; @name BurnTokens

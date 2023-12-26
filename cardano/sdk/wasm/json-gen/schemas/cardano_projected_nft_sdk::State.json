@@ -1,0 +1,136 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "State",
+  "type": "object",
+  "required": [
+    "owner",
+    "status"
+  ],
+  "properties": {
+    "owner": {
+      "$ref": "#/definitions/Owner"
+    },
+    "status": {
+      "$ref": "#/definitions/Status"
+    }
+  },
+  "definitions": {
+    "AssetName": {
+      "type": "object",
+      "required": [
+        "inner"
+      ],
+      "properties": {
+        "inner": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          }
+        }
+      }
+    },
+    "OutRef": {
+      "type": "object",
+      "required": [
+        "index",
+        "tx_id"
+      ],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "tx_id": {
+          "type": "string"
+        }
+      }
+    },
+    "Owner": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "PKH"
+          ],
+          "properties": {
+            "PKH": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "NFT"
+          ],
+          "properties": {
+            "NFT": {
+              "type": "array",
+              "items": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/definitions/AssetName"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Receipt"
+          ],
+          "properties": {
+            "Receipt": {
+              "$ref": "#/definitions/AssetName"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Status": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "Locked"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Unlocking"
+          ],
+          "properties": {
+            "Unlocking": {
+              "type": "object",
+              "required": [
+                "for_how_long",
+                "out_ref"
+              ],
+              "properties": {
+                "for_how_long": {
+                  "type": "string"
+                },
+                "out_ref": {
+                  "$ref": "#/definitions/OutRef"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

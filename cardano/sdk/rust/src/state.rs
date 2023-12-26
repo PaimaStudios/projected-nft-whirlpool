@@ -71,7 +71,10 @@ impl TryFrom<PlutusData> for Owner {
 )]
 pub enum Status {
     Locked,
-    Unlocking { out_ref: OutRef, for_how_long: u64 },
+    Unlocking {
+        out_ref: OutRef,
+        for_how_long: BigInt,
+    },
 }
 
 impl Status {
@@ -79,7 +82,7 @@ impl Status {
         Self::Locked
     }
 
-    pub fn new_unlocking(out_ref: OutRef, for_how_long: u64) -> Self {
+    pub fn new_unlocking(out_ref: OutRef, for_how_long: BigInt) -> Self {
         Self::Unlocking {
             out_ref,
             for_how_long,
@@ -97,7 +100,7 @@ impl From<Status> for PlutusData {
             } => {
                 let out_ref = PlutusData::from(out_ref);
 
-                let for_how_long = PlutusData::new_integer(BigInt::from(for_how_long));
+                let for_how_long = PlutusData::new_integer(for_how_long);
 
                 PlutusData::new_constr_plutus_data(ConstrPlutusData::new(
                     1,
@@ -242,10 +245,7 @@ fn get_status(constr: ConstrPlutusData) -> Result<Status, String> {
             let for_how_long = match constr.fields.get(1).ok_or(
                 "no field found for for_how_long while parsing unlocking status".to_string(),
             )? {
-                PlutusData::Integer(bigint) => bigint.as_u64().ok_or(format!(
-                    "can't convert for_how_long bigint {} to u64 while parsing unlocking status",
-                    bigint
-                ))?,
+                PlutusData::Integer(bigint) => bigint.clone(),
                 _ => {
                     return Err("expected to see for_how_long bigint field type while parsing unlocking status".to_string());
                 }
@@ -272,6 +272,7 @@ mod tests {
     use cml_chain::plutus::PlutusData;
     use cml_chain::PolicyId;
 
+    use cml_chain::utils::BigInt;
     use cml_crypto::{Ed25519KeyHash, TransactionHash};
 
     #[test]
@@ -338,7 +339,7 @@ mod tests {
                     .unwrap(),
                     index: 2,
                 },
-                for_how_long: 300,
+                for_how_long: BigInt::from(300),
             },
         };
         let plutus_datum = PlutusData::from(datum.clone());

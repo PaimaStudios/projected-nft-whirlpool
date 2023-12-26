@@ -5,12 +5,12 @@ use std::fmt::Debug;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Deserialize, Serialize, schemars::JsonSchema)]
 pub enum MintRedeemer {
-    MintTokens { total: u64 },
+    MintTokens { total: BigInt },
     BurnTokens,
 }
 
 impl MintRedeemer {
-    pub fn new_mint(total: u64) -> MintRedeemer {
+    pub fn new_mint(total: BigInt) -> MintRedeemer {
         MintRedeemer::MintTokens { total }
     }
 
@@ -23,7 +23,7 @@ impl From<MintRedeemer> for PlutusData {
     fn from(value: MintRedeemer) -> Self {
         match value {
             MintRedeemer::MintTokens { total } => PlutusData::new_constr_plutus_data(
-                ConstrPlutusData::new(0, vec![PlutusData::new_integer(BigInt::from(total))]),
+                ConstrPlutusData::new(0, vec![PlutusData::new_integer(total)]),
             ),
             MintRedeemer::BurnTokens => {
                 PlutusData::new_constr_plutus_data(ConstrPlutusData::new(1, vec![]))
@@ -44,9 +44,7 @@ impl TryFrom<PlutusData> for MintRedeemer {
         match constr.alternative {
             0 => match constr.fields.get(0) {
                 Some(PlutusData::Integer(bigint)) => Ok(MintRedeemer::MintTokens {
-                    total: bigint
-                        .as_u64()
-                        .ok_or("Mint tokens total valus can't be represented as u64".to_string())?,
+                    total: bigint.clone(),
                 }),
                 _ => Err("constr field is not bigint".to_string()),
             },
@@ -62,12 +60,14 @@ impl TryFrom<PlutusData> for MintRedeemer {
 #[cfg(test)]
 mod tests {
     use crate::MintRedeemer;
-    use cml_chain::plutus::PlutusData;
+    use cml_chain::{plutus::PlutusData, utils::BigInt};
 
     #[test]
     fn test_mint_redeemer() {
         let mint_redeemer = vec![
-            MintRedeemer::MintTokens { total: 253 },
+            MintRedeemer::MintTokens {
+                total: BigInt::from(253),
+            },
             MintRedeemer::BurnTokens,
         ];
         for redeem in mint_redeemer.into_iter() {

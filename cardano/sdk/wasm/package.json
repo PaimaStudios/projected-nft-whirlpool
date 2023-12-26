@@ -1,0 +1,40 @@
+{
+  "name": "cardano-projected-nft",
+  "version": "1.0.0",
+  "description": "Cardano Projected NFT SDK",
+  "keywords": [
+    "cardano"
+  ],
+  "scripts": {
+    "rust:build-nodejs": "rimraf ./pkg; cross-env WASM_BINDGEN_WEAKREF=1 wasm-pack build --target=nodejs --out-name cardano_projected_nft; npm run js:ts-json-gen; wasm-pack pack",
+    "rust:build-browser": "rimraf ./pkg; cross-env WASM_BINDGEN_WEAKREF=1 wasm-pack build --target=browser --out-name cardano_projected_nft; npm run js:ts-json-gen; wasm-pack pack",
+    "rust:build-web": "rimraf ./pkg; cross-env WASM_BINDGEN_WEAKREF=1 wasm-pack build --target=web --out-name cardano_projected_nft; npm run js:ts-json-gen; wasm-pack pack",
+    "rust:publish": "cargo publish",
+    "rust:check-warnings": "(RUSTFLAGS=\"-D warnings\" cargo +stable build)",
+    "rust:test": "cargo test",
+    "js:prepublish": "npm run rust:test && rimraf ./publish && cp -r ./pkg ./publish && cp ../../../README.md publish/ && cp ../../../LICENSE publish/",
+    "js:test-publish": "npm run rust:build-nodejs && npm run js:prepublish && node ../../../scripts/publish-helper cardano/sdk cardano-projected-nft -nodejs && cd publish",
+    "js:publish-nodejs:prod": "npm run rust:build-nodejs && npm run js:prepublish && node ../../../scripts/publish-helper cardano/sdk cardano-projected-nft -nodejs && cd publish && npm publish --access public",
+    "js:publish-nodejs:beta": "npm run rust:build-nodejs && npm run js:prepublish && node ../../../scripts/publish-helper cardano/sdk cardano-projected-nft -nodejs && cd publish && npm publish --tag beta --access public",
+    "js:publish-browser:prod": "npm run rust:build-browser && npm run js:prepublish && node ../../../scripts/publish-helper cardano/sdk cardano-projected-nft -browser && cd publish && npm publish --access public",
+    "js:publish-browser:beta": "npm run rust:build-browser && npm run js:prepublish && node ../../../scripts/publish-helper cardano/sdk cardano-projected-nft -browser && cd publish && npm publish --tag beta --access public",
+    "js:ts-json-gen": "cd json-gen && cargo +stable run && cd .. && NODE_PATH=./node_modules node ../../../scripts/run-json2ts.js && node ../../../scripts/json-ts-types.js cardano/sdk cardano-projected-nft"
+  },
+  "husky": {
+    "hooks": {
+      "pre-push": "cargo fmt --check --manifest-path ../../Cargo.toml --all && cargo clippy --all-features --all-targets --manifest-path ../../Cargo.toml -- --deny 'clippy::all' && cargo check --all-features --all-targets --manifest-path ../../Cargo.toml && cargo test --all-features --all-targets --manifest-path ../../Cargo.toml"
+    }
+  },
+  "author": "dcSpark",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dcSpark/projected-nft-whirlpool.git"
+  },
+  "devDependencies": {
+    "husky": "4.2.5",
+    "json-schema-to-typescript": "^10.1.5",
+    "rimraf": "3.0.2",
+    "cross-env": "^7.0.3"
+  }
+}
