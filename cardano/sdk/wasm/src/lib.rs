@@ -374,8 +374,8 @@ impl Status {
                 out_ref,
                 for_how_long,
             } => Some(UnlockingStatus(
-                out_ref.clone().into(),
-                for_how_long.clone().into(),
+                out_ref.clone(),
+                for_how_long.clone(),
             )),
             _ => None,
         }
