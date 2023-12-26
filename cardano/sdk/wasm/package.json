@@ -22,7 +22,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-push": "npm run rust:test && npm run rust:build-nodejs"
+      "pre-push": "cargo fmt --check --manifest-path ../../Cargo.toml --all && cargo clippy --all-features --all-targets --manifest-path ../../Cargo.toml -- --deny 'clippy::all' && cargo check --all-features --all-targets --manifest-path ../../Cargo.toml && cargo test --all-features --all-targets --manifest-path ../../Cargo.toml"
     }
   },
   "author": "dcSpark",
