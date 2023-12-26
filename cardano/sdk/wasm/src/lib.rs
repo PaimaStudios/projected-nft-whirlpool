@@ -44,18 +44,14 @@ impl MintRedeemer {
 
     pub fn kind(&self) -> MintRedeemerKind {
         match &self.0 {
-            cardano_projected_nft::MintRedeemer::MintTokens { .. } => {
-                MintRedeemerKind::MintTokens
-            }
+            cardano_projected_nft::MintRedeemer::MintTokens { .. } => MintRedeemerKind::MintTokens,
             cardano_projected_nft::MintRedeemer::BurnTokens => MintRedeemerKind::BurnTokens,
         }
     }
 
     pub fn as_mint_tokens(&self) -> Option<cml_chain_wasm::utils::BigInt> {
         match &self.0 {
-            cardano_projected_nft::MintRedeemer::MintTokens { total } => {
-                Some(total.clone().into())
-            }
+            cardano_projected_nft::MintRedeemer::MintTokens { total } => Some(total.clone().into()),
             _ => None,
         }
     }
@@ -138,10 +134,7 @@ impl Owner {
     }
 
     pub fn new_nft(nft: &NFT) -> Self {
-        Self(cardano_projected_nft::Owner::new_nft(
-            nft.0,
-            nft.1.clone(),
-        ))
+        Self(cardano_projected_nft::Owner::new_nft(nft.0, nft.1.clone()))
     }
 
     pub fn new_receipt(receipt: &cml_chain_wasm::assets::AssetName) -> Self {
