@@ -182,6 +182,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "cardano-projected-nft-sdk-json-schema-gen"
+version = "0.0.1"
+dependencies = [
+ "cardano-projected-nft-sdk",
+ "cml-chain",
+ "cml-crypto",
+ "schemars",
+ "serde_json",
+]
+
+[[package]]
 name = "cardano-projected-nft-sdk-wasm"
 version = "0.1.0"
 dependencies = [

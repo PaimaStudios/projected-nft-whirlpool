@@ -10,7 +10,7 @@ owner =
   / asset_name                  ; @name Receipt
 
 status =
-    0                                         ; @name Locked
+    0                                           ; @name Locked
     / [out_ref: out_ref, for_how_long: big_int] ; @name Unlocking
 
 
@@ -27,4 +27,4 @@ redeem =
 
 mint_redeemer =
     [total: big_int] ; @name MintTokens
-    / 1             ; @name BurnTokens
+    / 1              ; @name BurnTokens

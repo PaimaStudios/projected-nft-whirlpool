@@ -7,7 +7,7 @@ const buildType /* : '-browser' | '-asmjs' | '-nodejs' */ = process.argv.slice(2
 const pathToRepo = path.join(__dirname, '..', pkgModName, 'wasm');
 const oldPkg = require(`${pathToRepo}/publish/package.json`);
 
-const repoName = `projected_nft_whirlpool`;
+const repoName = `cardano_projected_nft_sdk`;
 const baseHyphenName = repoName.replaceAll('_', '-');
 const underscorePkgModName = pkgModName.replaceAll('-', '_');
 

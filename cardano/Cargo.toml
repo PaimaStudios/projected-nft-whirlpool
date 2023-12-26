@@ -2,6 +2,7 @@
 members = [
     "sdk/rust",
     "sdk/wasm",
+    "sdk/wasm/json-gen",
 ]
 
 [workspace.metadata.release]
