@@ -15,12 +15,12 @@ pub fn export_schemas() {
     if !schema_path.exists() {
         std::fs::create_dir(schema_path).unwrap();
     }
-    gen_json_schema!(cardano_projected_nft_sdk::MintRedeemer);
-    gen_json_schema!(cardano_projected_nft_sdk::OutRef);
-    gen_json_schema!(cardano_projected_nft_sdk::Owner);
-    gen_json_schema!(cardano_projected_nft_sdk::Redeem);
-    gen_json_schema!(cardano_projected_nft_sdk::State);
-    gen_json_schema!(cardano_projected_nft_sdk::Status);
+    gen_json_schema!(cardano_projected_nft::MintRedeemer);
+    gen_json_schema!(cardano_projected_nft::OutRef);
+    gen_json_schema!(cardano_projected_nft::Owner);
+    gen_json_schema!(cardano_projected_nft::Redeem);
+    gen_json_schema!(cardano_projected_nft::State);
+    gen_json_schema!(cardano_projected_nft::Status);
 
     // TODO: update once this is merged https://github.com/dcSpark/cardano-multiplatform-lib/pull/287
     gen_json_schema!(cml_chain::assets::AssetName);

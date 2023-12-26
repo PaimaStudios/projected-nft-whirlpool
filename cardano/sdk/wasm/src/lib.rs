@@ -13,7 +13,7 @@ use wasm_bindgen::prelude::{wasm_bindgen, JsError, JsValue};
 
 #[derive(Clone, Debug)]
 #[wasm_bindgen]
-pub struct MintRedeemer(cardano_projected_nft_sdk::MintRedeemer);
+pub struct MintRedeemer(cardano_projected_nft::MintRedeemer);
 
 #[wasm_bindgen]
 impl MintRedeemer {
@@ -33,27 +33,27 @@ impl MintRedeemer {
     }
 
     pub fn new_mint(total: &cml_chain_wasm::utils::BigInt) -> Self {
-        Self(cardano_projected_nft_sdk::MintRedeemer::new_mint(
+        Self(cardano_projected_nft::MintRedeemer::new_mint(
             total.clone().into(),
         ))
     }
 
     pub fn new_burn() -> Self {
-        Self(cardano_projected_nft_sdk::MintRedeemer::new_burn())
+        Self(cardano_projected_nft::MintRedeemer::new_burn())
     }
 
     pub fn kind(&self) -> MintRedeemerKind {
         match &self.0 {
-            cardano_projected_nft_sdk::MintRedeemer::MintTokens { .. } => {
+            cardano_projected_nft::MintRedeemer::MintTokens { .. } => {
                 MintRedeemerKind::MintTokens
             }
-            cardano_projected_nft_sdk::MintRedeemer::BurnTokens => MintRedeemerKind::BurnTokens,
+            cardano_projected_nft::MintRedeemer::BurnTokens => MintRedeemerKind::BurnTokens,
         }
     }
 
     pub fn as_mint_tokens(&self) -> Option<cml_chain_wasm::utils::BigInt> {
         match &self.0 {
-            cardano_projected_nft_sdk::MintRedeemer::MintTokens { total } => {
+            cardano_projected_nft::MintRedeemer::MintTokens { total } => {
                 Some(total.clone().into())
             }
             _ => None,
@@ -61,20 +61,20 @@ impl MintRedeemer {
     }
 }
 
-impl From<cardano_projected_nft_sdk::MintRedeemer> for MintRedeemer {
-    fn from(native: cardano_projected_nft_sdk::MintRedeemer) -> Self {
+impl From<cardano_projected_nft::MintRedeemer> for MintRedeemer {
+    fn from(native: cardano_projected_nft::MintRedeemer) -> Self {
         Self(native)
     }
 }
 
-impl From<MintRedeemer> for cardano_projected_nft_sdk::MintRedeemer {
+impl From<MintRedeemer> for cardano_projected_nft::MintRedeemer {
     fn from(wasm: MintRedeemer) -> Self {
         wasm.0
     }
 }
 
-impl AsRef<cardano_projected_nft_sdk::MintRedeemer> for MintRedeemer {
-    fn as_ref(&self) -> &cardano_projected_nft_sdk::MintRedeemer {
+impl AsRef<cardano_projected_nft::MintRedeemer> for MintRedeemer {
+    fn as_ref(&self) -> &cardano_projected_nft::MintRedeemer {
         &self.0
     }
 }
@@ -112,7 +112,7 @@ impl NFT {
 
 #[derive(Clone, Debug)]
 #[wasm_bindgen]
-pub struct Owner(cardano_projected_nft_sdk::Owner);
+pub struct Owner(cardano_projected_nft::Owner);
 
 #[wasm_bindgen]
 impl Owner {
@@ -132,42 +132,42 @@ impl Owner {
     }
 
     pub fn new_keyhash(keyhash: &cml_crypto_wasm::Ed25519KeyHash) -> Self {
-        Self(cardano_projected_nft_sdk::Owner::new_keyhash(
+        Self(cardano_projected_nft::Owner::new_keyhash(
             keyhash.clone().into(),
         ))
     }
 
     pub fn new_nft(nft: &NFT) -> Self {
-        Self(cardano_projected_nft_sdk::Owner::new_nft(
+        Self(cardano_projected_nft::Owner::new_nft(
             nft.0,
             nft.1.clone(),
         ))
     }
 
     pub fn new_receipt(receipt: &cml_chain_wasm::assets::AssetName) -> Self {
-        Self(cardano_projected_nft_sdk::Owner::new_receipt(
+        Self(cardano_projected_nft::Owner::new_receipt(
             receipt.clone().into(),
         ))
     }
 
     pub fn kind(&self) -> OwnerKind {
         match &self.0 {
-            cardano_projected_nft_sdk::Owner::PKH(_) => OwnerKind::PublicKeyHash,
-            cardano_projected_nft_sdk::Owner::NFT(_, _) => OwnerKind::NFT,
-            cardano_projected_nft_sdk::Owner::Receipt(_) => OwnerKind::Receipt,
+            cardano_projected_nft::Owner::PKH(_) => OwnerKind::PublicKeyHash,
+            cardano_projected_nft::Owner::NFT(_, _) => OwnerKind::NFT,
+            cardano_projected_nft::Owner::Receipt(_) => OwnerKind::Receipt,
         }
     }
 
     pub fn as_public_keyhash(&self) -> Option<cml_crypto_wasm::Ed25519KeyHash> {
         match &self.0 {
-            cardano_projected_nft_sdk::Owner::PKH(pkh) => Some((*pkh).into()),
+            cardano_projected_nft::Owner::PKH(pkh) => Some((*pkh).into()),
             _ => None,
         }
     }
 
     pub fn as_nft(&self) -> Option<NFT> {
         match &self.0 {
-            cardano_projected_nft_sdk::Owner::NFT(policy_id, asset_name) => {
+            cardano_projected_nft::Owner::NFT(policy_id, asset_name) => {
                 Some(NFT(*policy_id, asset_name.clone()))
             }
             _ => None,
@@ -176,26 +176,26 @@ impl Owner {
 
     pub fn as_receipt(&self) -> Option<cml_chain_wasm::assets::AssetName> {
         match &self.0 {
-            cardano_projected_nft_sdk::Owner::Receipt(receipt) => Some(receipt.clone().into()),
+            cardano_projected_nft::Owner::Receipt(receipt) => Some(receipt.clone().into()),
             _ => None,
         }
     }
 }
 
-impl From<cardano_projected_nft_sdk::Owner> for Owner {
-    fn from(native: cardano_projected_nft_sdk::Owner) -> Self {
+impl From<cardano_projected_nft::Owner> for Owner {
+    fn from(native: cardano_projected_nft::Owner) -> Self {
         Self(native)
     }
 }
 
-impl From<Owner> for cardano_projected_nft_sdk::Owner {
+impl From<Owner> for cardano_projected_nft::Owner {
     fn from(wasm: Owner) -> Self {
         wasm.0
     }
 }
 
-impl AsRef<cardano_projected_nft_sdk::Owner> for Owner {
-    fn as_ref(&self) -> &cardano_projected_nft_sdk::Owner {
+impl AsRef<cardano_projected_nft::Owner> for Owner {
+    fn as_ref(&self) -> &cardano_projected_nft::Owner {
         &self.0
     }
 }
@@ -209,7 +209,7 @@ pub enum OwnerKind {
 
 #[derive(Clone, Debug)]
 #[wasm_bindgen]
-pub struct Redeem(cardano_projected_nft_sdk::Redeem);
+pub struct Redeem(cardano_projected_nft::Redeem);
 
 #[wasm_bindgen]
 impl Redeem {
@@ -248,7 +248,7 @@ impl Redeem {
         nft_input_owner: Option<OutRef>,
         new_receipt_owner: Option<cml_chain_wasm::assets::AssetName>,
     ) -> Self {
-        Self(cardano_projected_nft_sdk::Redeem::new(
+        Self(cardano_projected_nft::Redeem::new(
             partial_withdraw,
             nft_input_owner.map(Into::into),
             new_receipt_owner.map(Into::into),
@@ -256,27 +256,27 @@ impl Redeem {
     }
 }
 
-impl From<cardano_projected_nft_sdk::Redeem> for Redeem {
-    fn from(native: cardano_projected_nft_sdk::Redeem) -> Self {
+impl From<cardano_projected_nft::Redeem> for Redeem {
+    fn from(native: cardano_projected_nft::Redeem) -> Self {
         Self(native)
     }
 }
 
-impl From<Redeem> for cardano_projected_nft_sdk::Redeem {
+impl From<Redeem> for cardano_projected_nft::Redeem {
     fn from(wasm: Redeem) -> Self {
         wasm.0
     }
 }
 
-impl AsRef<cardano_projected_nft_sdk::Redeem> for Redeem {
-    fn as_ref(&self) -> &cardano_projected_nft_sdk::Redeem {
+impl AsRef<cardano_projected_nft::Redeem> for Redeem {
+    fn as_ref(&self) -> &cardano_projected_nft::Redeem {
         &self.0
     }
 }
 
 #[derive(Clone, Debug)]
 #[wasm_bindgen]
-pub struct State(cardano_projected_nft_sdk::State);
+pub struct State(cardano_projected_nft::State);
 
 #[wasm_bindgen]
 impl State {
@@ -304,34 +304,34 @@ impl State {
     }
 
     pub fn new(owner: &Owner, status: &Status) -> Self {
-        Self(cardano_projected_nft_sdk::State::new(
+        Self(cardano_projected_nft::State::new(
             owner.clone().into(),
             status.clone().into(),
         ))
     }
 }
 
-impl From<cardano_projected_nft_sdk::State> for State {
-    fn from(native: cardano_projected_nft_sdk::State) -> Self {
+impl From<cardano_projected_nft::State> for State {
+    fn from(native: cardano_projected_nft::State) -> Self {
         Self(native)
     }
 }
 
-impl From<State> for cardano_projected_nft_sdk::State {
+impl From<State> for cardano_projected_nft::State {
     fn from(wasm: State) -> Self {
         wasm.0
     }
 }
 
-impl AsRef<cardano_projected_nft_sdk::State> for State {
-    fn as_ref(&self) -> &cardano_projected_nft_sdk::State {
+impl AsRef<cardano_projected_nft::State> for State {
+    fn as_ref(&self) -> &cardano_projected_nft::State {
         &self.0
     }
 }
 
 #[derive(Clone, Debug)]
 #[wasm_bindgen]
-pub struct Status(cardano_projected_nft_sdk::Status);
+pub struct Status(cardano_projected_nft::Status);
 
 #[wasm_bindgen]
 impl Status {
@@ -351,11 +351,11 @@ impl Status {
     }
 
     pub fn new_locked() -> Self {
-        Self(cardano_projected_nft_sdk::Status::new_locked())
+        Self(cardano_projected_nft::Status::new_locked())
     }
 
     pub fn new_unlocking(unlocking: &UnlockingStatus) -> Self {
-        Self(cardano_projected_nft_sdk::Status::new_unlocking(
+        Self(cardano_projected_nft::Status::new_unlocking(
             unlocking.out_ref().clone().into(),
             unlocking.for_how_long().into(),
         ))
@@ -363,14 +363,14 @@ impl Status {
 
     pub fn kind(&self) -> StatusKind {
         match &self.0 {
-            cardano_projected_nft_sdk::Status::Locked { .. } => StatusKind::Locked,
-            cardano_projected_nft_sdk::Status::Unlocking { .. } => StatusKind::Unlocking,
+            cardano_projected_nft::Status::Locked { .. } => StatusKind::Locked,
+            cardano_projected_nft::Status::Unlocking { .. } => StatusKind::Unlocking,
         }
     }
 
     pub fn as_unlocking(&self) -> Option<UnlockingStatus> {
         match &self.0 {
-            cardano_projected_nft_sdk::Status::Unlocking {
+            cardano_projected_nft::Status::Unlocking {
                 out_ref,
                 for_how_long,
             } => Some(UnlockingStatus(out_ref.clone(), for_how_long.clone())),
@@ -379,20 +379,20 @@ impl Status {
     }
 }
 
-impl From<cardano_projected_nft_sdk::Status> for Status {
-    fn from(native: cardano_projected_nft_sdk::Status) -> Self {
+impl From<cardano_projected_nft::Status> for Status {
+    fn from(native: cardano_projected_nft::Status) -> Self {
         Self(native)
     }
 }
 
-impl From<Status> for cardano_projected_nft_sdk::Status {
+impl From<Status> for cardano_projected_nft::Status {
     fn from(wasm: Status) -> Self {
         wasm.0
     }
 }
 
-impl AsRef<cardano_projected_nft_sdk::Status> for Status {
-    fn as_ref(&self) -> &cardano_projected_nft_sdk::Status {
+impl AsRef<cardano_projected_nft::Status> for Status {
+    fn as_ref(&self) -> &cardano_projected_nft::Status {
         &self.0
     }
 }
@@ -405,7 +405,7 @@ pub enum StatusKind {
 
 #[derive(Clone, Debug)]
 #[wasm_bindgen]
-pub struct UnlockingStatus(cardano_projected_nft_sdk::OutRef, cml_chain::utils::BigInt);
+pub struct UnlockingStatus(cardano_projected_nft::OutRef, cml_chain::utils::BigInt);
 
 #[wasm_bindgen]
 impl UnlockingStatus {

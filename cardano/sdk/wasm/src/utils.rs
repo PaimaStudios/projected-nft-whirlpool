@@ -9,7 +9,7 @@ impl MintRedeemer {
     pub fn from_plutus_data(
         redeemer: &cml_chain_wasm::plutus::PlutusData,
     ) -> Result<MintRedeemer, JsValue> {
-        cardano_projected_nft_sdk::MintRedeemer::try_from(
+        cardano_projected_nft::MintRedeemer::try_from(
             Into::<cml_chain::plutus::PlutusData>::into(redeemer.clone()),
         )
         .map(MintRedeemer)
@@ -24,7 +24,7 @@ impl Owner {
     }
 
     pub fn from_plutus_data(owner: &cml_chain_wasm::plutus::PlutusData) -> Result<Owner, JsValue> {
-        cardano_projected_nft_sdk::Owner::try_from(Into::<cml_chain::plutus::PlutusData>::into(
+        cardano_projected_nft::Owner::try_from(Into::<cml_chain::plutus::PlutusData>::into(
             owner.clone(),
         ))
         .map(Owner)
@@ -40,7 +40,7 @@ impl Redeem {
     pub fn from_plutus_data(
         redeemer: &cml_chain_wasm::plutus::PlutusData,
     ) -> Result<Redeem, JsValue> {
-        cardano_projected_nft_sdk::Redeem::try_from(Into::<cml_chain::plutus::PlutusData>::into(
+        cardano_projected_nft::Redeem::try_from(Into::<cml_chain::plutus::PlutusData>::into(
             redeemer.clone(),
         ))
         .map(Redeem)
@@ -55,7 +55,7 @@ impl State {
     }
 
     pub fn from_plutus_data(state: &cml_chain_wasm::plutus::PlutusData) -> Result<State, JsValue> {
-        cardano_projected_nft_sdk::State::try_from(Into::<cml_chain::plutus::PlutusData>::into(
+        cardano_projected_nft::State::try_from(Into::<cml_chain::plutus::PlutusData>::into(
             state.clone(),
         ))
         .map(State)
@@ -72,7 +72,7 @@ impl Status {
     pub fn from_plutus_data(
         status: &cml_chain_wasm::plutus::PlutusData,
     ) -> Result<Status, JsValue> {
-        cardano_projected_nft_sdk::Status::try_from(Into::<cml_chain::plutus::PlutusData>::into(
+        cardano_projected_nft::Status::try_from(Into::<cml_chain::plutus::PlutusData>::into(
             status.clone(),
         ))
         .map(Status)

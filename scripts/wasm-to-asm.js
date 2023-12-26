@@ -2,7 +2,7 @@ const fs = require('fs')
 
 const pkgModName = process.argv.slice(2)[0];
 
-const repoName = `cardano_projected_nft_sdk`;
+const repoName = `cardano_projected_nft`;
 
 const paths = [
   `./pkg/${repoName}_${pkgModName}_bg.js`,
