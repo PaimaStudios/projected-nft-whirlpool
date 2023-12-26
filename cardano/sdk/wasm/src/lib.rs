@@ -6,9 +6,10 @@
 // This file was code-generated using an experimental CDDL to rust tool:
 // https://github.com/dcSpark/cddl-codegen
 
-use cml_chain::assets::AssetName;
+mod output_reference;
 
-use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
+use output_reference::OutRef;
+use wasm_bindgen::prelude::{wasm_bindgen, JsError, JsValue};
 
 #[derive(Clone, Debug)]
 #[wasm_bindgen]
@@ -16,38 +17,25 @@ pub struct MintRedeemer(cardano_projected_nft_sdk::MintRedeemer);
 
 #[wasm_bindgen]
 impl MintRedeemer {
-    pub fn to_plutus_data(&self) -> cml_chain_wasm::plutus::PlutusData {
-        cml_chain::plutus::PlutusData::from(self.0.clone()).into()
+    pub fn to_json(&self) -> Result<String, JsError> {
+        serde_json::to_string_pretty(&self.0).map_err(|e| JsError::new(&format!("to_json: {}", e)))
     }
 
-    pub fn from_plutus_data(
-        redeemer: &cml_chain_wasm::plutus::PlutusData,
-    ) -> Result<MintRedeemer, JsValue> {
-        cardano_projected_nft_sdk::MintRedeemer::try_from(
-            Into::<cml_chain::plutus::PlutusData>::into(redeemer.clone()),
-        )
-        .map(MintRedeemer)
-        .map_err(|e| JsValue::from_str(&format!("from_plutus_data: {}", e)))
-    }
-
-    pub fn to_json(&self) -> Result<String, JsValue> {
-        serde_json::to_string_pretty(&self.0)
-            .map_err(|e| JsValue::from_str(&format!("to_json: {}", e)))
-    }
-
-    pub fn to_json_value(&self) -> Result<JsValue, JsValue> {
+    pub fn to_json_value(&self) -> Result<JsValue, JsError> {
         serde_wasm_bindgen::to_value(&self.0)
-            .map_err(|e| JsValue::from_str(&format!("to_js_value: {}", e)))
+            .map_err(|e| JsError::new(&format!("to_js_value: {}", e)))
     }
 
-    pub fn from_json(json: &str) -> Result<MintRedeemer, JsValue> {
+    pub fn from_json(json: &str) -> Result<MintRedeemer, JsError> {
         serde_json::from_str(json)
             .map(Self)
-            .map_err(|e| JsValue::from_str(&format!("from_json: {}", e)))
+            .map_err(|e| JsError::new(&format!("from_json: {}", e)))
     }
 
-    pub fn new_mint(total: u64) -> Self {
-        Self(cardano_projected_nft_sdk::MintRedeemer::new_mint(total))
+    pub fn new_mint(total: &cml_chain_wasm::utils::BigInt) -> Self {
+        Self(cardano_projected_nft_sdk::MintRedeemer::new_mint(
+            total.clone().into(),
+        ))
     }
 
     pub fn new_burn() -> Self {
@@ -63,9 +51,9 @@ impl MintRedeemer {
         }
     }
 
-    pub fn as_mint_tokens(&self) -> Option<u64> {
+    pub fn as_mint_tokens(&self) -> Option<cml_chain_wasm::utils::BigInt> {
         match &self.0 {
-            cardano_projected_nft_sdk::MintRedeemer::MintTokens { total } => Some(*total),
+            cardano_projected_nft_sdk::MintRedeemer::MintTokens{ total } => Some(total.clone().into()),
             _ => None,
         }
     }
@@ -101,6 +89,14 @@ pub struct NFT(cml_chain::PolicyId, cml_chain::assets::AssetName);
 
 #[wasm_bindgen]
 impl NFT {
+    pub fn policy_id(&self) -> cml_chain_wasm::PolicyId {
+        self.0.into()
+    }
+
+    pub fn asset_name(&self) -> cml_chain_wasm::assets::AssetName {
+        self.1.clone().into()
+    }
+
     pub fn new(
         policy_id: &cml_chain_wasm::PolicyId,
         asset_name: &cml_chain_wasm::assets::AssetName,
@@ -110,14 +106,6 @@ impl NFT {
             Into::<cml_chain::assets::AssetName>::into(asset_name.clone()),
         )
     }
-
-    pub fn policy_id(&self) -> cml_chain_wasm::PolicyId {
-        self.0.into()
-    }
-
-    pub fn asset_name(&self) -> cml_chain_wasm::assets::AssetName {
-        self.1.clone().into()
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -126,32 +114,19 @@ pub struct Owner(cardano_projected_nft_sdk::Owner);
 
 #[wasm_bindgen]
 impl Owner {
-    pub fn to_plutus_data(&self) -> cml_chain_wasm::plutus::PlutusData {
-        cml_chain::plutus::PlutusData::from(self.0.clone()).into()
+    pub fn to_json(&self) -> Result<String, JsError> {
+        serde_json::to_string_pretty(&self.0).map_err(|e| JsError::new(&format!("to_json: {}", e)))
     }
 
-    pub fn from_plutus_data(owner: &cml_chain_wasm::plutus::PlutusData) -> Result<Owner, JsValue> {
-        cardano_projected_nft_sdk::Owner::try_from(Into::<cml_chain::plutus::PlutusData>::into(
-            owner.clone(),
-        ))
-        .map(Owner)
-        .map_err(|e| JsValue::from_str(&format!("from_plutus_data: {}", e)))
-    }
-
-    pub fn to_json(&self) -> Result<String, JsValue> {
-        serde_json::to_string_pretty(&self.0)
-            .map_err(|e| JsValue::from_str(&format!("to_json: {}", e)))
-    }
-
-    pub fn to_json_value(&self) -> Result<JsValue, JsValue> {
+    pub fn to_json_value(&self) -> Result<JsValue, JsError> {
         serde_wasm_bindgen::to_value(&self.0)
-            .map_err(|e| JsValue::from_str(&format!("to_js_value: {}", e)))
+            .map_err(|e| JsError::new(&format!("to_js_value: {}", e)))
     }
 
-    pub fn from_json(json: &str) -> Result<Owner, JsValue> {
+    pub fn from_json(json: &str) -> Result<Owner, JsError> {
         serde_json::from_str(json)
             .map(Self)
-            .map_err(|e| JsValue::from_str(&format!("from_json: {}", e)))
+            .map_err(|e| JsError::new(&format!("from_json: {}", e)))
     }
 
     pub fn new_keyhash(keyhash: &cml_crypto_wasm::Ed25519KeyHash) -> Self {
@@ -234,35 +209,21 @@ pub enum OwnerKind {
 #[wasm_bindgen]
 pub struct Redeem(cardano_projected_nft_sdk::Redeem);
 
+#[wasm_bindgen]
 impl Redeem {
-    pub fn to_plutus_data(&self) -> cml_chain_wasm::plutus::PlutusData {
-        cml_chain::plutus::PlutusData::from(self.0.clone()).into()
+    pub fn to_json(&self) -> Result<String, JsError> {
+        serde_json::to_string_pretty(&self.0).map_err(|e| JsError::new(&format!("to_json: {}", e)))
     }
 
-    pub fn from_plutus_data(
-        redeemer: &cml_chain_wasm::plutus::PlutusData,
-    ) -> Result<Redeem, JsValue> {
-        cardano_projected_nft_sdk::Redeem::try_from(Into::<cml_chain::plutus::PlutusData>::into(
-            redeemer.clone(),
-        ))
-        .map(Redeem)
-        .map_err(|e| JsValue::from_str(&format!("from_plutus_data: {}", e)))
-    }
-
-    pub fn to_json(&self) -> Result<String, JsValue> {
-        serde_json::to_string_pretty(&self.0)
-            .map_err(|e| JsValue::from_str(&format!("to_json: {}", e)))
-    }
-
-    pub fn to_json_value(&self) -> Result<JsValue, JsValue> {
+    pub fn to_json_value(&self) -> Result<JsValue, JsError> {
         serde_wasm_bindgen::to_value(&self.0)
-            .map_err(|e| JsValue::from_str(&format!("to_js_value: {}", e)))
+            .map_err(|e| JsError::new(&format!("to_js_value: {}", e)))
     }
 
-    pub fn from_json(json: &str) -> Result<Redeem, JsValue> {
+    pub fn from_json(json: &str) -> Result<Redeem, JsError> {
         serde_json::from_str(json)
             .map(Self)
-            .map_err(|e| JsValue::from_str(&format!("from_json: {}", e)))
+            .map_err(|e| JsError::new(&format!("from_json: {}", e)))
     }
 
     pub fn partial_withdraw(&self) -> bool {
@@ -273,7 +234,7 @@ impl Redeem {
         self.0.nft_input_owner.clone().map(std::convert::Into::into)
     }
 
-    pub fn new_receipt_owner(&self) -> Option<AssetName> {
+    pub fn new_receipt_owner(&self) -> Option<cml_chain_wasm::assets::AssetName> {
         self.0
             .new_receipt_owner
             .clone()
@@ -317,32 +278,19 @@ pub struct State(cardano_projected_nft_sdk::State);
 
 #[wasm_bindgen]
 impl State {
-    pub fn to_plutus_data(&self) -> cml_chain_wasm::plutus::PlutusData {
-        cml_chain::plutus::PlutusData::from(self.0.clone()).into()
+    pub fn to_json(&self) -> Result<String, JsError> {
+        serde_json::to_string_pretty(&self.0).map_err(|e| JsError::new(&format!("to_json: {}", e)))
     }
 
-    pub fn from_plutus_data(state: &cml_chain_wasm::plutus::PlutusData) -> Result<State, JsValue> {
-        cardano_projected_nft_sdk::State::try_from(Into::<cml_chain::plutus::PlutusData>::into(
-            state.clone(),
-        ))
-        .map(State)
-        .map_err(|e| JsValue::from_str(&format!("from_plutus_data: {}", e)))
-    }
-
-    pub fn to_json(&self) -> Result<String, JsValue> {
-        serde_json::to_string_pretty(&self.0)
-            .map_err(|e| JsValue::from_str(&format!("to_json: {}", e)))
-    }
-
-    pub fn to_json_value(&self) -> Result<JsValue, JsValue> {
+    pub fn to_json_value(&self) -> Result<JsValue, JsError> {
         serde_wasm_bindgen::to_value(&self.0)
-            .map_err(|e| JsValue::from_str(&format!("to_js_value: {}", e)))
+            .map_err(|e| JsError::new(&format!("to_js_value: {}", e)))
     }
 
-    pub fn from_json(json: &str) -> Result<State, JsValue> {
+    pub fn from_json(json: &str) -> Result<State, JsError> {
         serde_json::from_str(json)
             .map(Self)
-            .map_err(|e| JsValue::from_str(&format!("from_json: {}", e)))
+            .map_err(|e| JsError::new(&format!("from_json: {}", e)))
     }
 
     pub fn owner(&self) -> Owner {
@@ -385,34 +333,19 @@ pub struct Status(cardano_projected_nft_sdk::Status);
 
 #[wasm_bindgen]
 impl Status {
-    pub fn to_plutus_data(&self) -> cml_chain_wasm::plutus::PlutusData {
-        cml_chain::plutus::PlutusData::from(self.0.clone()).into()
+    pub fn to_json(&self) -> Result<String, JsError> {
+        serde_json::to_string_pretty(&self.0).map_err(|e| JsError::new(&format!("to_json: {}", e)))
     }
 
-    pub fn from_plutus_data(
-        status: &cml_chain_wasm::plutus::PlutusData,
-    ) -> Result<Status, JsValue> {
-        cardano_projected_nft_sdk::Status::try_from(Into::<cml_chain::plutus::PlutusData>::into(
-            status.clone(),
-        ))
-        .map(Status)
-        .map_err(|e| JsValue::from_str(&format!("from_plutus_data: {}", e)))
-    }
-
-    pub fn to_json(&self) -> Result<String, JsValue> {
-        serde_json::to_string_pretty(&self.0)
-            .map_err(|e| JsValue::from_str(&format!("to_json: {}", e)))
-    }
-
-    pub fn to_json_value(&self) -> Result<JsValue, JsValue> {
+    pub fn to_json_value(&self) -> Result<JsValue, JsError> {
         serde_wasm_bindgen::to_value(&self.0)
-            .map_err(|e| JsValue::from_str(&format!("to_js_value: {}", e)))
+            .map_err(|e| JsError::new(&format!("to_js_value: {}", e)))
     }
 
-    pub fn from_json(json: &str) -> Result<Status, JsValue> {
+    pub fn from_json(json: &str) -> Result<Status, JsError> {
         serde_json::from_str(json)
             .map(Self)
-            .map_err(|e| JsValue::from_str(&format!("from_json: {}", e)))
+            .map_err(|e| JsError::new(&format!("from_json: {}", e)))
     }
 
     pub fn new_locked() -> Self {
@@ -422,7 +355,7 @@ impl Status {
     pub fn new_unlocking(unlocking: &UnlockingStatus) -> Self {
         Self(cardano_projected_nft_sdk::Status::new_unlocking(
             unlocking.out_ref().clone().into(),
-            unlocking.for_how_long(),
+            unlocking.for_how_long().into(),
         ))
     }
 
@@ -438,7 +371,7 @@ impl Status {
             cardano_projected_nft_sdk::Status::Unlocking {
                 out_ref,
                 for_how_long,
-            } => Some(UnlockingStatus(out_ref.clone(), *for_how_long)),
+            } => Some(UnlockingStatus(out_ref.clone().into(), for_how_long.clone().into())),
             _ => None,
         }
     }
@@ -470,7 +403,7 @@ pub enum StatusKind {
 
 #[derive(Clone, Debug)]
 #[wasm_bindgen]
-pub struct UnlockingStatus(cardano_projected_nft_sdk::OutRef, u64);
+pub struct UnlockingStatus(cardano_projected_nft_sdk::OutRef, cml_chain::utils::BigInt);
 
 #[wasm_bindgen]
 impl UnlockingStatus {
@@ -478,57 +411,11 @@ impl UnlockingStatus {
         self.0.clone().into()
     }
 
-    pub fn for_how_long(&self) -> u64 {
-        self.1
+    pub fn for_how_long(&self) -> cml_chain_wasm::utils::BigInt {
+        self.1.clone().into()
     }
 
-    pub fn new(out_ref: &OutRef, for_how_long: u64) -> Self {
-        UnlockingStatus(out_ref.clone().into(), for_how_long)
-    }
-}
-
-#[derive(Clone, Debug)]
-#[wasm_bindgen]
-pub struct OutRef(cardano_projected_nft_sdk::OutRef);
-
-#[wasm_bindgen]
-impl OutRef {
-    pub fn to_plutus_data(&self) -> cml_chain_wasm::plutus::PlutusData {
-        cml_chain::plutus::PlutusData::from(self.0.clone()).into()
-    }
-
-    pub fn from_plutus_data(
-        out_ref: &cml_chain_wasm::plutus::PlutusData,
-    ) -> Result<OutRef, JsValue> {
-        cardano_projected_nft_sdk::OutRef::try_from(Into::<cml_chain::plutus::PlutusData>::into(
-            out_ref.clone(),
-        ))
-        .map(OutRef)
-        .map_err(|e| JsValue::from_str(&format!("from_plutus_data: {}", e)))
-    }
-
-    pub fn new(tx_id: &cml_crypto_wasm::TransactionHash, index: u64) -> Self {
-        Self(cardano_projected_nft_sdk::OutRef::new(
-            tx_id.clone().into(),
-            index,
-        ))
-    }
-}
-
-impl From<cardano_projected_nft_sdk::OutRef> for OutRef {
-    fn from(native: cardano_projected_nft_sdk::OutRef) -> Self {
-        Self(native)
-    }
-}
-
-impl From<OutRef> for cardano_projected_nft_sdk::OutRef {
-    fn from(wasm: OutRef) -> Self {
-        wasm.0
-    }
-}
-
-impl AsRef<cardano_projected_nft_sdk::OutRef> for OutRef {
-    fn as_ref(&self) -> &cardano_projected_nft_sdk::OutRef {
-        &self.0
+    pub fn new(out_ref: &OutRef, for_how_long: &cml_chain_wasm::utils::BigInt) -> Self {
+        UnlockingStatus(out_ref.clone().into(), for_how_long.clone().into())
     }
 }

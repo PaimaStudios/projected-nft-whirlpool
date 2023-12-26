@@ -13,6 +13,7 @@ use cml_chain::transaction::{
     DatumOption, RequiredSigners, Transaction, TransactionInput, TransactionOutput,
     TransactionWitnessSet,
 };
+use cml_chain::utils::BigInt;
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::{header, Client, StatusCode};
 use serde::de::Error;
@@ -683,7 +684,7 @@ async fn handle_unlock(
 
     let validity = ttl_by_posix(now - 100);
     let ttl = ttl_by_posix(now + 100);
-    let for_how_long = (now + 400) * 1000;
+    let for_how_long = BigInt::from((now + 400) * 1000);
 
     let new_datum = match config.control_nft.clone() {
         None => State {
