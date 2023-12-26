@@ -26,7 +26,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: -- --check --manifest-path ./cardano/Cargo.toml --all
+          args: --check --manifest-path ./cardano/Cargo.toml --all
 
       - name: "Linter checks"
         uses: actions-rs/cargo@v1
