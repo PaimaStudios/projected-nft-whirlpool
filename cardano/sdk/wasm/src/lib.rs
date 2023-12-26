@@ -53,7 +53,9 @@ impl MintRedeemer {
 
     pub fn as_mint_tokens(&self) -> Option<cml_chain_wasm::utils::BigInt> {
         match &self.0 {
-            cardano_projected_nft_sdk::MintRedeemer::MintTokens{ total } => Some(total.clone().into()),
+            cardano_projected_nft_sdk::MintRedeemer::MintTokens { total } => {
+                Some(total.clone().into())
+            }
             _ => None,
         }
     }
@@ -371,7 +373,10 @@ impl Status {
             cardano_projected_nft_sdk::Status::Unlocking {
                 out_ref,
                 for_how_long,
-            } => Some(UnlockingStatus(out_ref.clone().into(), for_how_long.clone().into())),
+            } => Some(UnlockingStatus(
+                out_ref.clone().into(),
+                for_how_long.clone().into(),
+            )),
             _ => None,
         }
     }

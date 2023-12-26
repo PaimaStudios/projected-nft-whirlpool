@@ -71,7 +71,10 @@ impl TryFrom<PlutusData> for Owner {
 )]
 pub enum Status {
     Locked,
-    Unlocking { out_ref: OutRef, for_how_long: BigInt },
+    Unlocking {
+        out_ref: OutRef,
+        for_how_long: BigInt,
+    },
 }
 
 impl Status {

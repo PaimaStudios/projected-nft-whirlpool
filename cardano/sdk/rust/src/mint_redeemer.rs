@@ -65,7 +65,9 @@ mod tests {
     #[test]
     fn test_mint_redeemer() {
         let mint_redeemer = vec![
-            MintRedeemer::MintTokens { total: BigInt::from(253) },
+            MintRedeemer::MintTokens {
+                total: BigInt::from(253),
+            },
             MintRedeemer::BurnTokens,
         ];
         for redeem in mint_redeemer.into_iter() {
