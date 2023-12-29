@@ -10,6 +10,9 @@ export const getLockDatum = ({
 }: {
   ownerPaymentKeyHash: string;
 }): string => {
+  // TODO: replace with
+  // State.new(ownerPaymentKeyHash, Status.new_locked()).to_plutus_data
+  // https://github.com/dcSpark/projected-nft-whirlpool/issues/20
   const data = new Constr(0, [
     new Constr(0, [ownerPaymentKeyHash]),
     new Constr(0, []),
@@ -31,6 +34,10 @@ export const getUnlockDatum = ({
   outputIndex: bigint;
   unlockTime: bigint;
 }): string => {
+  // TODO: replace with
+  // const outRef = OutRef.new(txId, outputIndex)
+  // State.new(ownerPaymentKeyHash, Status.new_unlocking(UnlockingStatus.new(outRef, unlockTime))).to_plutus_data
+  // https://github.com/dcSpark/projected-nft-whirlpool/issues/20
   const data = new Constr(0, [
     new Constr(0, [ownerPaymentKeyHash]),
     new Constr(1, [

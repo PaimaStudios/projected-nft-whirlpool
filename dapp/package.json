@@ -5,7 +5,7 @@
   "dependencies": {
     "@assemblyscript/loader": "^0.27.13",
     "@dcspark/cardano-multiplatform-lib-browser": "^3.1.2",
-    "@dcspark/carp-client": "^2.3.1",
+    "@dcspark/carp-client": "^2.4.1",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
     "@mui/icons-material": "^5.14.9",

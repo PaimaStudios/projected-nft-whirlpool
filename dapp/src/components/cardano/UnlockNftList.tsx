@@ -38,7 +38,8 @@ import { Value } from "../../utils/cardano/value";
 import { useSnackbar } from "notistack";
 import { SnackbarMessage } from "../../utils/texts";
 
-// From validator
+// From validator (hololocker.ah)
+// TODO: get this from WASM instead (https://github.com/dcSpark/projected-nft-whirlpool/issues/22)
 const minimumLockTime = BigInt(300000);
 const ttl = 120 * 1000;
 // Artificially increase unlockTime by this amount to let chain produce block satisfying the real unlockTime

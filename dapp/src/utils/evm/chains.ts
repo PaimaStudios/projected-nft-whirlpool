@@ -40,6 +40,9 @@ export const getChainReserveWaitingTime = (
       // 1.5x blocktime (12s)
       return (12n * 3n) / 2n;
     default:
+      // note: if somebody forgets to update this function for a specific chain
+      //       the value of 0 here is not unsafe - it just leads to a poor UX
+      //       i.e. if you click withdraw too soon, the button won't work and you get a NotUnlockedYet() error
       return 0n;
   }
 };
