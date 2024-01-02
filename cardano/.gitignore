@@ -1,0 +1,21 @@
+# Aiken compilation artifacts
+artifacts/
+# Aiken's project working directory
+build/
+# Aiken's default documentation export
+docs/
+
+# JetBrains IDE files
+.idea/
+
+# Rust data
+sdk/target
+sdk/Cargo.lock
+
+**/target
+**/pkg
+**/node_modules
+
+sdk/wasm/json-gen/target/**
+sdk/wasm/json-gen/output/**
+sdk/wasm/json-gen/schemas/**
