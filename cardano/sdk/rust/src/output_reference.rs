@@ -64,7 +64,7 @@ fn get_out_ref(constr: ConstrPlutusData) -> Result<OutRef, String> {
             constr.alternative
         ));
     }
-    let transaction_id = match constr.fields.get(0).ok_or("no field found for transaction id while parsing out ref")? {
+    let transaction_id = match constr.fields.first().ok_or("no field found for transaction id while parsing out ref")? {
         PlutusData::ConstrPlutusData(constr) => {
             if constr.alternative != 0 {
                 return Err(format!(
@@ -72,7 +72,7 @@ fn get_out_ref(constr: ConstrPlutusData) -> Result<OutRef, String> {
                     constr.alternative
                 ));
             }
-            match constr.fields.get(0).ok_or("no field found for transaction id bytes while parsing transaction id while parsing out ref")? {
+            match constr.fields.first().ok_or("no field found for transaction id bytes while parsing transaction id while parsing out ref")? {
                 PlutusData::Bytes {
                     bytes,
                     ..

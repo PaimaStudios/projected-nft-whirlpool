@@ -620,7 +620,7 @@ async fn handle_unlock(
     let (_contract_balance, contract_inputs) =
         fetch_inputs(vec![config.locked], &blockfrost).await?;
 
-    let (contract_input_pointer, contract_input) = contract_inputs.get(0).cloned().unwrap();
+    let (contract_input_pointer, contract_input) = contract_inputs.first().cloned().unwrap();
     builder
         .add_input(
             SingleInputBuilder::new(
@@ -879,7 +879,7 @@ async fn handle_claim(
 
     let (_, contract_inputs) = fetch_inputs(vec![config.locked], &blockfrost).await?;
 
-    let (contract_input_pointer, contract_input) = contract_inputs.get(0).cloned().unwrap();
+    let (contract_input_pointer, contract_input) = contract_inputs.first().cloned().unwrap();
     builder
         .add_input(
             SingleInputBuilder::new(

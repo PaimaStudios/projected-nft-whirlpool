@@ -53,7 +53,7 @@ impl TryFrom<PlutusData> for MintRedeemer {
         };
 
         match constr.alternative {
-            0 => match constr.fields.get(0) {
+            0 => match constr.fields.first() {
                 Some(PlutusData::Integer(bigint)) => Ok(MintRedeemer::MintTokens {
                     total: bigint.clone(),
                 }),

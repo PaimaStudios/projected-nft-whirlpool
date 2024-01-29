@@ -92,7 +92,7 @@ impl TryFrom<PlutusData> for Redeem {
 
         let redeemer_constr = match constr
             .fields
-            .get(0)
+            .first()
             .ok_or("no field found for inner redeem while parsing redeem".to_string())?
         {
             PlutusData::ConstrPlutusData(constr) => constr,
@@ -111,7 +111,7 @@ impl TryFrom<PlutusData> for Redeem {
             ));
         }
 
-        let constr_withdraw = match redeemer_constr.fields.get(0).ok_or("no field found for partial_withdraw while parsing redeem".to_string())? {
+        let constr_withdraw = match redeemer_constr.fields.first().ok_or("no field found for partial_withdraw while parsing redeem".to_string())? {
             PlutusData::ConstrPlutusData(constr) => constr.clone(),
             _ => return Err("expected to see constr plutus data for partial_withdraw field while parsing redeem".to_string()),
         };
@@ -163,7 +163,7 @@ fn get_partial_withdraw(constr: ConstrPlutusData) -> Result<bool, String> {
 
 fn get_nft_input_owner(constr: ConstrPlutusData) -> Result<Option<OutRef>, String> {
     match constr.alternative {
-        0 => OutRef::try_from(constr.fields.get(0).cloned().ok_or(
+        0 => OutRef::try_from(constr.fields.first().cloned().ok_or(
             "no field found for output reference while parsing nft_input_owner".to_string(),
         )?)
         .map(Some)
@@ -178,7 +178,7 @@ fn get_nft_input_owner(constr: ConstrPlutusData) -> Result<Option<OutRef>, Strin
 
 fn get_new_receipt_owner(constr: ConstrPlutusData) -> Result<Option<AssetName>, String> {
     match constr.alternative {
-        0 => match constr.fields.get(0).ok_or(
+        0 => match constr.fields.first().ok_or(
             "no field found for new_receipt_owner while parsing new_receipt_owner".to_string(),
         )? {
             PlutusData::Bytes { bytes, .. } => {
