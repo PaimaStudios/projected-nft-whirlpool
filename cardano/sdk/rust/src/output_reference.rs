@@ -1,11 +1,12 @@
 use cml_chain::plutus::{ConstrPlutusData, PlutusData};
 use cml_chain::utils::BigInt;
 
+use cml_core::serialization::Deserialize;
 use cml_crypto::{RawBytesEncoding, TransactionHash};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize as SerdeDeserialize, Serialize};
 use std::fmt::Debug;
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash, Deserialize, Serialize, schemars::JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, SerdeDeserialize, Serialize, schemars::JsonSchema)]
 pub struct OutRef {
     pub tx_id: TransactionHash,
     pub index: u64,
@@ -14,6 +15,16 @@ pub struct OutRef {
 impl OutRef {
     pub fn new(tx_id: TransactionHash, index: u64) -> Self {
         OutRef { tx_id, index }
+    }
+}
+
+impl TryFrom<&[u8]> for OutRef {
+    type Error = String;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        let plutus_data = PlutusData::from_cbor_bytes(value)
+            .map_err(|err| format!("can't decode as plutus data: {err}"))?;
+        Self::try_from(plutus_data)
     }
 }
 

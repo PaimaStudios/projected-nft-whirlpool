@@ -2,6 +2,7 @@ use crate::OutRef;
 use cml_chain::assets::AssetName;
 use cml_chain::plutus::{ConstrPlutusData, PlutusData};
 
+use cml_core::serialization::Deserialize;
 use std::fmt::Debug;
 
 #[derive(
@@ -24,6 +25,16 @@ impl Redeem {
             nft_input_owner,
             new_receipt_owner,
         }
+    }
+}
+
+impl TryFrom<&[u8]> for Redeem {
+    type Error = String;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        let plutus_data = PlutusData::from_cbor_bytes(value)
+            .map_err(|err| format!("can't decode as plutus data: {err}"))?;
+        Self::try_from(plutus_data)
     }
 }
 

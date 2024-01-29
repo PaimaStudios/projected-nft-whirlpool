@@ -4,6 +4,7 @@ use cml_chain::plutus::{ConstrPlutusData, PlutusData};
 use cml_chain::utils::BigInt;
 use cml_chain::PolicyId;
 
+use cml_core::serialization::Deserialize;
 use cml_crypto::{Ed25519KeyHash, RawBytesEncoding};
 use std::fmt::Debug;
 
@@ -50,6 +51,16 @@ impl From<Owner> for PlutusData {
                 ConstrPlutusData::new(2, vec![PlutusData::new_bytes(asset_name.get().clone())]),
             ),
         }
+    }
+}
+
+impl TryFrom<&[u8]> for Owner {
+    type Error = String;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        let plutus_data = PlutusData::from_cbor_bytes(value)
+            .map_err(|err| format!("can't decode as plutus data: {err}"))?;
+        Self::try_from(plutus_data)
     }
 }
 
@@ -111,6 +122,16 @@ impl From<Status> for PlutusData {
     }
 }
 
+impl TryFrom<&[u8]> for Status {
+    type Error = String;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        let plutus_data = PlutusData::from_cbor_bytes(value)
+            .map_err(|err| format!("can't decode as plutus data: {err}"))?;
+        Self::try_from(plutus_data)
+    }
+}
+
 impl TryFrom<PlutusData> for Status {
     type Error = String;
 
@@ -145,6 +166,16 @@ impl From<State> for PlutusData {
         let status = PlutusData::from(state.status);
 
         PlutusData::new_constr_plutus_data(ConstrPlutusData::new(0, vec![owner_data, status]))
+    }
+}
+
+impl TryFrom<&[u8]> for State {
+    type Error = String;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        let plutus_data = PlutusData::from_cbor_bytes(value)
+            .map_err(|err| format!("can't decode as plutus data: {err}"))?;
+        Self::try_from(plutus_data)
     }
 }
 

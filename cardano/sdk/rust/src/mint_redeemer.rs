@@ -1,9 +1,10 @@
 use cml_chain::plutus::{ConstrPlutusData, PlutusData};
 use cml_chain::utils::BigInt;
-use serde::{Deserialize, Serialize};
+use cml_core::serialization::Deserialize;
+use serde::{Deserialize as SerdeDeserialize, Serialize};
 use std::fmt::Debug;
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash, Deserialize, Serialize, schemars::JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, SerdeDeserialize, Serialize, schemars::JsonSchema)]
 pub enum MintRedeemer {
     MintTokens { total: BigInt },
     BurnTokens,
@@ -29,6 +30,16 @@ impl From<MintRedeemer> for PlutusData {
                 PlutusData::new_constr_plutus_data(ConstrPlutusData::new(1, vec![]))
             }
         }
+    }
+}
+
+impl TryFrom<&[u8]> for MintRedeemer {
+    type Error = String;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        let plutus_data = PlutusData::from_cbor_bytes(value)
+            .map_err(|err| format!("can't decode as plutus data: {err}"))?;
+        Self::try_from(plutus_data)
     }
 }
 
