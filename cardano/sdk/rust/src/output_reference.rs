@@ -1,11 +1,12 @@
 use cml_chain::plutus::{ConstrPlutusData, PlutusData};
 use cml_chain::utils::BigInt;
 
+use cml_core::serialization::Deserialize;
 use cml_crypto::{RawBytesEncoding, TransactionHash};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize as SerdeDeserialize, Serialize};
 use std::fmt::Debug;
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash, Deserialize, Serialize, schemars::JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, SerdeDeserialize, Serialize, schemars::JsonSchema)]
 pub struct OutRef {
     pub tx_id: TransactionHash,
     pub index: u64,
@@ -14,6 +15,16 @@ pub struct OutRef {
 impl OutRef {
     pub fn new(tx_id: TransactionHash, index: u64) -> Self {
         OutRef { tx_id, index }
+    }
+}
+
+impl TryFrom<&[u8]> for OutRef {
+    type Error = String;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        let plutus_data = PlutusData::from_cbor_bytes(value)
+            .map_err(|err| format!("can't decode as plutus data: {err}"))?;
+        Self::try_from(plutus_data)
     }
 }
 
@@ -53,7 +64,7 @@ fn get_out_ref(constr: ConstrPlutusData) -> Result<OutRef, String> {
             constr.alternative
         ));
     }
-    let transaction_id = match constr.fields.get(0).ok_or("no field found for transaction id while parsing out ref")? {
+    let transaction_id = match constr.fields.first().ok_or("no field found for transaction id while parsing out ref")? {
         PlutusData::ConstrPlutusData(constr) => {
             if constr.alternative != 0 {
                 return Err(format!(
@@ -61,7 +72,7 @@ fn get_out_ref(constr: ConstrPlutusData) -> Result<OutRef, String> {
                     constr.alternative
                 ));
             }
-            match constr.fields.get(0).ok_or("no field found for transaction id bytes while parsing transaction id while parsing out ref")? {
+            match constr.fields.first().ok_or("no field found for transaction id bytes while parsing transaction id while parsing out ref")? {
                 PlutusData::Bytes {
                     bytes,
                     ..

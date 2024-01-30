@@ -4,6 +4,7 @@ use cml_chain::plutus::{ConstrPlutusData, PlutusData};
 use cml_chain::utils::BigInt;
 use cml_chain::PolicyId;
 
+use cml_core::serialization::Deserialize;
 use cml_crypto::{Ed25519KeyHash, RawBytesEncoding};
 use std::fmt::Debug;
 
@@ -50,6 +51,16 @@ impl From<Owner> for PlutusData {
                 ConstrPlutusData::new(2, vec![PlutusData::new_bytes(asset_name.get().clone())]),
             ),
         }
+    }
+}
+
+impl TryFrom<&[u8]> for Owner {
+    type Error = String;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        let plutus_data = PlutusData::from_cbor_bytes(value)
+            .map_err(|err| format!("can't decode as plutus data: {err}"))?;
+        Self::try_from(plutus_data)
     }
 }
 
@@ -111,6 +122,16 @@ impl From<Status> for PlutusData {
     }
 }
 
+impl TryFrom<&[u8]> for Status {
+    type Error = String;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        let plutus_data = PlutusData::from_cbor_bytes(value)
+            .map_err(|err| format!("can't decode as plutus data: {err}"))?;
+        Self::try_from(plutus_data)
+    }
+}
+
 impl TryFrom<PlutusData> for Status {
     type Error = String;
 
@@ -148,6 +169,16 @@ impl From<State> for PlutusData {
     }
 }
 
+impl TryFrom<&[u8]> for State {
+    type Error = String;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        let plutus_data = PlutusData::from_cbor_bytes(value)
+            .map_err(|err| format!("can't decode as plutus data: {err}"))?;
+        Self::try_from(plutus_data)
+    }
+}
+
 impl TryFrom<PlutusData> for State {
     type Error = String;
 
@@ -160,7 +191,7 @@ impl TryFrom<PlutusData> for State {
         let owner = Owner::try_from(
             constr
                 .fields
-                .get(0)
+                .first()
                 .cloned()
                 .ok_or("no field found for owner while parsing state".to_string())?,
         )?;
@@ -180,7 +211,7 @@ fn get_owner(constr: ConstrPlutusData) -> Result<Owner, String> {
     match constr.alternative {
         0 => match constr
             .fields
-            .get(0)
+            .first()
             .ok_or("no field found for PKH bytes while parsing owner 0".to_string())?
         {
             PlutusData::Bytes { bytes, .. } => Ok(Owner::PKH(
@@ -193,7 +224,7 @@ fn get_owner(constr: ConstrPlutusData) -> Result<Owner, String> {
             _ => Err("expected to see PKH bytes field type while parsing owner 0".to_string()),
         },
         1 => {
-            let policy_id = match constr.fields.get(0).ok_or("no field found for policy id bytes while parsing owner 1 (nft)".to_string())? {
+            let policy_id = match constr.fields.first().ok_or("no field found for policy id bytes while parsing owner 1 (nft)".to_string())? {
                 PlutusData::Bytes {
                          bytes, ..
                      } => PolicyId::from_raw_bytes(bytes).map_err(|err| format!("can't decode policy id bytes as PolicyId while parsing owner 1 (nft): {err:?}"))?,
@@ -213,7 +244,7 @@ fn get_owner(constr: ConstrPlutusData) -> Result<Owner, String> {
             Ok(Owner::NFT(policy_id, asset_name))
         }
         2 => {
-            let asset_name = match constr.fields.get(0).ok_or("no field found for asset name bytes while parsing owner 2 (receipt)".to_string())? {
+            let asset_name = match constr.fields.first().ok_or("no field found for asset name bytes while parsing owner 2 (receipt)".to_string())? {
                 PlutusData::Bytes {
                          bytes,
                          ..
@@ -237,7 +268,7 @@ fn get_status(constr: ConstrPlutusData) -> Result<Status, String> {
         1 => {
             let out_ref =
                 OutRef::try_from(
-                    constr.fields.get(0).cloned().ok_or(
+                    constr.fields.first().cloned().ok_or(
                         "no field found for output reference while parsing unlocking status",
                     )?,
                 )
