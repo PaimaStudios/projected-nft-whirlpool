@@ -50,6 +50,10 @@
     "web-vitals": "^2.1.0",
     "zustand": "^4.4.6"
   },
+  "overrides": {
+    "@typescript-eslint/typescript-estree": "^5.57.1",
+    "typescript": "^5.0.4"
+  },
   "scripts": {
     "start": "react-app-rewired start",
     "build": "react-app-rewired build",
