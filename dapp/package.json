@@ -76,6 +76,7 @@
     ]
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@wagmi/cli": "^1.5.0",
     "eslint": "^8.15.0",
     "eslint-config-next": "^12.1.6",
