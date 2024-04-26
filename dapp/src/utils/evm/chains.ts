@@ -49,6 +49,6 @@ export const getChainReserveWaitingTime = (
 
 export const isChainSupported = (chainId: number | undefined) => {
   return (
-    chainId != null && !!supportedChains.find((chain) => chain.id === chainId)
+    chainId != null && supportedChains.find((chain) => chain.id === chainId) != null
   );
 };

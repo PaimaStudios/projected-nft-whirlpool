@@ -105,6 +105,9 @@ export default function LockNftList() {
   if (showOnlyNfts) {
     tokens = tokens.filter((token) => isTokenNft(token));
   }
+  if (tokens.length === 0) {
+    return <Typography>None.</Typography>;
+  }
 
   return (
     <Stack sx={{ gap: 2, width: "100%", alignItems: "center" }}>

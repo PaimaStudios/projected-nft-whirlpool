@@ -25,12 +25,12 @@ const fetchLocks = async (paymentKeyHash: string) => {
     );
     const responseData: ProjectedNftRangeResponse = request.data;
     const locksMap: Record<string, LockInfoCardano> = {};
-    responseData.forEach((dat) => {
+    responseData.forEach(datAndTx => datAndTx.payload.forEach((dat) => {
       if (dat.status === ProjectedNftStatus.Invalid) return;
       if (dat.ownerAddress !== paymentKeyHash) return;
 
       const token = new Token(new Asset(dat.policyId, dat.assetName), BigInt(dat.amount));
-      const txKey = `${dat.actionTxId}#${dat.actionOutputIndex}`;
+      const txKey = `${datAndTx.txId}#${dat.actionOutputIndex}`;
       const previousTxKey =
         dat.previousTxHash !== "" && dat.previousTxOutputIndex != null
           ? `${dat.previousTxHash}#${dat.previousTxOutputIndex}`
@@ -44,6 +44,8 @@ const fetchLocks = async (paymentKeyHash: string) => {
               tokens: [token],
               status: dat.status,
               unlockTime: null,
+              block: datAndTx.block,
+              txId: datAndTx.txId,
             };
             locksMap[txKey] = lock;
           } else {
@@ -71,6 +73,8 @@ const fetchLocks = async (paymentKeyHash: string) => {
               tokens: [token],
               status: dat.status,
               unlockTime: BigInt(dat.forHowLong),
+              block: datAndTx.block,
+              txId: datAndTx.txId,
             };
             delete locksMap[previousTxKey];
             locksMap[txKey] = lock;
@@ -92,7 +96,7 @@ const fetchLocks = async (paymentKeyHash: string) => {
           assertNever(dat.status);
           break;
       }
-    });
+    }));
     const locks: LockInfoCardano[] = Object.values(locksMap).sort(
       (a, b) => a.actionSlot - b.actionSlot,
     );

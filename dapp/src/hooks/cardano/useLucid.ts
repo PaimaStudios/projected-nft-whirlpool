@@ -25,11 +25,15 @@ const useLucid = () => {
         : "https://cardano-mainnet.blockfrost.io/api/v0",
       env.REACT_APP_BLOCKFROST_PROJECT_ID,
     );
-    const newLucidInstance = await Lucid.new(provider, blockfrostNetwork);
 
-    newLucidInstance.selectWallet(walletApi);
+    try {
+      const newLucidInstance = await Lucid.new(provider, blockfrostNetwork);
+      newLucidInstance.selectWallet(walletApi);
 
     return newLucidInstance;
+    } catch (e) {
+      throw new Error(`Blockfrost connection error. Check your network panel for more information`);
+    }
   }, [walletApi, networkId]);
 
   useEffect(() => {

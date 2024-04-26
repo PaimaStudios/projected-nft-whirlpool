@@ -2,15 +2,17 @@ import { Stack, Typography } from "@mui/material";
 import { PropsWithChildren } from "react";
 import ConnectWallet from "./ConnectWallet";
 import { useGetVmType } from "../hooks/useGetVmType";
-import { isChainSupported } from "../utils/evm/chains";
+import { isChainSupported as isEvmChainSupported } from "../utils/evm/chains";
+import { isChainSupported as isCardanoChainSupported } from "../utils/cardano/chains";
 import { useNetwork } from "wagmi";
 import ChainSelector from "./ChainSelector";
 import { VmTypes } from "../utils/constants";
+import { useCardanoNetworkId } from "../hooks/cardano/useCardanoNetworkId";
+import { useCardanoWalletApi } from "../hooks/cardano/useCardanoWalletApi";
+import { useDappStore } from "../store";
 
 export default function IsConnectedWrapper({ children }: PropsWithChildren) {
   const vmType = useGetVmType();
-  const { chain } = useNetwork();
-  const supportedChain = isChainSupported(chain?.id);
 
   if (vmType === VmTypes.None) {
     return (
@@ -33,7 +35,44 @@ export default function IsConnectedWrapper({ children }: PropsWithChildren) {
     );
   }
 
-  if (vmType === VmTypes.EVM && !supportedChain) {
+  if (vmType === VmTypes.EVM) {
+    const EvmIsConnected = IsConnectedEvmWrapper();
+    if (EvmIsConnected != null) {
+      return EvmIsConnected;
+    }
+  }
+  if (vmType === VmTypes.Cardano) {
+    const CardanoIsConnected = IsConnectedCardanoWrapper();
+    if (CardanoIsConnected != null) {
+      return CardanoIsConnected;
+    }
+  }
+  
+  return <>{children}</>;
+}
+
+function IsConnectedCardanoWrapper() {
+  const selectedWallet = useDappStore((state) => state.selectedWallet);
+  const walletApi = useCardanoWalletApi(selectedWallet);
+  const networkId = useCardanoNetworkId(walletApi);
+  const supportedChain = isCardanoChainSupported(networkId);
+
+  if (!supportedChain) {
+    return (
+      <Stack sx={{ my: 4, gap: 2, alignItems: "center" }}>
+        <Typography>You are using an account on an unsupported network.</Typography>
+      </Stack>
+    );
+  }
+
+  return undefined;
+}
+
+function IsConnectedEvmWrapper() {
+  const { chain } = useNetwork();
+  const supportedChain = isEvmChainSupported(chain?.id);
+
+  if (!supportedChain) {
     return (
       <Stack sx={{ my: 4, gap: 2, alignItems: "center" }}>
         <Typography>You are using an unsupported network.</Typography>
@@ -41,5 +80,6 @@ export default function IsConnectedWrapper({ children }: PropsWithChildren) {
       </Stack>
     );
   }
-  return <>{children}</>;
+
+  return undefined;
 }

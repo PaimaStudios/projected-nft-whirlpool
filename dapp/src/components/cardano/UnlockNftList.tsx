@@ -96,7 +96,7 @@ function UnlockNftListItem({
   const lucid = useDappStore((state) => state.lucid);
   const address = useDappStore((state) => state.address);
   const paymentKeyHash = useDappStore((state) => state.paymentKeyHash);
-  const { tokens, actionTxId, actionOutputIndex, plutusDatum } = lockInfo;
+  const { tokens, actionOutputIndex, txId, plutusDatum } = lockInfo;
   let { unlockTime } = lockInfo;
   const [now, setNow] = useState<number>(new Date().getTime());
   const [isLoading, setIsLoading] = useState(false);
@@ -129,8 +129,8 @@ function UnlockNftListItem({
       throw new Error("Prerequisites missing!");
     }
 
-    if (!actionTxId) {
-      console.error("actionTxId missing in lock info", lockInfo);
+    if (!txId) {
+      console.error("txId missing in lock info", lockInfo);
       return;
     }
     if (!plutusDatum) {
@@ -141,7 +141,7 @@ function UnlockNftListItem({
     const validatorAddress = lucid.utils.validatorToAddress(validator);
     const utxos = await lucid.utxosByOutRef([
       {
-        txHash: actionTxId,
+        txHash: txId,
         outputIndex: actionOutputIndex,
       },
     ]);
@@ -155,7 +155,7 @@ function UnlockNftListItem({
 
     const datum = getUnlockDatum({
       ownerPaymentKeyHash: paymentKeyHash,
-      txId: actionTxId,
+      txId,
       outputIndex: BigInt(actionOutputIndex),
       unlockTime: BigInt(lastBlockTime + ttl) + minimumLockTime,
     });
@@ -219,14 +219,14 @@ function UnlockNftListItem({
       throw new Error("Prerequisites missing!");
     }
 
-    if (!actionTxId) {
-      console.error("actionTxId missing in lock info", lockInfo);
+    if (!txId) {
+      console.error("txId missing in lock info", lockInfo);
       return;
     }
 
     const utxos = await lucid.utxosByOutRef([
       {
-        txHash: actionTxId,
+        txHash: txId,
         outputIndex: actionOutputIndex,
       },
     ]);
@@ -327,7 +327,7 @@ function UnlockNftListItem({
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Stack>
           <Typography sx={{ overflowWrap: "anywhere" }}>
-            Tx ID: {actionTxId}
+            Tx ID: {txId}
             <Box component="span" fontWeight={700}>
               #{actionOutputIndex}
             </Box>
@@ -449,7 +449,7 @@ export default function UnlockNftList() {
       {unclaimedLocks.map((lock) => (
         <UnlockNftListItem
           lockInfo={lock}
-          key={`${lock.actionTxId}#${lock.actionOutputIndex}`}
+          key={`${lock.txId}#${lock.actionOutputIndex}`}
           metadata={nftMetadata}
         />
       ))}
