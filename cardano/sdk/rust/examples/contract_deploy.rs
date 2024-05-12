@@ -656,7 +656,7 @@ async fn handle_unlock(
     builder.add_required_signer(match payment_address.payment_cred().unwrap() {
         StakeCredential::PubKey { hash, .. } => *hash,
         StakeCredential::Script { .. } => {
-            return Err(anyhow!("script is not suported as required signer"));
+            return Err(anyhow!("script is not supported as required signer"));
         }
     });
 
@@ -900,7 +900,7 @@ async fn handle_claim(
     builder.add_required_signer(match payment_address.payment_cred().unwrap() {
         StakeCredential::PubKey { hash, .. } => *hash,
         StakeCredential::Script { .. } => {
-            return Err(anyhow!("script is not suported as required signer"));
+            return Err(anyhow!("script is not supported as required signer"));
         }
     });
 
